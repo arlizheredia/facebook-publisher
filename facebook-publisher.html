@@ -1,0 +1,1655 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Facebook Publisher</title>
+<meta name="description" content="Comparte publicaciones de Facebook en tus grupos de forma rápida, ordenada y segura.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%232d88ff'/%3E%3Cstop offset='1' stop-color='%230b57d0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='48' height='48' rx='12' fill='url(%23g)'/%3E%3Cpath d='M10 36.5L40 24 10 11.5v9.7l21.4 2.8L10 26.8z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0..1,0&display=block">
+<style>
+/* ================== TOKENS (Material 3) ================== */
+:root{
+  --primary:#0b57d0;--on-primary:#fff;--primary-container:#d3e3fd;--on-primary-container:#041e49;
+  --secondary-container:#c2e7ff;--on-secondary-container:#001d35;
+  --bg:#f8fafd;--surface:#ffffff;--surface-2:#f0f4f9;--surface-3:#e9eef6;
+  --text:#1f1f1f;--text-2:#444746;--text-3:#747775;--outline:#747775;--outline-2:#c4c7c5;
+  --error:#b3261e;--error-container:#f9dedc;--success:#146c2e;--success-container:#c4eed0;--warn:#7a5900;--warn-container:#ffefc2;
+  --fb:#1877f2;--scrim:rgba(0,0,0,.32);
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 1px 3px 1px rgba(0,0,0,.15);
+  --shadow-2:0 1px 2px rgba(0,0,0,.3),0 2px 6px 2px rgba(0,0,0,.15);
+  --shadow-3:0 4px 8px 3px rgba(0,0,0,.15),0 1px 3px rgba(0,0,0,.3);
+  --font:"Google Sans Text","Google Sans",Roboto,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-display:"Google Sans","Google Sans Display",Roboto,system-ui,sans-serif;
+  --mono:"Roboto Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --primary:#a8c7fa;--on-primary:#062e6f;--primary-container:#0842a0;--on-primary-container:#d3e3fd;
+    --secondary-container:#004a77;--on-secondary-container:#c2e7ff;
+    --bg:#131314;--surface:#1e1f20;--surface-2:#282a2c;--surface-3:#333537;
+    --text:#e3e3e3;--text-2:#c4c7c5;--text-3:#8e918f;--outline:#8e918f;--outline-2:#444746;
+    --error:#f2b8b5;--error-container:#601410;--success:#6dd58c;--success-container:#0f5223;--warn:#f9dc8c;--warn-container:#4a3800;
+    --scrim:rgba(0,0,0,.6);color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --primary:#a8c7fa;--on-primary:#062e6f;--primary-container:#0842a0;--on-primary-container:#d3e3fd;
+  --secondary-container:#004a77;--on-secondary-container:#c2e7ff;
+  --bg:#131314;--surface:#1e1f20;--surface-2:#282a2c;--surface-3:#333537;
+  --text:#e3e3e3;--text-2:#c4c7c5;--text-3:#8e918f;--outline:#8e918f;--outline-2:#444746;
+  --error:#f2b8b5;--error-container:#601410;--success:#6dd58c;--success-container:#0f5223;--warn:#f9dc8c;--warn-container:#4a3800;
+  --scrim:rgba(0,0,0,.6);color-scheme:dark;
+}
+
+/* ================== BASE ================== */
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;height:100%}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{overflow-x:hidden;background:var(--bg);color:var(--text);font:400 14px/20px var(--font);-webkit-font-smoothing:antialiased;letter-spacing:.01em}
+button,input,textarea,select{font:inherit;color:inherit}
+a{color:var(--primary);text-underline-offset:2px}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:400;letter-spacing:0}
+p{margin:0 0 8px}
+code,kbd{font-family:var(--mono);font-size:12.5px;background:var(--surface-2);border-radius:4px;padding:1px 6px}
+kbd{border:1px solid var(--outline-2);border-bottom-width:2px;color:var(--text-2);font-size:11px}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.ms{font-family:"Material Symbols Rounded";font-weight:normal;font-style:normal;font-size:24px;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;direction:ltr;-webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;user-select:none;flex:none;overflow:hidden;width:1em}
+.ms.fill{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+[hidden]{display:none!important}
+:root:not(.ms-ready) .ms{color:transparent!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.muted{color:var(--text-2)}
+.small{font-size:12px;line-height:16px}
+.ml-auto{margin-left:auto}
+.spacer{flex:1}
+
+/* ================== BOTONES ================== */
+.btn{--bgc:transparent;--fg:var(--primary);position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 24px;border-radius:20px;border:0;background:var(--bgc);color:var(--fg);font:500 14px/20px var(--font);letter-spacing:.01em;cursor:pointer;white-space:nowrap;text-decoration:none;overflow:hidden;transition:box-shadow .2s}
+.btn::after{content:"";position:absolute;inset:0;background:currentColor;opacity:0;transition:opacity .15s;pointer-events:none}
+.btn:hover::after{opacity:.08}.btn:active::after{opacity:.12}
+.btn .ms{font-size:18px;margin-left:-8px}
+.btn kbd{background:color-mix(in srgb,currentColor 12%,transparent);color:inherit;border-color:color-mix(in srgb,currentColor 30%,transparent)}
+.btn.filled{--bgc:var(--primary);--fg:var(--on-primary)}
+.btn.filled:hover{box-shadow:var(--shadow)}
+.btn.tonal{--bgc:var(--secondary-container);--fg:var(--on-secondary-container)}
+.btn.outlined{border:1px solid var(--outline);--fg:var(--primary)}
+.btn.text{padding:0 12px}.btn.text .ms{margin-left:-4px}
+.btn.danger{--fg:var(--error)}
+.btn.success{--bgc:var(--success);--fg:var(--surface)}
+.btn.fb{--bgc:var(--fb);--fg:#fff}
+.btn.sm{height:32px;padding:0 16px;font-size:13px}
+.btn.lg{height:48px;padding:0 28px;border-radius:24px;font-size:15px}
+.btn:disabled{opacity:.38;cursor:not-allowed;box-shadow:none}
+.btn:disabled::after{display:none}
+.icon-btn{position:relative;width:40px;height:40px;border-radius:50%;border:0;background:transparent;color:var(--text-2);display:inline-grid;place-items:center;cursor:pointer;text-decoration:none;flex:none;padding:0}
+.icon-btn::after{content:"";position:absolute;inset:0;border-radius:50%;background:currentColor;opacity:0;transition:opacity .15s;pointer-events:none}
+.icon-btn:hover::after{opacity:.08}
+.icon-btn.sm{width:32px;height:32px}.icon-btn.sm .ms{font-size:20px}
+.tip[data-tip]:hover::before{content:attr(data-tip);position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--text);color:var(--surface);font:400 12px/16px var(--font);padding:4px 8px;border-radius:4px;white-space:nowrap;z-index:50;pointer-events:none}
+.help-link{position:relative;width:40px;height:40px;border:0;background:none;cursor:pointer;color:var(--text-2);display:inline-grid;place-items:center;border-radius:50%;padding:0;flex:none;margin:-6px -8px -6px 0}
+.help-link:hover{color:var(--primary);background:color-mix(in srgb,var(--primary) 10%,transparent)}
+.help-link .ms{font-size:22px}
+.help-link.ml-auto{margin-left:auto}
+.side .card-head h2{white-space:nowrap}
+.hlp{display:inline-flex;align-items:center;gap:4px;font:500 13px/20px var(--font);color:var(--primary);text-decoration:none;border-radius:16px;padding:4px 10px 4px 6px;white-space:nowrap;border:0;background:none;cursor:pointer}
+.hlp:hover{background:color-mix(in srgb,var(--primary) 10%,transparent)}
+.hlp .ms{font-size:18px}
+.head-links{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0 0 -6px}
+
+/* ================== APP BAR / RAIL ================== */
+.appbar{position:sticky;top:0;z-index:30;height:64px;display:flex;align-items:center;gap:4px;padding:0 8px 0 16px;background:var(--bg)}
+.brand{display:flex;align-items:center;gap:12px;font-family:var(--font-display);font-size:20px;color:var(--text-2);text-decoration:none;padding-left:8px;min-width:0;white-space:nowrap}
+.brand b{font-weight:500;color:var(--text)}
+.brand-logo{width:36px;height:36px;display:grid;place-items:center;flex:none}
+.brand-logo svg{display:block;filter:drop-shadow(0 1px 1px rgba(0,0,0,.15))}
+.layout{display:grid;grid-template-columns:88px 1fr;min-height:calc(100vh - 64px);min-height:calc(100dvh - 64px)}
+.rail{display:flex;flex-direction:column;align-items:center;gap:12px;padding:8px 0;position:sticky;top:64px;height:calc(100vh - 64px);z-index:20}
+.nav-item{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:none;color:var(--text-2);font:500 12px/16px var(--font);cursor:pointer;width:80px;padding:0;text-decoration:none}
+.nav-item .ind{width:56px;height:32px;border-radius:16px;display:grid;place-items:center;position:relative;transition:background .2s}
+.nav-item:hover .ind{background:color-mix(in srgb,var(--text) 8%,transparent)}
+.nav-item[aria-current="page"]{color:var(--text)}
+.nav-item[aria-current="page"] .ind{background:var(--secondary-container);color:var(--on-secondary-container)}
+.nav-item[aria-current="page"] .ms{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+.nav-badge{position:absolute;top:-2px;left:32px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--error);color:var(--surface);font-size:11px;line-height:16px;text-align:center;font-weight:500}
+.nav-badge:empty{display:none}
+main{background:var(--surface);border-radius:16px 16px 0 0;margin-right:16px;min-width:0;padding:32px 40px 64px}
+.view{display:none;max-width:1180px;margin:0 auto}
+.view.active{display:block;animation:fadein .25s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.page-head{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+.page-head h1{font-size:28px;line-height:36px;margin:0}
+.page-head p{color:var(--text-2);font-size:16px;line-height:24px;margin:4px 0 0}
+.page-head .actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+
+/* ================== CARDS ================== */
+.card{background:var(--surface);border:1px solid var(--outline-2);border-radius:12px;padding:20px;margin-bottom:16px}
+.card.filled{background:var(--surface-2);border-color:transparent}
+.card-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.card-head h2{font-size:18px;line-height:24px;font-weight:500;margin:0}
+.card-head .sub{color:var(--text-2);font-size:13px;line-height:18px}
+.step{width:32px;height:32px;border-radius:50%;background:var(--primary);color:var(--on-primary);display:grid;place-items:center;font-weight:500;font-size:14px;flex:none}
+.step.ok{background:var(--success);color:var(--surface)}
+
+/* ================== CAMPOS ================== */
+.field{position:relative;margin-bottom:16px}
+.field label{display:block;font-size:12px;font-weight:500;color:var(--text-2);margin:0 0 6px}
+.input,select.input,textarea.input,.textarea{width:100%;height:48px;padding:0 16px;border:1px solid var(--outline);border-radius:8px;background:var(--surface);color:var(--text);font:400 14px var(--font);outline:none;transition:border-color .15s,box-shadow .15s}
+.input:hover{border-color:var(--text)}
+.input:focus,.textarea:focus{border-color:var(--primary);box-shadow:inset 0 0 0 1px var(--primary)}
+.input.invalid{border-color:var(--error);box-shadow:inset 0 0 0 1px var(--error)}
+select.input{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--text-2) 50%),linear-gradient(135deg,var(--text-2) 50%,transparent 50%);background-position:calc(100% - 20px) 50%,calc(100% - 15px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:40px}
+.textarea,textarea.input{height:auto;min-height:140px;padding:12px 16px;resize:vertical;line-height:22px}
+.hint{font-size:12px;line-height:16px;color:var(--text-2);margin:6px 0 0;display:flex;gap:6px;align-items:center}
+.hint .ms{font-size:16px}
+.hint.err{color:var(--error)}
+.hint.ok{color:var(--success)}
+.input-wrap{position:relative;display:flex;align-items:center}
+.input-wrap .input{padding-left:48px}
+.input-wrap>.ms{position:absolute;left:14px;color:var(--text-2);font-size:22px;pointer-events:none}
+.input-wrap .trail{position:absolute;right:4px;display:flex}
+.input-wrap .input.has-trail{padding-right:84px}
+input[type=checkbox].cb{accent-color:var(--primary);width:18px;height:18px;margin:0;cursor:pointer;flex:none}
+
+/* Editor */
+.editor{border:1px solid var(--outline);border-radius:12px;overflow:hidden;background:var(--surface)}
+.editor:focus-within{border-color:var(--primary);box-shadow:inset 0 0 0 1px var(--primary)}
+.toolbar{display:flex;align-items:center;gap:2px;padding:4px 6px;border-bottom:1px solid var(--outline-2);background:var(--surface-2);flex-wrap:wrap}
+.toolbar .div{width:1px;height:20px;background:var(--outline-2);margin:0 6px}
+.toolbar .tb{position:relative;height:36px;min-width:36px;padding:0 8px;border:0;background:transparent;border-radius:18px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;color:var(--text-2);font:500 13px var(--font)}
+.toolbar .tb:hover{background:color-mix(in srgb,var(--text) 8%,transparent);color:var(--text)}
+.toolbar .tb .ms{font-size:20px}
+.editor .textarea{border:0;border-radius:0;box-shadow:none!important;min-height:200px;font-size:15px;line-height:22px}
+.editor-foot{display:flex;align-items:center;gap:12px;padding:6px 16px;border-top:1px solid var(--outline-2);font-size:12px;color:var(--text-2)}
+
+/* Dropzone & media */
+.drop{border:2px dashed var(--outline-2);border-radius:16px;padding:24px 16px;text-align:center;color:var(--text-2);transition:background .15s,border-color .15s;cursor:pointer;margin-top:16px}
+.drop>.ms{font-size:40px;color:var(--primary);display:block;margin:0 auto 6px}
+.drop:hover,.drop.over{background:var(--primary-container);border-color:var(--primary);color:var(--on-primary-container)}
+.drop-row{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:12px;flex-wrap:wrap}
+.media-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin-top:12px}
+.media-grid:empty{display:none}
+.media-item{position:relative;border-radius:12px;overflow:hidden;background:var(--surface-2);aspect-ratio:1;border:1px solid var(--outline-2)}
+.media-item img,.media-item video{width:100%;height:100%;object-fit:cover;display:block}
+.media-item .audio{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:10px;gap:6px;text-align:center}
+.media-item .audio>.ms{font-size:32px;color:var(--primary)}
+.media-item .name{font-size:11px;line-height:14px;color:var(--text-2);word-break:break-all;max-height:28px;overflow:hidden}
+.media-item .ops{position:absolute;top:6px;right:6px;display:flex;gap:4px}
+.media-item .ops button{width:30px;height:30px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;cursor:pointer;display:grid;place-items:center}
+.media-item .ops .ms{font-size:18px}
+.media-item .type{position:absolute;left:6px;bottom:6px;font-size:10px;font-weight:700;letter-spacing:.5px;background:rgba(0,0,0,.6);color:#fff;padding:2px 6px;border-radius:4px}
+.media-item .busy{position:absolute;inset:0;background:color-mix(in srgb,var(--surface) 88%,transparent);display:grid;place-items:center;font-size:12px;font-weight:500;text-align:center;padding:8px}
+
+/* Chips */
+.chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 16px;border-radius:8px;border:1px solid var(--outline);background:transparent;cursor:pointer;font:500 13px var(--font);color:var(--text-2);transition:background .15s}
+.chip:hover{background:color-mix(in srgb,var(--text) 8%,transparent)}
+.chip.on{background:var(--secondary-container);color:var(--on-secondary-container);border-color:transparent}
+.chip .ms{font-size:18px;margin-left:-6px}
+.chip.static{cursor:default;border-color:var(--outline-2)}
+.chip.static:hover{background:transparent}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:6px;background:var(--surface-3);color:var(--text-2);font-size:11px;font-weight:500;margin-right:4px;vertical-align:1px}
+.pill{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px;border-radius:8px;font-size:12px;font-weight:500;white-space:nowrap;border:1px solid var(--outline-2);color:var(--text-2)}
+.pill .ms{font-size:16px}
+.pill.ok{background:var(--success-container);color:var(--success);border-color:transparent}
+.pill.warn{background:var(--warn-container);color:var(--warn);border-color:transparent}
+.pill.err{background:var(--error-container);color:var(--error);border-color:transparent}
+.pill.info{background:var(--secondary-container);color:var(--on-secondary-container);border-color:transparent}
+
+/* Switch M3 */
+.switch{position:relative;display:inline-block;width:52px;height:32px;flex:none}
+.switch input{opacity:0;width:0;height:0;position:absolute}
+.switch span{position:absolute;inset:0;border-radius:16px;background:var(--surface-3);border:2px solid var(--outline);cursor:pointer;transition:.2s}
+.switch span::before{content:"";position:absolute;width:16px;height:16px;left:6px;top:6px;border-radius:50%;background:var(--outline);transition:.2s}
+.switch input:checked+span{background:var(--primary);border-color:var(--primary)}
+.switch input:checked+span::before{transform:translateX(20px);width:24px;height:24px;left:2px;top:2px;background:var(--on-primary)}
+.switch input:focus-visible+span{outline:2px solid var(--primary);outline-offset:2px}
+
+/* Publicar */
+.compose{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:24px;align-items:start}
+.side{position:sticky;top:80px}
+.fb-post{background:var(--surface);border:1px solid var(--outline-2);border-radius:12px;overflow:hidden;font-family:Roboto,Helvetica,Arial,sans-serif}
+.fb-post .ph{display:flex;gap:10px;align-items:center;padding:12px 14px}
+.fb-post .av{width:40px;height:40px;min-width:40px;aspect-ratio:1;border-radius:50%;background:linear-gradient(135deg,#2d88ff,#0b57d0);color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
+.fb-post .who{font-weight:600;font-size:14px;line-height:18px}
+.fb-post .when{font-size:12px;color:var(--text-3);display:flex;align-items:center;gap:4px}
+.fb-post .when .ms{font-size:14px}
+.fb-post .body{padding:0 14px 12px;white-space:pre-wrap;word-wrap:break-word;font-size:15px;line-height:20px;max-height:320px;overflow:auto}
+.fb-post .body .hl{color:var(--fb);font-weight:500}
+.fb-post .body .ph-empty{color:var(--text-3);font-style:italic}
+.fb-media{display:grid;gap:2px;background:var(--surface-2)}
+.fb-media.n1{grid-template-columns:1fr}
+.fb-media.n2,.fb-media.n3,.fb-media.n4{grid-template-columns:1fr 1fr}
+.fb-media>div{position:relative;aspect-ratio:1;background:var(--surface-3);overflow:hidden}
+.fb-media.n1>div{aspect-ratio:auto;max-height:340px}
+.fb-media.n3>div:first-child{grid-column:1/3;aspect-ratio:2}
+.fb-media img,.fb-media video{width:100%;height:100%;object-fit:cover;display:block}
+.fb-media .more{position:absolute;inset:0;background:rgba(0,0,0,.5);color:#fff;display:grid;place-items:center;font-size:28px;font-weight:700}
+.fb-link{margin:0 14px 12px;border:1px solid var(--outline-2);border-radius:8px;overflow:hidden;background:var(--surface-2)}
+.fb-link .lk-img{height:120px;background:linear-gradient(135deg,#2d88ff 0%,#0b57d0 60%,#062e6f 100%);display:grid;place-items:center;color:#fff}
+.fb-link .lk-img .ms{font-size:44px;opacity:.9}
+.fb-link .lk-t{padding:8px 12px}
+.fb-link .lk-d{font-size:11px;color:var(--text-3);text-transform:uppercase}
+.fb-link .lk-h{font-weight:600;font-size:14px;word-break:break-all}
+.fb-actions{display:flex;border-top:1px solid var(--outline-2);margin:0 14px;padding:4px 0;color:var(--text-3);font-size:13px;font-weight:600}
+.fb-actions span{flex:1;text-align:center;padding:6px}
+
+/* Listas */
+.list{border:1px solid var(--outline-2);border-radius:12px;overflow:hidden;background:var(--surface)}
+.row{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--outline-2);min-height:56px;transition:background .1s}
+.row:last-child{border-bottom:0}
+.row:hover{background:var(--surface-2)}
+.row .main{flex:1;min-width:0}
+.row .title{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .meta{font-size:12px;line-height:18px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .meta a{color:var(--text-2)}
+.row.off .title{color:var(--text-3)}
+.row label.click{display:flex;align-items:center;gap:12px;flex:1;min-width:0;cursor:pointer}
+.scroll-list{max-height:360px;overflow:auto}
+.list-head{display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--surface);font-size:13px;font-weight:500;color:var(--text-2);border-bottom:1px solid var(--outline-2);min-height:48px;position:sticky;top:0;z-index:2}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--primary-container);color:var(--on-primary-container);display:grid;place-items:center;font-weight:500;font-size:13px;flex:none}
+.row.off .avatar{background:var(--surface-3);color:var(--text-3)}
+
+.publish-bar{position:sticky;bottom:16px;z-index:20;display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--surface-2);box-shadow:var(--shadow-2);border-radius:28px;padding:8px 8px 8px 24px;margin-top:8px}
+.publish-bar .sum{flex:1;min-width:200px}
+.publish-bar .sum b{font-weight:500}
+
+/* Banners */
+.banner{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border-radius:12px;background:var(--surface-2);font-size:14px;line-height:20px;margin:0 0 16px}
+.banner>.ms{font-size:20px;color:var(--primary);margin-top:1px}
+.banner.warn{background:var(--warn-container)}.banner.warn>.ms{color:var(--warn)}
+.banner.hero{background:var(--primary-container);color:var(--on-primary-container);border-radius:24px;padding:20px 24px;gap:16px}
+.banner.hero>.ms{font-size:28px;color:inherit}
+.banner h3{margin:0 0 4px;font-size:18px;line-height:24px;font-weight:400}
+.banner ol{margin:6px 0 12px;padding-left:20px}
+.banner ol li{margin:2px 0}
+
+.bm-card{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.bookmarklet{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 20px;border-radius:20px;background:var(--fb);color:#fff!important;font-weight:500;text-decoration:none;cursor:grab;box-shadow:var(--shadow);white-space:nowrap;max-width:100%}
+.bookmarklet:active{cursor:grabbing}
+.bookmarklet::before{content:"";width:22px;height:22px;flex:none;border-radius:6px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%232d88ff'/%3E%3Cstop offset='1' stop-color='%230b57d0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='48' height='48' rx='12' fill='url(%23g)'/%3E%3Cpath d='M10 36.5L40 24 10 11.5v9.7l21.4 2.8L10 26.8z' fill='%23fff'/%3E%3C/svg%3E") center/22px 22px no-repeat;box-shadow:0 0 0 1.5px rgba(255,255,255,.9)}
+
+.empty{text-align:center;padding:56px 16px;color:var(--text-2)}
+.empty .ill{width:120px;height:120px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;margin:0 auto 24px;color:var(--primary)}
+.empty .ill .ms{font-size:56px}
+.empty h3{color:var(--text);font-size:22px;line-height:28px;margin:0 0 8px}
+.empty p{max-width:440px;margin:0 auto 24px}
+.empty.compact{padding:24px 16px}
+.empty.compact .ill{width:88px;height:88px;margin-bottom:16px}
+.empty.compact .ill .ms{font-size:40px}
+.empty.compact h3{font-size:18px}
+
+.toolbar-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.searchbar{display:flex;align-items:center;gap:8px;height:48px;padding:0 4px 0 16px;border-radius:24px;background:var(--surface-2);flex:1 1 320px;max-width:520px;min-width:0;transition:background .15s,box-shadow .15s}
+.searchbar:focus-within{background:var(--surface);box-shadow:var(--shadow-2)}
+.searchbar input{flex:1;border:0;outline:none;background:none;color:var(--text);font:400 16px var(--font);min-width:0;height:100%}
+.searchbar .ms{color:var(--text-2)}
+.fsep{width:1px;align-self:stretch;background:var(--outline-2);margin:4px}
+.bulk{display:none;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 8px 8px 16px;border-radius:12px;background:var(--secondary-container);color:var(--on-secondary-container);margin-bottom:12px}
+.bulk.show{display:flex}
+.bulk .btn{--fg:var(--on-secondary-container)}
+
+/* Historial */
+.hist{border:1px solid var(--outline-2);border-radius:12px;background:var(--surface);margin-bottom:12px;overflow:hidden}
+.hist summary{list-style:none;display:flex;gap:12px;align-items:center;padding:14px 16px;cursor:pointer;flex-wrap:wrap}
+.hist summary:hover{background:var(--surface-2)}
+.hist summary::-webkit-details-marker{display:none}
+.hist summary .main{flex:1 1 260px;min-width:0}
+.hist summary .title{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist summary .exp{transition:transform .2s;color:var(--text-2)}
+.hist[open] summary .exp{transform:rotate(180deg)}
+.hist[open] summary{background:var(--surface-2)}
+.hist .det{border-top:1px solid var(--outline-2);padding:16px}
+.hist .det pre{white-space:pre-wrap;font:400 14px/20px var(--font);background:var(--surface-2);padding:12px 14px;border-radius:10px;margin:0 0 12px;max-height:160px;overflow:auto}
+.prog{height:8px;border-radius:4px;background:var(--surface-3);overflow:hidden;width:120px}
+.prog>i{display:block;height:100%;background:var(--primary);border-radius:4px;transition:width .3s}
+
+/* Diálogos */
+dialog{border:0;padding:0;border-radius:28px;background:var(--surface-2);color:var(--text);box-shadow:var(--shadow-3);width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 48px);max-height:calc(100dvh - 32px)}
+dialog::backdrop{background:var(--scrim)}
+dialog[open]{animation:dlg .2s cubic-bezier(.2,0,0,1)}
+@keyframes dlg{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+dialog .input,dialog .textarea{background:var(--surface)}
+.dlg-h{padding:24px 24px 8px;display:flex;align-items:center;gap:8px}
+.dlg-h h2{font-size:24px;line-height:32px;margin:0;flex:1}
+.dlg-b{padding:8px 24px;overflow:auto;max-height:calc(100vh - 220px);max-height:calc(100dvh - 200px)}
+.dlg-f{padding:16px 24px 24px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.set-row{display:flex;gap:16px;align-items:center;padding:14px 0;border-bottom:1px solid var(--outline-2)}
+.set-row:last-child{border-bottom:0}
+.set-row .main{flex:1;min-width:0}
+.set-row .t{font-weight:500}
+.set-row .d{font-size:12px;line-height:16px;color:var(--text-2);margin-top:2px}
+.seg{display:inline-flex;align-items:stretch;border:1px solid var(--outline);border-radius:999px;overflow:hidden;height:40px;flex:none;background:var(--surface)}
+.seg button{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;background:none;color:var(--text);font:500 13px/1 var(--font);padding:0 12px;cursor:pointer;white-space:nowrap}
+.seg button+button{border-left:1px solid var(--outline)}
+.seg button .ms{font-size:18px}
+.seg button:not(.on):hover{background:color-mix(in srgb,var(--text) 8%,transparent)}
+.seg button.on{background:var(--secondary-container);color:var(--on-secondary-container);font-weight:600}
+
+/* Publicación asistida */
+#runDlg{width:min(1080px,calc(100vw - 24px));height:min(780px,calc(100vh - 24px));max-height:none;border-radius:28px;background:var(--surface)}
+#runDlg[open]{display:flex;flex-direction:column}
+.run-top{display:flex;align-items:center;gap:16px;padding:16px 16px 16px 24px;background:var(--surface-2)}
+.run-top h2{margin:0;font-size:22px;line-height:28px}
+.run-top .bar{flex:1;max-width:340px;height:8px;border-radius:4px;background:var(--primary-container);overflow:hidden}
+.run-top .bar i{display:block;height:100%;background:var(--primary);border-radius:4px;transition:width .3s}
+.run-body{flex:1;display:grid;grid-template-columns:300px 1fr;min-height:0}
+.run-queue{background:var(--surface-2);overflow:auto;padding:8px 12px 16px}
+.run-queue .q{display:flex;align-items:center;gap:10px;padding:0 12px;height:44px;font-size:14px;cursor:pointer;border-radius:22px;margin-bottom:2px}
+.run-queue .q:hover{background:color-mix(in srgb,var(--text) 6%,transparent)}
+.run-queue .q.cur{background:var(--secondary-container);color:var(--on-secondary-container);font-weight:500}
+.run-queue .q .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dot{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;flex:none;border:2px solid var(--outline)}
+.dot .ms{font-size:15px;font-weight:700}
+.dot.done{background:var(--success);border-color:var(--success);color:var(--surface)}
+.dot.skipped{background:var(--surface-3);border-color:var(--surface-3);color:var(--text-3)}
+.run-main{overflow:auto;padding:28px 36px}
+.run-group{display:flex;align-items:center;gap:16px;margin-bottom:12px}
+.run-group .gav{width:56px;height:56px;border-radius:16px;background:var(--primary-container);color:var(--on-primary-container);display:grid;place-items:center;font:500 20px/1 var(--font-display);flex:none}
+.run-group h3{margin:0;font-size:22px;line-height:28px}
+.rsteps{list-style:none;margin:16px 0 0;padding:0}
+.rstep{position:relative;display:flex;gap:20px;padding:0 0 28px}
+.rstep:last-child{padding-bottom:0}
+.rstep:not(:last-child)::after{content:"";position:absolute;left:15.5px;top:40px;bottom:6px;width:1px;background:var(--outline-2)}
+.rstep .main{flex:1;min-width:0}
+.rstep h4{margin:5px 0 6px;font:500 16px/22px var(--font)}
+.rstep p{margin:0 0 12px;color:var(--text-2)}
+.rstep .acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.note{display:flex;gap:10px;align-items:flex-start;background:var(--warn-container);color:var(--warn);border-radius:12px;padding:12px 14px;font-size:14px;margin:12px 0}
+.note .ms{font-size:20px}
+.text-peek{background:var(--surface-2);border-radius:10px;padding:12px 14px;white-space:pre-wrap;max-height:130px;overflow:auto;font-size:13px;margin-bottom:12px}
+details.adv summary{cursor:pointer;color:var(--primary);font-weight:500;list-style:none;display:inline-flex;align-items:center;gap:4px;font-size:13px}
+details.adv summary::-webkit-details-marker{display:none}
+details.adv summary .ms{transition:transform .2s;font-size:20px}
+details.adv[open] summary .ms{transform:rotate(180deg)}
+.cool{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px;padding:40px 0}
+.ring{width:140px;height:140px;position:relative}
+.ring svg{width:140px;height:140px;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:8}
+.ring .bg{stroke:var(--primary-container)}
+.ring .fg{stroke:var(--primary);stroke-linecap:round;transition:stroke-dashoffset 1s linear}
+.ring b{position:absolute;inset:0;display:grid;place-items:center;font:400 40px/1 var(--font-display);font-variant-numeric:tabular-nums}
+.summary{text-align:center;padding:40px 10px}
+.stats{display:flex;gap:12px;justify-content:center;margin:24px 0;flex-wrap:wrap}
+.stat{background:var(--surface-2);border-radius:16px;padding:16px 24px;min-width:140px;text-align:left}
+.stat .k{font-size:13px;color:var(--text-2);display:flex;align-items:center;gap:6px}
+.stat .k .ms{font-size:18px}
+.stat .v{font:400 28px/36px var(--font-display);margin-top:4px;font-variant-numeric:tabular-nums}
+
+/* ================== CENTRO DE AYUDA ================== */
+.help-hero{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:24px;border-radius:24px;background:var(--primary-container);color:var(--on-primary-container);margin-bottom:32px}
+.help-hero h1{font-size:28px;line-height:36px;margin:0}
+.help-search{display:flex;align-items:center;gap:8px;height:48px;padding:0 16px;border-radius:24px;background:var(--surface);flex:0 1 380px;color:var(--text)}
+.help-search input{flex:1;border:0;outline:0;background:none;font:400 15px var(--font);color:var(--text);min-width:0}
+.help-search .ms{color:var(--text-2)}
+.help-layout{display:grid;grid-template-columns:240px 1fr;gap:40px;align-items:start}
+.help-layout>*{min-width:0}
+.toc{position:sticky;top:96px;display:flex;flex-direction:column;gap:2px}
+.toc a{display:block;padding:8px 16px;border-radius:20px;color:var(--text-2);text-decoration:none;font-weight:500;font-size:14px}
+.toc a:hover{background:var(--surface-2)}
+.toc a.active{background:var(--secondary-container);color:var(--on-secondary-container)}
+.toc .cat{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.6px;color:var(--text-3);padding:14px 16px 4px}
+.toc .cat:first-child{padding-top:0}
+.help-article{overflow-wrap:anywhere;scroll-margin-top:88px;padding-bottom:32px;margin-bottom:32px;border-bottom:1px solid var(--outline-2)}
+.help-article:last-child{border-bottom:0}
+.help-article h2{display:flex;align-items:center;gap:12px;margin:0 0 12px;font-size:22px;line-height:28px}
+.help-article h2 .ms{color:var(--primary);font-size:26px}
+.help-article h3{margin:20px 0 8px;font-size:16px;line-height:24px;font-weight:500}
+.help-article p,.help-article li{font-size:15px;line-height:24px}
+.help-article p{margin:0 0 10px}
+.help-article ul,.help-article ol{padding-left:22px;margin:8px 0}
+.help-article li{margin:4px 0}
+.help-article table{border-collapse:collapse;width:100%;font-size:14px;margin:12px 0;border:1px solid var(--outline-2);border-radius:12px;overflow:hidden;display:block;overflow-x:auto}
+.help-article th,.help-article td{padding:10px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--outline-2)}
+.help-article th{font-weight:500;color:var(--text-2);font-size:13px;background:var(--surface-2)}
+.help-article tr:last-child td{border-bottom:0}
+.help-article a[data-help]{cursor:pointer}
+.help-note,.help-article .callout{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--surface-2);margin:12px 0;font-size:14px;line-height:22px}
+.help-article .callout{display:block;position:relative;padding-left:44px}
+.help-article .callout::before{content:"lightbulb";font-family:"Material Symbols Rounded";font-size:20px;line-height:22px;color:var(--primary);position:absolute;left:14px;top:12px}
+.help-article .callout.warn{background:var(--warn-container)}
+.help-article .callout.warn::before{content:"warning";color:var(--warn)}
+.help-count{margin:0 0 16px}
+.help-hl{background:color-mix(in srgb,var(--primary) 12%,transparent);border-radius:16px;transition:background 1.5s}
+.feedback{margin-top:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--text-2);font-size:13px}
+
+/* Popover / menús */
+.pop{position:fixed;z-index:80;background:var(--surface-2);border-radius:12px;box-shadow:var(--shadow-2);padding:8px 0;min-width:240px;max-width:340px;max-height:380px;overflow:auto}
+.pop .emoji-grid{display:grid;grid-template-columns:repeat(8,36px);gap:2px;padding:0 8px}
+.pop .emoji-grid button{width:36px;height:36px;border:0;background:transparent;border-radius:8px;font-size:20px;cursor:pointer}
+.pop .emoji-grid button:hover{background:color-mix(in srgb,var(--text) 8%,transparent)}
+.menu-item{display:flex;align-items:center;gap:12px;width:100%;border:0;background:transparent;text-align:left;min-height:48px;padding:6px 16px;cursor:pointer;font:400 14px var(--font);color:var(--text)}
+.menu-item:hover{background:color-mix(in srgb,var(--text) 8%,transparent)}
+.menu-item>.ms{font-size:20px;color:var(--text-2)}
+.menu-item .d{font-size:12px;line-height:16px;color:var(--text-2)}
+.menu-sep{height:1px;background:var(--outline-2);margin:8px 0}
+.menu-label{font-size:12px;color:var(--text-2);padding:4px 16px 8px;font-weight:500}
+
+/* Snackbar */
+#snack{position:fixed;left:50%;bottom:24px;transform:translate(-50%,24px);min-width:288px;max-width:min(560px,calc(100vw - 32px));display:flex;align-items:center;gap:8px;padding:6px 8px 6px 16px;min-height:48px;border-radius:4px;background:#303030;color:#f2f2f2;box-shadow:var(--shadow-3);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:1000;font-size:14px}
+#snack.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+#snack .msg{flex:1;padding:8px 0}
+#snack button{background:transparent;border:0;color:#a8c7fa;font:500 14px var(--font);cursor:pointer;padding:8px 12px;border-radius:20px}
+#snack button:hover{background:rgba(168,199,250,.1)}
+:root[data-theme="dark"] #snack{background:#e3e3e3;color:#303030}
+:root[data-theme="dark"] #snack button{color:#0b57d0}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) #snack{background:#e3e3e3;color:#303030}:root:not([data-theme="light"]) #snack button{color:#0b57d0}}
+
+/* ================== RESPONSIVE ================== */
+@media (max-width:1100px){.compose{grid-template-columns:minmax(0,1fr)}.side{position:static}}
+@media (max-width:900px){.help-layout{grid-template-columns:1fr;gap:16px}.toc{position:static;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:2px 16px 6px}.toc::-webkit-scrollbar{display:none}.toc a{flex:none;white-space:nowrap;padding:6px 12px;border:1px solid var(--outline-2)}.toc .cat{display:none}}
+@media (max-width:720px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+  .card-head .sub{display:none}
+  .rail{position:fixed;top:auto;bottom:0;left:0;right:0;height:auto;flex-direction:row;justify-content:space-around;padding:12px 0 calc(12px + env(safe-area-inset-bottom));background:var(--surface-2);z-index:30;gap:0}
+  main{margin:0;padding:20px 16px 128px}
+  .brand .long{display:none}
+  .brand{font-size:16px;gap:8px;padding-left:0}
+  .page-head h1,.help-hero h1{font-size:24px;line-height:32px}
+  .run-body{grid-template-columns:1fr}
+  .run-queue{display:none}
+  .run-main{padding:20px}
+  .publish-bar{border-radius:20px;padding:12px 16px;bottom:92px}
+  .publish-bar .btn{width:100%}
+  .help-hero{padding:20px;border-radius:20px}
+  .help-search{flex:1 1 100%}
+  .card{padding:16px}
+  #snack{bottom:96px}
+  .hide-sm{display:none!important}
+}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+<header class="appbar">
+  <a class="brand" href="#publicar" aria-label="Facebook Publisher — inicio">
+    <span class="brand-logo"><svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 48 48"><defs><linearGradient id="brandGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2d88ff"/><stop offset="1" stop-color="#0b57d0"/></linearGradient></defs><rect width="48" height="48" rx="12" fill="url(#brandGrad)"/><path d="M10 36.5L40 24 10 11.5v9.7l21.4 2.8L10 26.8z" fill="#fff"/><circle cx="35" cy="35" r="7" fill="#fff"/><path d="M31.5 35h7M35 31.5v7" stroke="#1877f2" stroke-width="2.4" stroke-linecap="round"/></svg></span>
+    <span class="brand-name"><span class="long">Facebook </span><b>Publisher</b></span>
+  </a>
+  <div class="spacer"></div>
+  <button class="icon-btn tip" data-tip="Ayuda (F1)" id="helpBtn" aria-label="Centro de Ayuda"><span class="ms" aria-hidden="true">help</span></button>
+  <button class="icon-btn tip" data-tip="Tema" id="themeBtn" aria-label="Cambiar tema"><span class="ms" aria-hidden="true">brightness_auto</span></button>
+  <button class="icon-btn tip" data-tip="Ajustes" id="settingsBtn" aria-label="Ajustes"><span class="ms" aria-hidden="true">settings</span></button>
+</header>
+
+<div class="layout">
+  <nav class="rail" aria-label="Navegación principal">
+    <a class="nav-item" href="#publicar" data-view="publicar"><span class="ind"><span class="ms" aria-hidden="true">send</span></span>Publicar</a>
+    <a class="nav-item" href="#grupos" data-view="grupos"><span class="ind"><span class="ms" aria-hidden="true">group</span><span class="nav-badge" id="navGroupsBadge"></span></span>Grupos</a>
+    <a class="nav-item" href="#historial" data-view="historial"><span class="ind"><span class="ms" aria-hidden="true">history</span><span class="nav-badge" id="navHistBadge"></span></span>Historial</a>
+    <a class="nav-item" href="#ayuda" data-view="ayuda"><span class="ind"><span class="ms" aria-hidden="true">menu_book</span></span>Ayuda</a>
+  </nav>
+
+  <main id="main" tabindex="-1">
+    <!-- ================= PUBLICAR ================= -->
+    <section class="view" id="view-publicar" aria-labelledby="h-pub">
+      <div class="page-head">
+        <div>
+          <h1 id="h-pub">Publicar en grupos</h1>
+          <p>Prepara tu publicación una vez y compártela en todos tus grupos en unos minutos.</p>
+          <div class="head-links"><a class="hlp" href="#ayuda/como-funciona" data-help="como-funciona"><span class="ms" aria-hidden="true">help</span>¿Cómo funciona?</a><a class="hlp" href="#ayuda/primeros-pasos" data-help="primeros-pasos"><span class="ms" aria-hidden="true">help</span>Primeros pasos</a></div>
+        </div>
+      </div>
+
+      <div class="banner hero" id="welcome" hidden>
+        <span class="ms" aria-hidden="true">waving_hand</span>
+        <div style="flex:1">
+          <h3>Te damos la bienvenida a Facebook Publisher</h3>
+          <ol>
+            <li><b>Añade tus grupos</b> a mano o captúralos desde Facebook con el marcador.</li>
+            <li><b>Pega la URL</b> de la publicación y, si quieres, enriquécela con texto e imágenes.</li>
+            <li><b>Inicia la publicación asistida</b>: la app copia el texto y abre cada grupo por ti.</li>
+          </ol>
+          <button class="btn filled" data-nav="grupos"><span class="ms" aria-hidden="true">group_add</span>Añadir mis grupos</button>
+          <button class="btn text" data-help="primeros-pasos">Ver guía de primeros pasos</button>
+        </div>
+        <button class="icon-btn sm" id="welcomeClose" aria-label="Cerrar"><span class="ms" aria-hidden="true">close</span></button>
+      </div>
+
+      <div class="compose">
+        <div>
+          <!-- 1. Origen -->
+          <div class="card">
+            <div class="card-head">
+              <span class="step" id="st1">1</span>
+              <div><h2>Publicación de origen</h2><div class="sub">La publicación de Facebook que quieres difundir (opcional si solo publicas contenido nuevo)</div></div>
+              <button class="help-link ml-auto" data-help="url-origen" aria-label="Ayuda: publicación de origen"><span class="ms" aria-hidden="true">help</span></button>
+            </div>
+            <div class="field" style="margin:0">
+              <label for="srcUrl">URL de la publicación</label>
+              <div class="input-wrap">
+                <span class="ms" aria-hidden="true">link</span>
+                <input class="input has-trail" id="srcUrl" type="url" inputmode="url" placeholder="https://www.facebook.com/…/posts/…" autocomplete="off">
+                <div class="trail">
+                  <button class="icon-btn sm tip" data-tip="Pegar" id="pasteUrl" aria-label="Pegar URL"><span class="ms" aria-hidden="true">content_paste</span></button>
+                  <button class="icon-btn sm tip" data-tip="Abrir en Facebook" id="openUrl" aria-label="Abrir publicación"><span class="ms" aria-hidden="true">open_in_new</span></button>
+                </div>
+              </div>
+              <div class="hint" id="urlHint">Admite publicaciones, fotos, vídeos, reels y enlaces «Compartir» de Facebook.</div>
+            </div>
+          </div>
+
+          <!-- 2. Contenido -->
+          <div class="card">
+            <div class="card-head">
+              <span class="step" id="st2">2</span>
+              <div><h2>Contenido</h2><div class="sub">Texto que acompañará a la publicación en cada grupo</div></div>
+              <button class="help-link ml-auto" data-help="editor" aria-label="Ayuda: editor"><span class="ms" aria-hidden="true">help</span></button>
+            </div>
+            <div class="editor">
+              <div class="toolbar" role="toolbar" aria-label="Formato">
+                <button class="tb tip" data-tip="Negrita (Ctrl+B)" data-fmt="b" aria-label="Negrita"><span class="ms" aria-hidden="true">format_bold</span></button>
+                <button class="tb tip" data-tip="Cursiva (Ctrl+I)" data-fmt="i" aria-label="Cursiva"><span class="ms" aria-hidden="true">format_italic</span></button>
+                <span class="div"></span>
+                <button class="tb tip" data-tip="Emojis" id="emojiBtn" aria-label="Emojis"><span class="ms" aria-hidden="true">mood</span></button>
+                <button class="tb tip" data-tip="Hashtag" id="hashBtn" aria-label="Hashtag"><span class="ms" aria-hidden="true">tag</span></button>
+                <button class="tb tip" data-tip="Variables" id="varBtn" aria-label="Insertar variable">{ }&nbsp;Variables</button>
+                <span class="div"></span>
+                <button class="tb tip" data-tip="Plantillas" id="tplBtn" aria-label="Plantillas"><span class="ms" aria-hidden="true">description</span>Plantillas</button>
+                <button class="tb tip" data-tip="Adjuntar archivos" id="attachBtn" aria-label="Adjuntar"><span class="ms" aria-hidden="true">image</span></button>
+                <span class="spacer"></span>
+                <button class="tb tip" data-tip="Vaciar" id="clearText" aria-label="Vaciar texto"><span class="ms" aria-hidden="true">delete</span></button>
+              </div>
+              <textarea class="textarea" id="postText" placeholder="Escribe algo para los grupos… Usa {grupo} para personalizar el saludo en cada grupo." aria-label="Texto de la publicación"></textarea>
+              <div class="editor-foot">
+                <span id="charCount">0 caracteres</span>
+                <span id="saveState" class="ml-auto">Borrador guardado</span>
+              </div>
+            </div>
+
+            <div class="drop" id="drop" tabindex="0" role="button" aria-label="Añadir imágenes, vídeo o audio">
+              <span class="ms" aria-hidden="true">add_photo_alternate</span>
+              <div><b>Arrastra aquí imágenes, vídeos o audio</b> o pega una imagen con Ctrl+V</div>
+              <div class="drop-row">
+                <span class="chip static"><span class="ms" aria-hidden="true">image</span>Imagen</span>
+                <span class="chip static"><span class="ms" aria-hidden="true">videocam</span>Vídeo</span>
+                <span class="chip static"><span class="ms" aria-hidden="true">music_note</span>Audio</span>
+                <button class="help-link" data-help="multimedia" aria-label="Ayuda: multimedia"><span class="ms" aria-hidden="true">help</span></button>
+              </div>
+              <input type="file" id="fileIn" multiple accept="image/*,video/*,audio/*" hidden>
+            </div>
+            <div class="media-grid" id="mediaGrid"></div>
+          </div>
+
+          <!-- 3. Destinos -->
+          <div class="card">
+            <div class="card-head">
+              <span class="step" id="st3">3</span>
+              <div><h2>Destinos</h2><div class="sub" id="destSub">Grupos activos donde se compartirá</div></div>
+              <button class="help-link ml-auto" data-help="destinos" aria-label="Ayuda: destinos"><span class="ms" aria-hidden="true">help</span></button>
+            </div>
+            <div id="destBox"></div>
+          </div>
+
+          <div class="publish-bar">
+            <div class="sum" id="pubSum"></div>
+            <button class="btn filled lg" id="startBtn"><span class="ms" aria-hidden="true">play_arrow</span>Iniciar publicación asistida</button>
+          </div>
+        </div>
+
+        <aside class="side">
+          <div class="card filled" style="padding:16px">
+            <div class="card-head" style="margin-bottom:12px">
+              <h2>Vista previa</h2>
+              <span class="pill info" id="pvGroup" hidden></span>
+              <button class="help-link ml-auto" data-help="vista-previa" aria-label="Ayuda: vista previa"><span class="ms" aria-hidden="true">help</span></button>
+            </div>
+            <div id="preview"></div>
+            <div class="hint" style="margin-top:10px"><span class="ms" aria-hidden="true">info</span>Aproximación: Facebook puede mostrarla ligeramente distinta.</div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ================= GRUPOS ================= -->
+    <section class="view" id="view-grupos" aria-labelledby="h-grp">
+      <div class="page-head">
+        <div>
+          <h1 id="h-grp">Grupos</h1>
+          <p>Gestiona los grupos de Facebook donde compartes. Solo los grupos activos aparecen como destino.</p>
+          <div class="head-links"><a class="hlp" href="#ayuda/grupos" data-help="grupos"><span class="ms" aria-hidden="true">help</span>Gestionar grupos</a><a class="hlp" href="#ayuda/marcador" data-help="marcador"><span class="ms" aria-hidden="true">help</span>Capturar grupos con el marcador</a></div>
+        </div>
+        <div class="actions">
+          <button class="btn outlined" id="importBtn"><span class="ms" aria-hidden="true">upload</span>Importar</button>
+          <button class="btn outlined" id="exportBtn"><span class="ms" aria-hidden="true">download</span>Exportar</button>
+          <button class="btn filled" id="addGroupBtn"><span class="ms" aria-hidden="true">add</span>Añadir grupo</button>
+        </div>
+      </div>
+
+      <div class="card filled">
+        <div class="bm-card">
+          <div style="flex:1;min-width:260px">
+            <div class="card-head" style="margin-bottom:6px">
+              <span class="ms" style="color:var(--fb)" aria-hidden="true">bookmark_add</span>
+              <h2>Captura tus grupos desde Facebook con un clic</h2>
+              <button class="help-link" data-help="marcador" aria-label="Ayuda: marcador"><span class="ms" aria-hidden="true">help</span></button>
+            </div>
+            <div class="muted">Arrastra el botón azul a tu barra de marcadores. Luego abre <a href="https://www.facebook.com/groups/joins/" target="_blank" rel="noopener">Tus grupos</a> en Facebook, desplázate hasta el final y pulsa el marcador. Después vuelve aquí y usa <b>Importar → Pegar</b>.</div>
+          </div>
+          <a class="bookmarklet" id="bookmarklet" href="#" title="Arrastra a la barra de marcadores">FB Publisher · Capturar grupos</a>
+        </div>
+      </div>
+
+      <div class="toolbar-row">
+        <label class="searchbar">
+          <span class="ms" aria-hidden="true">search</span>
+          <input id="gSearch" type="search" placeholder="Buscar grupos (pulsa / )" aria-label="Buscar grupos">
+        </label>
+        <div class="chips" id="gFilters">
+          <button class="chip on" data-f="all">Todos</button>
+          <button class="chip" data-f="on">Activos</button>
+          <button class="chip" data-f="off">Inactivos</button>
+        </div>
+        <span class="fsep hide-sm"></span><div class="chips" id="gTagFilters"></div>
+      </div>
+
+      <div class="bulk" id="bulk">
+        <span id="bulkCount" style="flex:1"></span>
+        <button class="btn text" data-bulk="on"><span class="ms" aria-hidden="true">toggle_on</span>Activar</button>
+        <button class="btn text" data-bulk="off"><span class="ms" aria-hidden="true">toggle_off</span>Desactivar</button>
+        <button class="btn text" data-bulk="tag"><span class="ms" aria-hidden="true">sell</span>Etiquetar</button>
+        <button class="btn text" data-bulk="del"><span class="ms" aria-hidden="true">delete</span>Eliminar</button>
+        <button class="icon-btn sm" data-bulk="none" aria-label="Quitar selección" style="color:inherit"><span class="ms" aria-hidden="true">close</span></button>
+      </div>
+
+      <div id="groupsBox"></div>
+    </section>
+
+    <!-- ================= HISTORIAL ================= -->
+    <section class="view" id="view-historial" aria-labelledby="h-his">
+      <div class="page-head">
+        <div>
+          <h1 id="h-his">Historial</h1>
+          <p>Cada sesión de publicación asistida queda registrada con el estado de cada grupo.</p>
+          <div class="head-links"><a class="hlp" href="#ayuda/historial" data-help="historial"><span class="ms" aria-hidden="true">help</span>Historial y reanudación</a></div>
+        </div>
+        <div class="actions">
+          <button class="btn outlined danger" id="clearHist"><span class="ms" aria-hidden="true">delete</span>Borrar historial</button>
+        </div>
+      </div>
+      <div id="histBox"></div>
+    </section>
+
+    <!-- ================= AYUDA ================= -->
+    <section class="view" id="view-ayuda" aria-labelledby="h-help">
+      <div class="help-hero">
+        <div>
+          <button class="btn tonal sm" id="helpBack" hidden style="margin-bottom:12px"><span class="ms" aria-hidden="true">arrow_back</span><span id="helpBackTxt">Volver</span></button>
+          <h1 id="h-help">Centro de Ayuda</h1>
+          <p style="margin:4px 0 0;opacity:.85">Guías, respuestas y buenas prácticas para compartir en grupos sin perder tiempo.</p>
+        </div>
+        <label class="help-search"><span class="ms" aria-hidden="true">search</span><input type="search" id="helpSearch" placeholder="Buscar en la ayuda" aria-label="Buscar en la ayuda"></label>
+      </div>
+      <div class="help-layout">
+        <nav class="toc" id="toc" aria-label="Contenido de la ayuda"></nav>
+        <div><p class="help-count small muted" id="helpCount" hidden aria-live="polite"></p><div id="helpBody"></div></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Group dialog -->
+<dialog id="groupDlg">
+  <form method="dialog" id="groupForm">
+    <div class="dlg-h"><h2 id="groupDlgTitle">Añadir grupo</h2><button type="button" class="help-link" data-help="grupos" aria-label="Ayuda"><span class="ms" aria-hidden="true">help</span></button></div>
+    <div class="dlg-b">
+      <div class="field"><label for="gUrl">URL o ID del grupo *</label><input class="input" id="gUrl" required placeholder="https://www.facebook.com/groups/…"><div class="hint" id="gUrlHint">También vale el ID numérico o el nombre corto del grupo.</div></div>
+      <div class="field"><label for="gName">Nombre *</label><input class="input" id="gName" required maxlength="140" placeholder="Ej.: Compraventa Madrid Centro"></div>
+      <div class="field"><label for="gTags">Etiquetas</label><input class="input" id="gTags" placeholder="Separadas por comas: ventas, local, empleo" list="tagList"><datalist id="tagList"></datalist></div>
+      <div class="field"><label for="gNotes">Notas / normas del grupo</label><textarea class="input textarea" id="gNotes" style="min-height:80px" placeholder="Ej.: solo se permiten enlaces los lunes"></textarea><div class="hint">Se mostrarán como recordatorio al publicar en este grupo.</div></div>
+      <div class="set-row" style="border:0"><div class="main"><div class="t">Activo para compartir</div><div class="d">Los grupos inactivos se conservan pero no aparecen como destino.</div></div><label class="switch"><input type="checkbox" id="gActive" checked><span></span></label></div>
+    </div>
+    <div class="dlg-f">
+      <button type="button" class="btn text" value="cancel" data-close>Cancelar</button>
+      <button type="submit" class="btn filled" id="groupSave">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Import dialog -->
+<dialog id="importDlg">
+  <div class="dlg-h"><h2>Importar grupos</h2><button class="help-link" data-help="importar" aria-label="Ayuda"><span class="ms" aria-hidden="true">help</span></button></div>
+  <div class="dlg-b">
+    <p class="muted" style="margin-top:0">Pega el resultado del marcador, un archivo JSON exportado o una lista con un grupo por línea (<code>Nombre | URL</code> o solo la URL).</p>
+    <div class="acts" style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <button class="btn tonal" id="impPaste"><span class="ms" aria-hidden="true">content_paste</span>Pegar del portapapeles</button>
+      <button class="btn outlined" id="impFileBtn"><span class="ms" aria-hidden="true">upload</span>Abrir archivo</button>
+      <input type="file" id="impFile" accept=".json,.txt,.csv,application/json,text/plain" hidden>
+    </div>
+    <textarea class="input textarea" id="impText" style="min-height:160px;font-family:ui-monospace,monospace;font-size:12px" placeholder="FBP_GROUPS:[…]&#10;Mi grupo | https://www.facebook.com/groups/123456&#10;https://www.facebook.com/groups/otrogrupo"></textarea>
+    <div class="hint" id="impHint">&nbsp;</div>
+  </div>
+  <div class="dlg-f">
+    <button class="btn text" data-close>Cancelar</button>
+    <button class="btn filled" id="impGo" disabled>Importar</button>
+  </div>
+</dialog>
+
+<!-- Settings dialog -->
+<dialog id="settingsDlg">
+  <div class="dlg-h"><h2>Ajustes</h2><button class="help-link" data-help="ajustes" aria-label="Ayuda"><span class="ms" aria-hidden="true">help</span></button></div>
+  <div class="dlg-b">
+    <div class="set-row"><div class="main"><div class="t">Tema</div><div class="d">Claro, oscuro o según el sistema</div></div>
+      <div class="seg" id="themeSeg"><button data-t="light"><span class="ms" aria-hidden="true">light_mode</span>Claro</button><button data-t="dark"><span class="ms" aria-hidden="true">dark_mode</span>Oscuro</button><button data-t="system"><span class="ms" aria-hidden="true">brightness_auto</span>Sistema</button></div></div>
+    <div class="set-row"><div class="main"><div class="t">Cómo abrir cada grupo</div><div class="d"><a href="#" data-help="modos-apertura">¿Qué opción elijo?</a></div></div>
+      <select class="input" id="setMode" style="width:220px;height:40px"><option value="side">Ventana lateral</option><option value="tab">Pestaña nueva</option><option value="share">Diálogo «Compartir» de Facebook</option></select></div>
+    <div class="set-row"><div class="main"><div class="t">Pausa entre grupos</div><div class="d">Segundos de espera tras publicar en un grupo. <a href="#" data-help="buenas-practicas">Recomendaciones</a></div></div>
+      <input class="input" id="setPause" type="number" min="0" max="900" step="5" style="width:100px;height:40px"></div>
+    <div class="set-row"><div class="main"><div class="t">Añadir la URL al final del texto</div><div class="d">Facebook genera la vista previa de la publicación original al pegar el enlace.</div></div>
+      <label class="switch"><input type="checkbox" id="setAppend"><span></span></label></div>
+    <div class="set-row"><div class="main"><div class="t">Avisar de grupos recientes</div><div class="d">Marca los grupos en los que ya compartiste en las últimas 24 horas.</div></div>
+      <label class="switch"><input type="checkbox" id="setRecent"><span></span></label></div>
+    <div class="set-row"><div class="main"><div class="t">Sonido al terminar la pausa</div><div class="d">Un aviso discreto cuando puedes pasar al siguiente grupo.</div></div>
+      <label class="switch"><input type="checkbox" id="setSound"><span></span></label></div>
+    <div class="set-row" style="flex-wrap:wrap"><div class="main"><div class="t">Copia de seguridad</div><div class="d">Grupos, plantillas, ajustes e historial. <a href="#" data-help="privacidad">Tus datos</a></div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn outlined" id="backupOut"><span class="ms" aria-hidden="true">download</span>Exportar</button>
+        <button class="btn outlined" id="backupInBtn"><span class="ms" aria-hidden="true">upload</span>Restaurar</button>
+        <input type="file" id="backupIn" accept=".json,application/json" hidden>
+      </div></div>
+    <div class="set-row"><div class="main"><div class="t" style="color:var(--error)">Borrar todos los datos</div><div class="d">Elimina grupos, plantillas, historial y ajustes de este navegador.</div></div>
+      <button class="btn text danger" id="wipeAll">Borrar</button></div>
+  </div>
+  <div class="dlg-f"><button class="btn filled" data-close>Listo</button></div>
+</dialog>
+
+<!-- Confirm dialog -->
+<dialog id="confirmDlg" style="width:min(420px,calc(100vw - 32px))">
+  <div class="dlg-h"><h2 id="cfTitle"></h2></div>
+  <div class="dlg-b"><p id="cfText" class="muted" style="margin:0"></p></div>
+  <div class="dlg-f"><button class="btn text" id="cfNo">Cancelar</button><button class="btn filled" id="cfYes">Aceptar</button></div>
+</dialog>
+
+<!-- Run dialog -->
+<dialog id="runDlg" aria-label="Publicación asistida">
+  <div class="run-top">
+    <h2>Publicación asistida</h2>
+    <div class="bar"><i id="runBar"></i></div>
+    <span id="runCount" class="muted"></span>
+    <span class="spacer"></span>
+    <button class="help-link" data-help="asistente" aria-label="Ayuda: publicación asistida"><span class="ms" aria-hidden="true">help</span></button>
+    <button class="icon-btn" id="runClose" aria-label="Cerrar"><span class="ms" aria-hidden="true">close</span></button>
+  </div>
+  <div class="run-body">
+    <div class="run-queue" id="runQueue"></div>
+    <div class="run-main" id="runMain"></div>
+  </div>
+</dialog>
+
+<div id="snack" role="status" aria-live="polite"><span class="msg"></span><button hidden></button></div>
+
+<script>
+"use strict";
+/* ============================================================
+   Facebook Publisher — app de una sola página, sin servidor.
+   Datos en localStorage. Archivos multimedia solo en memoria.
+   ============================================================ */
+
+/* ---------- Iconos (Material) ---------- */
+const MS={"menu": "menu", "send": "send", "group": "group", "history": "history", "help": "help", "settings": "settings", "dark": "dark_mode", "light": "light_mode", "auto": "brightness_auto", "add": "add", "delete": "delete", "edit": "edit", "link": "link", "image": "image", "music": "music_note", "video": "videocam", "mood": "mood", "tag": "tag", "bold": "format_bold", "italic": "format_italic", "upload": "upload", "download": "download", "check": "check", "close": "close", "open": "open_in_new", "copy": "content_copy", "paste": "content_paste", "search": "search", "bookmark": "bookmark", "play": "play_arrow", "skip": "skip_next", "info": "info", "back": "arrow_back", "timer": "timer", "globe": "public", "refresh": "refresh", "doc": "description", "movie": "movie", "chevron": "expand_more", "warn": "warning", "keyboard": "keyboard", "shield": "shield"};
+function ic(name,cls){return `<span class="ms ${cls||''}" aria-hidden="true">${MS[name]||name}</span>`}
+function hydrateIcons(){}
+
+/* ---------- Utilidades ---------- */
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const load=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}};
+const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){snack('No se pudo guardar: almacenamiento lleno o bloqueado')}};
+const debounce=(fn,ms)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}};
+const initials=s=>(String(s||'?').replace(/[^\p{L}\p{N} ]/gu,'').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('')||'?').toUpperCase();
+const rtf=new Intl.RelativeTimeFormat('es',{numeric:'auto'});
+function ago(ts){if(!ts)return '';const d=(ts-Date.now())/1000;const a=Math.abs(d);
+  if(a<60)return 'ahora mismo';if(a<3600)return rtf.format(Math.round(d/60),'minute');if(a<86400)return rtf.format(Math.round(d/3600),'hour');
+  if(a<2592000)return rtf.format(Math.round(d/86400),'day');return new Date(ts).toLocaleDateString('es',{day:'numeric',month:'short',year:'numeric'})}
+const fmtDate=ts=>new Date(ts).toLocaleString('es',{dateStyle:'medium',timeStyle:'short'});
+function download(name,data,type='application/json'){const b=new Blob([data],{type});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+
+/* ---------- Estado ---------- */
+const DEF_SETTINGS={mode:'side',pause:30,appendUrl:true,warnRecent:true,sound:true};
+const S={
+  groups:load('fbp.groups',[]),
+  settings:Object.assign({},DEF_SETTINGS,load('fbp.settings',{})),
+  history:load('fbp.history',[]),
+  templates:load('fbp.templates',[]),
+  draft:load('fbp.draft',{url:'',text:''}),
+  theme:load('fbp.theme','system'),
+  media:[],
+  sel:null,           // Set de ids de grupos seleccionados como destino
+  gFilter:'all',gTag:null,gChecked:new Set(),
+  run:null
+};
+const persist={
+  groups:()=>{save('fbp.groups',S.groups);renderAllGroups()},
+  settings:()=>save('fbp.settings',S.settings),
+  history:()=>{save('fbp.history',S.history);renderHistory()},
+  templates:()=>save('fbp.templates',S.templates),
+};
+
+/* ---------- Snackbar ---------- */
+let snackT;
+function snack(msg,action,fn,ms=4500){
+  const el=$('#snack'),b=$('button',el);$('.msg',el).textContent=msg;
+  if(action){b.hidden=false;b.textContent=action;b.onclick=()=>{el.classList.remove('show');fn&&fn()}}else b.hidden=true;
+  el.classList.add('show');clearTimeout(snackT);snackT=setTimeout(()=>el.classList.remove('show'),ms);
+}
+
+/* ---------- Confirmación ---------- */
+function confirmBox(title,text,okLabel='Aceptar',danger=false){
+  return new Promise(res=>{const d=$('#confirmDlg');$('#cfTitle').textContent=title;$('#cfText').textContent=text;
+    const y=$('#cfYes');y.textContent=okLabel;y.style.background=danger?'var(--error)':'';y.style.color=danger?'var(--bg)':'';
+    const done=v=>{d.close();res(v)};y.onclick=()=>done(true);$('#cfNo').onclick=()=>done(false);d.oncancel=()=>res(false);d.showModal()})
+}
+
+/* ---------- Tema ---------- */
+function applyTheme(){
+  const t=S.theme;if(t==='system')document.documentElement.removeAttribute('data-theme');else document.documentElement.dataset.theme=t;
+  const b=$('#themeBtn');b.innerHTML=ic(t==='dark'?'dark':t==='light'?'light':'auto');
+  b.dataset.tip='Tema: '+({light:'claro',dark:'oscuro',system:'sistema'}[t]);
+  $$('#themeSeg button').forEach(x=>x.classList.toggle('on',x.dataset.t===t));
+}
+$('#themeBtn').onclick=()=>{S.theme={system:'light',light:'dark',dark:'system'}[S.theme];save('fbp.theme',S.theme);applyTheme();snack('Tema: '+({light:'claro',dark:'oscuro',system:'según el sistema'}[S.theme]))};
+$$('#themeSeg button').forEach(b=>b.onclick=()=>{S.theme=b.dataset.t;save('fbp.theme',S.theme);applyTheme()});
+
+/* ---------- Navegación ---------- */
+const VIEWS=['publicar','grupos','historial','ayuda'];
+const VIEW_NAMES={publicar:'Publicar',grupos:'Grupos',historial:'Historial'};
+let lastView='publicar',helpReturn=null;
+function route(){
+  const [v0,sub]=location.hash.slice(1).split('/');const v=VIEWS.includes(v0)?v0:'publicar';
+  const prev=$('.view.active');const changed=!prev||prev.id!=='view-'+v;
+  $$('.view').forEach(x=>x.classList.toggle('active',x.id==='view-'+v));
+  $$('.rail .nav-item').forEach(a=>a.dataset.view===v?a.setAttribute('aria-current','page'):a.removeAttribute('aria-current'));
+  if(v!=='ayuda')lastView=v;
+  if(v==='ayuda'){renderHelp();updateHelpBack();if(sub)focusArticle(sub);else if(changed)window.scrollTo(0,0)}
+  else if(changed)window.scrollTo(0,0);
+}
+window.addEventListener('hashchange',route);
+$$('.rail .nav-item').forEach(a=>a.addEventListener('click',()=>{helpReturn=null}));
+document.addEventListener('click',e=>{const n=e.target.closest('[data-nav]');if(n){e.preventDefault();location.hash=n.dataset.nav}});
+
+/* ---------- URLs de Facebook ---------- */
+const FB_HOST=/(^|\.)(facebook\.com|fb\.com|fb\.watch|fb\.me|fb\.gg)$/i;
+const KEEP_PARAMS=['story_fbid','id','fbid','v','set','multi_permalinks'];
+function parseFbUrl(raw){
+  raw=String(raw||'').trim();if(!raw)return {empty:true};
+  let u;try{u=new URL(/^https?:\/\//i.test(raw)?raw:'https://'+raw)}catch(e){return {error:'No parece una URL válida.'}}
+  if(!FB_HOST.test(u.hostname))return {error:'La URL debe ser de facebook.com, fb.com o fb.watch.'};
+  if(/^(m|mbasic|web|touch|es-es|es-la)\./i.test(u.hostname))u.hostname='www.facebook.com';
+  const removed=[];[...u.searchParams.keys()].forEach(k=>{if(!KEEP_PARAMS.includes(k)){removed.push(k);u.searchParams.delete(k)}});
+  u.hash='';
+  const p=u.pathname;let kind='Publicación';
+  if(/\/reel\//.test(p))kind='Reel';else if(/\/videos?\//.test(p)||/fb\.watch/.test(u.hostname)||/\/watch/.test(p))kind='Vídeo';
+  else if(/\/photo|photo\.php/.test(p))kind='Foto';else if(/\/groups\/[^/]+\/(posts|permalink)/.test(p))kind='Publicación de grupo';
+  else if(/\/share\//.test(p))kind='Enlace compartido';else if(/\/events\//.test(p))kind='Evento';
+  else if(/^\/?[^/]+\/?$/.test(p)&&!u.search)kind='Página o perfil';
+  return {url:u.toString(),kind,cleaned:removed.length>0,host:u.hostname.replace(/^www\./,'')};
+}
+function normGroupUrl(raw){
+  raw=String(raw||'').trim();if(!raw)return null;
+  if(/^[\w.\-]+$/.test(raw)&&!/\./.test(raw.replace(/^[\w\-]+$/,'')))return `https://www.facebook.com/groups/${raw}/`;
+  try{const u=new URL(/^https?:\/\//i.test(raw)?raw:'https://'+raw);if(!FB_HOST.test(u.hostname))return null;
+    const m=u.pathname.match(/\/groups\/([^/?#]+)/);if(!m||['feed','joins','discover','create','search'].includes(m[1]))return null;
+    return `https://www.facebook.com/groups/${m[1]}/`}catch(e){return null}
+}
+const groupKey=url=>(url||'').toLowerCase().replace(/\/+$/,'');
+
+/* ---------- Texto final por grupo ---------- */
+function srcInfo(){return parseFbUrl($('#srcUrl').value)}
+function finalText(group,textOverride,urlOverride){
+  let t=textOverride!=null?textOverride:$('#postText').value;
+  const url=urlOverride!=null?urlOverride:(srcInfo().url||'');
+  const today=new Date().toLocaleDateString('es',{day:'numeric',month:'long'});
+  t=t.replace(/\{grupo\}/gi,group?group.name:'{grupo}').replace(/\{fecha\}/gi,today).replace(/\{enlace\}/gi,url);
+  if(url&&S.settings.appendUrl&&!t.includes(url))t=(t.trimEnd()+(t.trim()?'\n\n':'')+url);
+  return t;
+}
+
+/* ---------- Portapapeles ---------- */
+async function copyText(t){
+  try{await navigator.clipboard.writeText(t);return true}catch(e){
+    const ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.select();
+    let ok=false;try{ok=document.execCommand('copy')}catch(_){}ta.remove();return ok}
+}
+async function copyImage(item){
+  try{
+    const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=item.url});
+    const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;c.getContext('2d').drawImage(img,0,0);
+    const blob=await new Promise(r=>c.toBlob(r,'image/png'));
+    await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
+    snack('Imagen copiada. Pégala en Facebook con Ctrl+V');return true;
+  }catch(e){snack('Tu navegador no permite copiar imágenes. Usa «Descargar» y arrástrala a Facebook.');return false}
+}
+
+/* ============================================================
+   PUBLICAR: origen, editor, multimedia, vista previa, destinos
+   ============================================================ */
+const srcEl=$('#srcUrl'),txtEl=$('#postText');
+srcEl.value=S.draft.url||'';txtEl.value=S.draft.text||'';
+const saveDraft=debounce(()=>{S.draft={url:srcEl.value,text:txtEl.value};save('fbp.draft',S.draft);$('#saveState').textContent='Borrador guardado'},500);
+
+function validateUrl(){
+  const r=srcInfo(),h=$('#urlHint');srcEl.classList.toggle('invalid',!!r.error);
+  if(r.empty){h.className='hint';h.innerHTML='Admite publicaciones, fotos, vídeos, reels y enlaces «Compartir» de Facebook.'}
+  else if(r.error){h.className='hint err';h.innerHTML=ic('warn')+esc(r.error)+' <a href="#" data-help="url-origen">Ayuda</a>'}
+  else{h.className='hint ok';h.innerHTML=ic('check')+`<span>${esc(r.kind)} de ${esc(r.host)}${r.cleaned?' · se eliminaron parámetros de rastreo':''}</span>`}
+  $('#st1').classList.toggle('ok',!!r.url);
+  return r;
+}
+srcEl.addEventListener('input',()=>{validateUrl();renderPreview();renderSummary();saveDraft()});
+srcEl.addEventListener('blur',()=>{const r=srcInfo();if(r.url&&r.url!==srcEl.value){srcEl.value=r.url;saveDraft()}});
+$('#pasteUrl').onclick=async()=>{try{srcEl.value=(await navigator.clipboard.readText()).trim();srcEl.dispatchEvent(new Event('input'));srcEl.dispatchEvent(new Event('blur'))}catch(e){srcEl.focus();snack('Pulsa Ctrl+V para pegar la URL')}};
+$('#openUrl').onclick=()=>{const r=srcInfo();if(r.url)window.open(r.url,'_blank','noopener');else snack('Primero introduce una URL válida')};
+
+txtEl.addEventListener('input',()=>{updateCount();renderPreview();renderSummary();$('#saveState').textContent='Guardando…';saveDraft()});
+function updateCount(){const n=[...txtEl.value].length;$('#charCount').textContent=n.toLocaleString('es')+' caracteres'+(n>63206?' · supera el límite de Facebook (63 206)':'');$('#st2').classList.toggle('ok',n>0||S.media.length>0)}
+$('#clearText').onclick=()=>{if(!txtEl.value)return;const old=txtEl.value;txtEl.value='';txtEl.dispatchEvent(new Event('input'));snack('Texto vaciado','Deshacer',()=>{txtEl.value=old;txtEl.dispatchEvent(new Event('input'))})};
+
+function insertAtCursor(s){txtEl.focus();txtEl.setRangeText(s,txtEl.selectionStart,txtEl.selectionEnd,'end');txtEl.dispatchEvent(new Event('input'))}
+
+/* Negrita / cursiva con Unicode (Facebook no admite formato enriquecido) */
+const STY={b:{A:0x1D5D4,a:0x1D5EE,d:0x1D7EC},i:{A:0x1D608,a:0x1D622,d:null}};
+function plainOf(cp){for(const k in STY){const s=STY[k];
+  if(cp>=s.A&&cp<s.A+26)return 65+cp-s.A;if(cp>=s.a&&cp<s.a+26)return 97+cp-s.a;if(s.d&&cp>=s.d&&cp<s.d+10)return 48+cp-s.d}return null}
+function isStyled(str,k){const s=STY[k];return [...str].some(ch=>{const c=ch.codePointAt(0);return (c>=s.A&&c<s.A+26)||(c>=s.a&&c<s.a+26)||(s.d&&c>=s.d&&c<s.d+10)})}
+function styleStr(str,k){const s=STY[k];return [...str].map(ch=>{let c=ch.codePointAt(0);const p=plainOf(c);if(p!=null)c=p;
+  if(c>=65&&c<=90)return String.fromCodePoint(s.A+c-65);if(c>=97&&c<=122)return String.fromCodePoint(s.a+c-97);if(s.d&&c>=48&&c<=57)return String.fromCodePoint(s.d+c-48);return String.fromCodePoint(c)}).join('')}
+function unstyleStr(str){return [...str].map(ch=>{const p=plainOf(ch.codePointAt(0));return p!=null?String.fromCodePoint(p):ch}).join('')}
+function applyFmt(k){const a=txtEl.selectionStart,b=txtEl.selectionEnd;if(a===b){snack('Selecciona el texto al que quieres dar formato');txtEl.focus();return}
+  const sel=txtEl.value.slice(a,b);const out=isStyled(sel,k)?unstyleStr(sel):styleStr(sel,k);
+  txtEl.focus();txtEl.setRangeText(out,a,b,'select');txtEl.dispatchEvent(new Event('input'))}
+$$('[data-fmt]').forEach(b=>b.onclick=()=>applyFmt(b.dataset.fmt));
+txtEl.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&(e.key==='b'||e.key==='i')){e.preventDefault();applyFmt(e.key)}});
+
+/* Popovers */
+let popEl=null;
+function closePop(){if(popEl){popEl.remove();popEl=null}}
+function openPop(anchor,html,onClick){
+  closePop();popEl=document.createElement('div');popEl.className='pop';popEl.innerHTML=html;document.body.appendChild(popEl);hydrateIcons(popEl);
+  const r=anchor.getBoundingClientRect(),w=popEl.offsetWidth,h=popEl.offsetHeight;
+  let left=Math.min(r.left,innerWidth-w-8),top=r.bottom+6;if(top+h>innerHeight-8)top=Math.max(8,r.top-h-6);
+  popEl.style.left=Math.max(8,left)+'px';popEl.style.top=top+'px';
+  popEl.addEventListener('click',e=>onClick(e));
+}
+document.addEventListener('mousedown',e=>{if(popEl&&!popEl.contains(e.target)&&!e.target.closest('.tb'))closePop()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closePop()});
+
+const EMOJIS='😀 😂 😍 🥰 😎 🤩 😉 🙌 👏 👍 🙏 💪 🔥 ✨ ⭐ 🌟 🎉 🎁 💯 ✅ ❌ ⚠️ 📢 📣 📌 📍 📅 ⏰ 💰 💸 🛒 🏷️ 🚀 💡 ❤️ 💙 💚 🧡 💜 👉 👇 ☝️ 📞 📱 💻 🏠 🚗 🍕 ☕ 🎶 📷 🎥 🌎 🤝 🆕 🆓 ➡️ 🔗 📝 ℹ️ ❗ ❓ 🎯 🏆'.split(' ');
+$('#emojiBtn').onclick=e=>openPop(e.currentTarget,`<div class="emoji-grid">${EMOJIS.map(x=>`<button data-e="${x}" aria-label="${x}">${x}</button>`).join('')}</div>`,ev=>{const b=ev.target.closest('[data-e]');if(b)insertAtCursor(b.dataset.e)});
+$('#hashBtn').onclick=()=>{const v=txtEl.value,p=txtEl.selectionStart;insertAtCursor((p>0&&!/\s/.test(v[p-1])?' ':'')+'#')};
+$('#varBtn').onclick=e=>openPop(e.currentTarget,`
+  <div class="menu-label">Se sustituyen en cada grupo</div>
+  <button class="menu-item" data-v="{grupo}"><div><b>{grupo}</b><div class="d">Nombre del grupo de destino</div></div></button>
+  <button class="menu-item" data-v="{fecha}"><div><b>{fecha}</b><div class="d">Fecha de hoy (p. ej. 15 de noviembre)</div></div></button>
+  <button class="menu-item" data-v="{enlace}"><div><b>{enlace}</b><div class="d">URL de la publicación de origen</div></div></button>
+  <div class="menu-sep"></div><button class="menu-item" data-hv><span class="ms" aria-hidden="true">help</span>Más sobre variables</button>`,
+  ev=>{const b=ev.target.closest('[data-v]');if(b){insertAtCursor(b.dataset.v);closePop()}if(ev.target.closest('[data-hv]')){closePop();openHelp('variables')}});
+
+/* Plantillas */
+$('#tplBtn').onclick=e=>{
+  const list=S.templates.map(t=>`<div style="display:flex;align-items:center"><button class="menu-item" data-tpl="${t.id}" style="flex:1"><div style="min-width:0"><b>${esc(t.name)}</b><div class="d" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px">${esc(t.text.slice(0,80))}</div></div></button><button class="icon-btn sm" data-tdel="${t.id}" aria-label="Eliminar plantilla"><span class="ms" aria-hidden="true">delete</span></button></div>`).join('');
+  openPop(e.currentTarget,`<div class="menu-label">Plantillas guardadas</div>${list||'<div class="menu-item d" style="cursor:default">Aún no tienes plantillas</div>'}
+    <div class="menu-sep"></div><button class="menu-item" data-tsave><span class="ms" aria-hidden="true">add</span>Guardar texto actual como plantilla</button>
+    <button class="menu-item" data-th><span class="ms" aria-hidden="true">help</span>Acerca de las plantillas</button>`,ev=>{
+    const u=ev.target.closest('[data-tpl]'),d=ev.target.closest('[data-tdel]');
+    if(d){S.templates=S.templates.filter(t=>t.id!==d.dataset.tdel);persist.templates();closePop();snack('Plantilla eliminada');return}
+    if(u){const t=S.templates.find(x=>x.id===u.dataset.tpl);closePop();
+      if(txtEl.value.trim()){const old=txtEl.value;txtEl.value=t.text;snack('Plantilla aplicada','Deshacer',()=>{txtEl.value=old;txtEl.dispatchEvent(new Event('input'))})}else txtEl.value=t.text;
+      txtEl.dispatchEvent(new Event('input'));return}
+    if(ev.target.closest('[data-tsave]')){closePop();if(!txtEl.value.trim()){snack('Escribe primero el texto que quieres guardar');return}
+      const name=prompt('Nombre de la plantilla:',txtEl.value.trim().split('\n')[0].slice(0,40));if(!name)return;
+      S.templates.unshift({id:uid(),name:name.trim(),text:txtEl.value});persist.templates();snack('Plantilla guardada')}
+    if(ev.target.closest('[data-th]')){closePop();openHelp('plantillas')}
+  })};
+
+/* Multimedia */
+const drop=$('#drop'),fileIn=$('#fileIn');
+$('#attachBtn').onclick=()=>fileIn.click();
+drop.addEventListener('click',e=>{if(!e.target.closest('[data-help]'))fileIn.click()});
+drop.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fileIn.click()}});
+fileIn.onchange=()=>{addFiles(fileIn.files);fileIn.value=''};
+['dragenter','dragover'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove('over')}));
+drop.addEventListener('drop',e=>addFiles(e.dataTransfer.files));
+document.addEventListener('paste',e=>{
+  if(!$('#view-publicar').classList.contains('active')||document.querySelector('dialog[open]'))return;
+  const files=[...(e.clipboardData?.files||[])].filter(f=>/^(image|video|audio)\//.test(f.type));
+  if(files.length){e.preventDefault();addFiles(files)}
+});
+function addFiles(list){
+  let n=0;for(const f of list){const type=f.type.split('/')[0];if(!['image','video','audio'].includes(type)){snack(`«${f.name}» no es imagen, vídeo ni audio`);continue}
+    if(f.size>1024*1024*1024){snack(`«${f.name}» es demasiado grande (máx. 1 GB)`);continue}
+    S.media.push({id:uid(),file:f,url:URL.createObjectURL(f),type,name:f.name||(type+'.'+(f.type.split('/')[1]||'bin'))});n++}
+  if(n){renderMedia();renderPreview();updateCount();snack(n===1?'Archivo añadido':`${n} archivos añadidos`)}
+  if(S.media.some(m=>m.type==='audio')&&n)setTimeout(()=>snack('Facebook no admite audio suelto en grupos. Puedes convertirlo a vídeo.','Cómo',()=>openHelp('multimedia'),7000),1200);
+}
+function removeMedia(id){const m=S.media.find(x=>x.id===id);if(!m)return;if(m.cancel)m.cancel();URL.revokeObjectURL(m.url);S.media=S.media.filter(x=>x.id!==id);renderMedia();renderPreview();updateCount()}
+function renderMedia(){
+  $('#mediaGrid').innerHTML=S.media.map(m=>`<div class="media-item" data-id="${m.id}">
+    ${m.type==='image'?`<img src="${m.url}" alt="${esc(m.name)}">`:m.type==='video'?`<video src="${m.url}" muted preload="metadata"></video>`:
+      `<div class="audio">${ic('music')}<div class="name">${esc(m.name)}</div><audio src="${m.url}" controls style="width:100%;height:28px"></audio>
+       <button class="btn text" data-conv="${m.id}" style="height:28px;font-size:12px">${ic('movie')}Convertir a vídeo</button></div>`}
+    <span class="type">${{image:'IMAGEN',video:'VÍDEO',audio:'AUDIO'}[m.type]}</span>
+    <div class="ops">${m.type==='image'?`<button data-cimg="${m.id}" title="Copiar imagen" aria-label="Copiar imagen">${ic('copy')}</button>`:''}<button data-rm="${m.id}" title="Quitar" aria-label="Quitar">${ic('close')}</button></div>
+    ${m.busy?`<div class="busy">${esc(m.busy)}</div>`:''}
+  </div>`).join('');
+}
+$('#mediaGrid').addEventListener('click',e=>{
+  const rm=e.target.closest('[data-rm]'),cv=e.target.closest('[data-conv]'),ci=e.target.closest('[data-cimg]');
+  if(rm)removeMedia(rm.dataset.rm);if(cv)audioToVideo(cv.dataset.conv);if(ci)copyImage(S.media.find(m=>m.id===ci.dataset.cimg));
+});
+
+/* Audio → vídeo (imagen fija + audio) para poder publicarlo en Facebook */
+async function audioToVideo(id){
+  const m=S.media.find(x=>x.id===id);if(!m||m.busy)return;
+  if(!window.MediaRecorder||!HTMLCanvasElement.prototype.captureStream){snack('Tu navegador no permite convertir audio. Prueba con Chrome, Edge o Firefox.');return}
+  const mime=['video/mp4;codecs=avc1,mp4a','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));
+  if(!mime){snack('No hay formato de vídeo compatible en este navegador');return}
+  const cover=S.media.find(x=>x.type==='image');let coverImg=null;
+  if(cover)coverImg=await new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=cover.url});
+  const audio=new Audio(m.url);await new Promise((r,j)=>{audio.onloadedmetadata=r;audio.onerror=j}).catch(()=>null);
+  if(!isFinite(audio.duration)||!audio.duration){snack('No se pudo leer el audio');return}
+  const W=1280,H=720,c=document.createElement('canvas');c.width=W;c.height=H;const ctx=c.getContext('2d');
+  const title=(txtEl.value.split('\n').find(l=>l.trim())||m.name).slice(0,60);
+  const draw=p=>{
+    if(coverImg){const s=Math.max(W/coverImg.width,H/coverImg.height);ctx.drawImage(coverImg,(W-coverImg.width*s)/2,(H-coverImg.height*s)/2,coverImg.width*s,coverImg.height*s);ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(0,H-120,W,120)}
+    else{const g=ctx.createLinearGradient(0,0,W,H);g.addColorStop(0,'#1877f2');g.addColorStop(1,'#062e6f');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#fff';ctx.font='500 52px Roboto,sans-serif';ctx.textAlign='center';ctx.fillText(title,W/2,H/2-10);ctx.font='28px Roboto,sans-serif';ctx.globalAlpha=.7;ctx.fillText('♪ Audio',W/2,H/2+44);ctx.globalAlpha=1}
+    ctx.fillStyle='rgba(255,255,255,.3)';ctx.fillRect(60,H-60,W-120,8);ctx.fillStyle='#fff';ctx.fillRect(60,H-60,(W-120)*p,8)};
+  draw(0);
+  const ac=new (window.AudioContext||window.webkitAudioContext)();const src=ac.createMediaElementSource(audio);const dest=ac.createMediaStreamDestination();src.connect(dest);
+  const stream=new MediaStream([...c.captureStream(25).getVideoTracks(),...dest.stream.getAudioTracks()]);
+  const rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:2500000});const chunks=[];rec.ondataavailable=e=>e.data.size&&chunks.push(e.data);
+  let cancelled=false,iv;
+  m.cancel=()=>{cancelled=true;try{audio.pause();rec.stop()}catch(e){}};
+  m.busy='Convirtiendo… 0 %';renderMedia();
+  rec.onstop=()=>{clearInterval(iv);ac.close();delete m.cancel;m.busy=null;
+    if(cancelled){renderMedia();return}
+    const ext=mime.includes('mp4')?'mp4':'webm';const blob=new Blob(chunks,{type:mime.split(';')[0]});
+    const name=m.name.replace(/\.[^.]+$/,'')+'.'+ext;const f=new File([blob],name,{type:blob.type});
+    S.media.push({id:uid(),file:f,url:URL.createObjectURL(f),type:'video',name});renderMedia();renderPreview();
+    snack('Vídeo creado: '+name,'Descargar',()=>download(name,blob,blob.type),8000)};
+  rec.start(1000);
+  iv=setInterval(()=>{const p=Math.min(1,audio.currentTime/audio.duration);draw(p);const t=`Convirtiendo… ${Math.round(p*100)} %`;if(m.busy!==t){m.busy=t;const el=$(`.media-item[data-id="${m.id}"] .busy`);if(el)el.textContent=t+' (mantén la pestaña visible)'}},40);
+  audio.onended=()=>{draw(1);setTimeout(()=>rec.stop(),300)};
+  try{await audio.play()}catch(e){m.cancel();snack('No se pudo reproducir el audio para convertirlo')}
+}
+
+/* Vista previa */
+function linkify(t){return esc(t).replace(/(https?:\/\/[^\s<]+)/g,'<span class="hl">$1</span>').replace(/(^|\s)(#[\p{L}\p{N}_]+)/gu,'$1<span class="hl">$2</span>').replace(/\{(grupo|fecha|enlace)\}/gi,'<span class="hl">{$1}</span>')}
+function renderPreview(){
+  const sel=selectedGroups();const g=sel[0];const r=srcInfo();
+  const t=finalText(g);const pv=$('#pvGroup');pv.hidden=!g;if(g)pv.textContent='En: '+(g.name.length>22?g.name.slice(0,21)+'…':g.name);
+  const media=S.media.filter(m=>m.type!=='audio');const n=media.length;
+  const mediaHtml=n?`<div class="fb-media n${Math.min(n,4)}">${media.slice(0,4).map((m,i)=>`<div>${m.type==='image'?`<img src="${m.url}" alt="">`:`<video src="${m.url}" muted></video>`}${i===3&&n>4?`<div class="more">+${n-4}</div>`:''}</div>`).join('')}</div>`:'';
+  const linkHtml=(!n&&r.url)?`<div class="fb-link"><div class="lk-img">${ic('globe')}</div><div class="lk-t"><div class="lk-d">${esc(r.host||'facebook.com')}</div><div class="lk-h">${esc(r.kind)} de Facebook</div></div></div>`:'';
+  $('#preview').innerHTML=`<div class="fb-post"><div class="ph"><div class="av">Tú</div><div><div class="who">Tu nombre${g?` <span style="font-weight:400;color:var(--text-3)">▸</span> ${esc(g.name)}`:''}</div><div class="when">Ahora · ${ic('group')}</div></div></div>
+    <div class="body">${t.trim()?linkify(t):'<span class="ph-empty">Tu texto aparecerá aquí…</span>'}</div>${mediaHtml}${linkHtml}
+    <div class="fb-actions"><span>👍 Me gusta</span><span>💬 Comentar</span><span>↗ Compartir</span></div></div>`;
+}
+
+/* Destinos */
+function activeGroups(){return S.groups.filter(g=>g.active)}
+function ensureSel(){const act=activeGroups();if(!S.sel)S.sel=new Set(act.map(g=>g.id));else{const ids=new Set(act.map(g=>g.id));[...S.sel].forEach(id=>{if(!ids.has(id))S.sel.delete(id)})}}
+function selectedGroups(){ensureSel();return activeGroups().filter(g=>S.sel.has(g.id))}
+const isRecent=g=>S.settings.warnRecent&&g.lastShared&&Date.now()-g.lastShared<86400000;
+function allTags(list){return [...new Set((list||S.groups).flatMap(g=>g.tags||[]))].sort((a,b)=>a.localeCompare(b,'es'))}
+function renderDest(){
+  ensureSel();const act=activeGroups(),box=$('#destBox');
+  if(!S.groups.length){box.innerHTML=`<div class="empty compact"><div class="ill">${ic('group')}</div><h3>Aún no has añadido grupos</h3><p>Añádelos uno a uno o captúralos todos desde Facebook con el marcador.</p><button class="btn filled" data-nav="grupos">${ic('add')}Añadir grupos</button> <button class="btn text" data-help="marcador">Cómo capturarlos</button></div>`;return}
+  if(!act.length){box.innerHTML=`<div class="empty compact"><div class="ill">${ic('group')}</div><h3>No hay grupos activos</h3><p>Tienes ${S.groups.length} grupo(s), pero todos están desactivados.</p><button class="btn tonal" data-nav="grupos">Gestionar grupos</button></div>`;return}
+  const tags=allTags(act);const nSel=S.sel.size;
+  $('#destSub').textContent=`${nSel} de ${act.length} grupos activos seleccionados`;
+  box.innerHTML=`${tags.length?`<div class="chips" style="margin-bottom:12px" id="destTags"><span class="muted small" style="align-self:center">Seleccionar por etiqueta:</span>${tags.map(t=>`<button class="chip" data-dtag="${esc(t)}">${ic('tag')}${esc(t)}</button>`).join('')}</div>`:''}
+    <div class="list"><div class="list-head"><input type="checkbox" class="cb" id="destAll" aria-label="Seleccionar todos" ${nSel===act.length?'checked':''}><label for="destAll" style="flex:1;cursor:pointer">Todos los grupos activos</label><span>Último uso</span></div>
+    <div class="scroll-list">${act.map(g=>`<div class="row"><label class="click"><input type="checkbox" class="cb" data-dsel="${g.id}" ${S.sel.has(g.id)?'checked':''}>
+      <div class="main"><div class="title">${esc(g.name)}</div><div class="meta">${(g.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}${esc(g.url.replace('https://www.',''))}</div></div></label>
+      ${isRecent(g)?`<span class="pill warn" title="Ya compartiste aquí en las últimas 24 h">${ic('timer')}${esc(ago(g.lastShared))}</span>`:`<span class="small muted">${g.lastShared?esc(ago(g.lastShared)):'Nunca'}</span>`}</div>`).join('')}</div></div>
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn text" data-nav="grupos">${ic('edit')}Gestionar grupos</button>${act.some(isRecent)?`<button class="btn text" id="skipRecent">${ic('timer')}Excluir los de las últimas 24 h</button>`:''}</div>`;
+  const ind=$('#destAll');if(ind)ind.indeterminate=nSel>0&&nSel<act.length;
+  $('#st3').classList.toggle('ok',nSel>0);
+}
+$('#destBox').addEventListener('change',e=>{
+  if(e.target.id==='destAll'){ensureSel();if(e.target.checked)activeGroups().forEach(g=>S.sel.add(g.id));else S.sel.clear()}
+  const d=e.target.dataset.dsel;if(d){e.target.checked?S.sel.add(d):S.sel.delete(d)}
+  renderDest();renderPreview();renderSummary();
+});
+$('#destBox').addEventListener('click',e=>{
+  const t=e.target.closest('[data-dtag]');if(t){S.sel=new Set(activeGroups().filter(g=>(g.tags||[]).includes(t.dataset.dtag)).map(g=>g.id));renderDest();renderPreview();renderSummary();snack(`Seleccionados los grupos con etiqueta «${t.dataset.dtag}»`)}
+  if(e.target.closest('#skipRecent')){activeGroups().filter(isRecent).forEach(g=>S.sel.delete(g.id));renderDest();renderPreview();renderSummary()}
+});
+function renderSummary(){
+  const n=selectedGroups().length,r=srcInfo(),hasContent=!!(r.url||txtEl.value.trim()||S.media.length);
+  const est=Math.ceil(n*(25+(+S.settings.pause||0))/60);
+  $('#pubSum').innerHTML=n?`<b>${n} grupo${n>1?'s':''}</b> seleccionado${n>1?'s':''} · tiempo estimado ≈ ${est} min ${!hasContent?'<br><span class="small" style="color:var(--error)">Añade una URL, texto o archivos para empezar</span>':r.error?'<br><span class="small" style="color:var(--error)">Revisa la URL de origen</span>':''}`:'<span class="muted">Selecciona al menos un grupo de destino</span>';
+  $('#startBtn').disabled=!n||!hasContent||!!r.error;
+}
+
+/* ============================================================
+   GRUPOS
+   ============================================================ */
+function upsertGroup(data,id){
+  const key=groupKey(data.url);const dup=S.groups.find(g=>groupKey(g.url)===key&&g.id!==id);
+  if(dup){snack(`Ya existe un grupo con esa URL: «${dup.name}»`);return false}
+  if(id){Object.assign(S.groups.find(g=>g.id===id),data)}else S.groups.push(Object.assign({id:uid(),created:Date.now(),lastShared:null,active:true,tags:[],notes:''},data));
+  if(!id&&S.sel)S.sel.add(S.groups[S.groups.length-1].id);
+  persist.groups();return true;
+}
+let editingId=null;
+function openGroupDlg(id){
+  editingId=id||null;const g=id?S.groups.find(x=>x.id===id):null;
+  $('#groupDlgTitle').textContent=g?'Editar grupo':'Añadir grupo';
+  $('#gUrl').value=g?g.url:'';$('#gName').value=g?g.name:'';$('#gTags').value=g?(g.tags||[]).join(', '):'';$('#gNotes').value=g?g.notes||'':'';$('#gActive').checked=g?g.active:true;
+  $('#gUrl').classList.remove('invalid');$('#gUrlHint').className='hint';$('#gUrlHint').textContent='También vale el ID numérico o el nombre corto del grupo.';
+  $('#tagList').innerHTML=allTags().map(t=>`<option value="${esc(t)}">`).join('');
+  $('#groupDlg').showModal();setTimeout(()=>$('#gUrl').focus(),50);
+}
+$('#gUrl').addEventListener('input',()=>{const v=$('#gUrl').value.trim();const n=normGroupUrl(v);const h=$('#gUrlHint');
+  if(!v){h.className='hint';h.textContent='También vale el ID numérico o el nombre corto del grupo.';$('#gUrl').classList.remove('invalid');return}
+  if(n){h.className='hint ok';h.textContent='✓ '+n;$('#gUrl').classList.remove('invalid')}else{h.className='hint err';h.textContent='Debe ser un enlace a un grupo: facebook.com/groups/…';$('#gUrl').classList.add('invalid')}});
+$('#addGroupBtn').onclick=()=>openGroupDlg();
+$('#groupForm').addEventListener('submit',e=>{
+  e.preventDefault();const url=normGroupUrl($('#gUrl').value);const name=$('#gName').value.trim();
+  if(!url){$('#gUrl').classList.add('invalid');$('#gUrl').focus();return}
+  if(!name){$('#gName').focus();return}
+  const data={url,name,tags:[...new Set($('#gTags').value.split(',').map(s=>s.trim()).filter(Boolean))],notes:$('#gNotes').value.trim(),active:$('#gActive').checked};
+  if(upsertGroup(data,editingId)){$('#groupDlg').close();snack(editingId?'Grupo actualizado':'Grupo añadido')}
+});
+$$('dialog [data-close]').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
+
+function filteredGroups(){
+  const q=$('#gSearch').value.trim().toLowerCase();
+  return S.groups.filter(g=>(S.gFilter==='all'||(S.gFilter==='on'?g.active:!g.active))&&(!S.gTag||(g.tags||[]).includes(S.gTag))&&
+    (!q||g.name.toLowerCase().includes(q)||g.url.toLowerCase().includes(q)||(g.tags||[]).some(t=>t.toLowerCase().includes(q))));
+}
+function renderGroups(){
+  const box=$('#groupsBox');const list=filteredGroups();
+  const tags=allTags();$('#gTagFilters').innerHTML=tags.length?tags.map(t=>`<button class="chip ${S.gTag===t?'on':''}" data-gtag="${esc(t)}">${ic('tag')}${esc(t)}</button>`).join(''):'';
+  [...S.gChecked].forEach(id=>{if(!S.groups.some(g=>g.id===id))S.gChecked.delete(id)});
+  $('#bulk').classList.toggle('show',S.gChecked.size>0);$('#bulkCount').textContent=`${S.gChecked.size} seleccionado${S.gChecked.size>1?'s':''}`;
+  if(!S.groups.length){box.innerHTML=`<div class="card empty"><div class="ill">${ic('group')}</div><h3>Tu lista de grupos está vacía</h3><p>Añade los grupos de Facebook en los que participas para poder compartir en ellos.</p>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn filled" onclick="openGroupDlg()">${ic('add')}Añadir grupo</button><button class="btn outlined" onclick="openImport()">${ic('upload')}Importar</button><button class="btn text" data-help="marcador">Usar el marcador</button></div></div>`;return}
+  if(!list.length){box.innerHTML=`<div class="card empty"><h3>Sin resultados</h3><p>Ningún grupo coincide con la búsqueda o el filtro.</p></div>`;return}
+  const allChecked=list.every(g=>S.gChecked.has(g.id));
+  box.innerHTML=`<div class="list" style="background:var(--surface)"><div class="list-head"><input type="checkbox" class="cb" id="gAll" ${allChecked?'checked':''} aria-label="Seleccionar todos"><span style="flex:1">${list.length} grupo${list.length>1?'s':''} · ${S.groups.filter(g=>g.active).length} activos</span><span style="width:110px" class="hide-sm">Último uso</span><span style="width:52px">Activo</span><span style="width:72px"></span></div>
+  ${list.map(g=>`<div class="row ${g.active?'':'off'}"><input type="checkbox" class="cb" data-gc="${g.id}" ${S.gChecked.has(g.id)?'checked':''} aria-label="Seleccionar ${esc(g.name)}">
+    <span class="avatar hide-sm" aria-hidden="true">${esc(initials(g.name))}</span><div class="main"><div class="title">${esc(g.name)}</div><div class="meta">${(g.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}<a href="${esc(g.url)}" target="_blank" rel="noopener">${esc(g.url.replace('https://www.',''))}</a>${g.notes?` · <span title="${esc(g.notes)}">📝 ${esc(g.notes.slice(0,40))}</span>`:''}</div></div>
+    <span class="small muted hide-sm" style="width:110px">${g.lastShared?esc(ago(g.lastShared)):'Nunca'}</span>
+    <label class="switch" title="${g.active?'Desactivar':'Activar'}"><input type="checkbox" data-gact="${g.id}" ${g.active?'checked':''} aria-label="Activo"><span></span></label>
+    <span style="width:72px;display:flex"><button class="icon-btn sm" data-gedit="${g.id}" aria-label="Editar">${ic('edit')}</button><button class="icon-btn sm" data-gdel="${g.id}" aria-label="Eliminar">${ic('delete')}</button></span>
+  </div>`).join('')}</div>`;
+}
+function renderAllGroups(){renderGroups();renderDest();renderPreview();renderSummary();renderBadges()}
+function renderBadges(){$('#navGroupsBadge').textContent='';const p=S.history.filter(h=>h.items.some(i=>i.status==='pending')).length;$('#navHistBadge').textContent=p?String(p):'';$('#navHistBadge').title=p?`${p} publicación(es) con grupos pendientes`:''}
+$('#gSearch').addEventListener('input',renderGroups);
+$('#gFilters').addEventListener('click',e=>{const b=e.target.closest('[data-f]');if(!b)return;S.gFilter=b.dataset.f;$$('#gFilters .chip').forEach(x=>x.classList.toggle('on',x===b));renderGroups()});
+$('#gTagFilters').addEventListener('click',e=>{const b=e.target.closest('[data-gtag]');if(!b)return;S.gTag=S.gTag===b.dataset.gtag?null:b.dataset.gtag;renderGroups()});
+$('#groupsBox').addEventListener('change',e=>{
+  const t=e.target;
+  if(t.id==='gAll'){filteredGroups().forEach(g=>t.checked?S.gChecked.add(g.id):S.gChecked.delete(g.id));renderGroups()}
+  if(t.dataset.gc){t.checked?S.gChecked.add(t.dataset.gc):S.gChecked.delete(t.dataset.gc);renderGroups()}
+  if(t.dataset.gact){const g=S.groups.find(x=>x.id===t.dataset.gact);g.active=t.checked;if(g.active&&S.sel)S.sel.add(g.id);persist.groups();snack(`«${g.name}» ${g.active?'activado':'desactivado'}`)}
+});
+$('#groupsBox').addEventListener('click',e=>{
+  const ed=e.target.closest('[data-gedit]'),dl=e.target.closest('[data-gdel]');
+  if(ed)openGroupDlg(ed.dataset.gedit);
+  if(dl)deleteGroups([dl.dataset.gdel]);
+});
+function deleteGroups(ids){
+  const removed=S.groups.filter(g=>ids.includes(g.id));if(!removed.length)return;
+  const before=S.groups.slice();S.groups=S.groups.filter(g=>!ids.includes(g.id));ids.forEach(id=>S.gChecked.delete(id));persist.groups();
+  snack(removed.length===1?`«${removed[0].name}» eliminado`:`${removed.length} grupos eliminados`,'Deshacer',()=>{S.groups=before;persist.groups()},7000);
+}
+$('#bulk').addEventListener('click',async e=>{
+  const b=e.target.closest('[data-bulk]');if(!b)return;const ids=[...S.gChecked];const act=b.dataset.bulk;
+  if(act==='none'){S.gChecked.clear();renderGroups();return}
+  if(act==='del'){if(ids.length>3&&!await confirmBox('¿Eliminar grupos?',`Se eliminarán ${ids.length} grupos de tu lista (no de Facebook).`,'Eliminar',true))return;deleteGroups(ids);return}
+  if(act==='tag'){const t=prompt('Etiqueta para añadir a los grupos seleccionados:');if(!t||!t.trim())return;S.groups.forEach(g=>{if(ids.includes(g.id)){g.tags=[...new Set([...(g.tags||[]),t.trim()])]}});persist.groups();snack('Etiqueta añadida');return}
+  S.groups.forEach(g=>{if(ids.includes(g.id)){g.active=act==='on';if(g.active&&S.sel)S.sel.add(g.id)}});persist.groups();snack(`${ids.length} grupo(s) ${act==='on'?'activados':'desactivados'}`);
+});
+
+/* Importar / exportar grupos */
+function parseImport(txt){
+  txt=String(txt||'').trim();if(!txt)return [];
+  const out=[];const m=txt.match(/FBP_GROUPS:(\[[\s\S]*\])/);let arr=null;
+  try{arr=JSON.parse(m?m[1]:txt)}catch(e){}
+  if(arr&&!Array.isArray(arr)&&Array.isArray(arr.groups))arr=arr.groups;
+  if(Array.isArray(arr)){arr.forEach(o=>{if(typeof o==='string')o={url:o};const url=normGroupUrl(o.url||o.link||o.id);if(url)out.push({url,name:(o.name||o.nombre||'').trim()||url.split('/groups/')[1].replace('/',''),tags:Array.isArray(o.tags)?o.tags:[],notes:o.notes||'',active:o.active!==false})})}
+  else txt.split(/\r?\n/).forEach(line=>{line=line.trim();if(!line)return;let name='',raw=line;
+    const p=line.split(/\s*[|;\t]\s*/);if(p.length>1){const ui=p.findIndex(x=>normGroupUrl(x)&&/groups|^\d+$/.test(x));if(ui>=0){raw=p[ui];name=p.filter((_,i)=>i!==ui).join(' ').trim()}}
+    else{const mm=line.match(/(\S*facebook\.com\/groups\/\S+)/i);if(mm){raw=mm[1];name=line.replace(mm[1],'').replace(/[-–:,]+\s*$/,'').trim()}}
+    const url=normGroupUrl(raw);if(url)out.push({url,name:name||url.split('/groups/')[1].replace('/',''),tags:[],notes:'',active:true})});
+  const seen=new Set();return out.filter(g=>{const k=groupKey(g.url);if(seen.has(k))return false;seen.add(k);return true});
+}
+function openImport(){$('#impText').value='';updImp();$('#importDlg').showModal()}
+function updImp(){const list=parseImport($('#impText').value);const existing=new Set(S.groups.map(g=>groupKey(g.url)));const nw=list.filter(g=>!existing.has(groupKey(g.url)));
+  const h=$('#impHint');if(!$('#impText').value.trim()){h.className='hint';h.innerHTML='&nbsp;'}else if(!list.length){h.className='hint err';h.textContent='No se ha detectado ningún grupo válido.'}
+  else{h.className='hint ok';h.textContent=`${list.length} grupo(s) detectados · ${nw.length} nuevos${list.length-nw.length?` · ${list.length-nw.length} ya existen (se omitirán)`:''}`}
+  $('#impGo').disabled=!nw.length;$('#impGo').textContent=nw.length?`Importar ${nw.length}`:'Importar';return nw}
+$('#importBtn').onclick=openImport;
+$('#impText').addEventListener('input',updImp);
+$('#impPaste').onclick=async()=>{try{$('#impText').value=await navigator.clipboard.readText();updImp()}catch(e){$('#impText').focus();snack('Pulsa Ctrl+V dentro del cuadro de texto')}};
+$('#impFileBtn').onclick=()=>$('#impFile').click();
+$('#impFile').onchange=async e=>{const f=e.target.files[0];if(f){$('#impText').value=await f.text();updImp()}e.target.value=''};
+$('#impGo').onclick=()=>{const nw=updImp();nw.forEach(g=>S.groups.push(Object.assign({id:uid(),created:Date.now(),lastShared:null},g)));if(S.sel)nw.forEach(g=>{const x=S.groups.find(y=>y.url===g.url);if(x&&x.active)S.sel.add(x.id)});persist.groups();$('#importDlg').close();snack(`${nw.length} grupo(s) importados`)};
+$('#exportBtn').onclick=()=>{if(!S.groups.length){snack('No hay grupos para exportar');return}download(`facebook-publisher-grupos-${new Date().toISOString().slice(0,10)}.json`,JSON.stringify({app:'Facebook Publisher',type:'groups',groups:S.groups.map(({name,url,tags,notes,active})=>({name,url,tags,notes,active}))},null,2));snack('Grupos exportados')};
+
+/* Marcador (bookmarklet) — solo LEE la página de Facebook y copia la lista al portapapeles */
+function fbpCapture(){
+  if(window.__fbpCap){window.__fbpCap.focus();return}
+  if(!/(^|\.)facebook\.com$/.test(location.hostname)){alert('Facebook Publisher: abre Facebook (facebook.com/groups/joins) y pulsa de nuevo el marcador.');return}
+  var SKIP={feed:1,joins:1,discover:1,create:1,search:1,notifications:1,you:1,browse:1,invites:1,category:1,suggested:1,manage:1};
+  var BAD=/^(ver grupo|view group|visitar|visit|unirte|join|ver m[aá]s|see more|ver todo|see all|activo|active|[uú]ltima|last|hace|about|\d|miembros|members|publicaciones|posts|grupo (p[uú]blico|privado)|(public|private) group|tus grupos|your groups|grupos a los que|groups you|administrar|manage|nueva actividad|new activity|unread|sin leer|·)/i;
+  var map={},order=[];
+  function slugOf(h){var m=(h||'').match(/\/groups\/([^\/?#]+)\/?(?:[?#].*)?$/);return m&&!SKIP[m[1].toLowerCase()]?m[1]:null}
+  function okName(t){t=String(t||'').replace(/\s+/g,' ').replace(/\s*(Activo por [uú]ltima vez|Activo hace|Last active|Active \d|[UÚ]ltima actividad|Hace \d+ (min|hora|d[ií]a)|\d[\d.,]*\s*(mil\s*)?(miembros|members)).*$/i,'').trim();return t.length>1&&t.length<=140&&!BAD.test(t)?t:''}
+  function firstGood(txt){var ls=String(txt||'').split('\n');for(var i=0;i<ls.length;i++){var n=okName(ls[i]);if(n)return n}return ''}
+  function nameFor(a,slug){
+    var n=firstGood(a.innerText)||okName(a.getAttribute('aria-label'));if(n)return n;
+    var p=a.parentElement;
+    for(var i=0;i<6&&p&&p!==document.body;i++,p=p.parentElement){
+      var ids={};p.querySelectorAll('a[href*="/groups/"]').forEach(function(x){var s=slugOf(x.getAttribute('href'));if(s)ids[s]=1});
+      if(Object.keys(ids).length>1)break;
+      n=firstGood(p.innerText);if(n)return n;
+    }
+    return '';
+  }
+  function collect(){
+    var m=location.pathname.match(/^\/groups\/([^\/?#]+)/);
+    if(m&&!SKIP[m[1].toLowerCase()]){var h=document.querySelector('[role=main] h1')||document.querySelector('h1');add(m[1],(h&&h.innerText)||document.title.replace(/\s*[|\-]\s*Facebook\s*$/,''))}
+    document.querySelectorAll('a[href*="/groups/"]').forEach(function(a){if(box.contains(a))return;var s=slugOf(a.getAttribute('href'));if(s)add(s,nameFor(a,s))});
+  }
+  function add(slug,name){name=okName(name);if(!(slug in map)){map[slug]='';order.push(slug)}if(name&&!map[slug])map[slug]=name}
+  var box=document.createElement('div');window.__fbpCap=box;box.tabIndex=-1;
+  box.style.cssText='position:fixed;top:16px;right:16px;z-index:2147483647;width:320px;background:#fff;color:#1f1f1f;border-radius:16px;box-shadow:0 4px 8px 3px rgba(0,0,0,.15),0 1px 3px rgba(0,0,0,.3);padding:16px 20px;font:14px/20px Roboto,Segoe UI,system-ui,sans-serif';
+  box.innerHTML='<div style="font-weight:500;font-size:16px;margin-bottom:6px;color:#0b57d0">Facebook Publisher</div><div id="fbpMsg">Buscando grupos…</div><div style="height:4px;background:#d3e3fd;border-radius:2px;margin:12px 0;overflow:hidden"><div id="fbpBar" style="height:100%;width:30%;background:#0b57d0;border-radius:2px;transition:width .3s"></div></div><div id="fbpHint" style="font-size:12px;color:#444746;margin-bottom:12px">Desplazándose automáticamente para cargar todos tus grupos. No cierres esta pestaña.</div><div style="display:flex;gap:8px;justify-content:flex-end"><button id="fbpX" style="height:36px;padding:0 14px;border-radius:18px;border:1px solid #747775;background:none;color:#0b57d0;font-weight:500;font-size:14px;font-family:inherit;cursor:pointer">Cancelar</button><button id="fbpGo" style="height:36px;padding:0 16px;border-radius:18px;border:0;background:#0b57d0;color:#fff;font-weight:500;font-size:14px;font-family:inherit;cursor:pointer">Terminar ya</button></div>';
+  document.body.appendChild(box);
+  var $=function(id){return box.querySelector('#'+id)};
+  var done=false,last=-1,stable=0,iter=0,MAXI=300;
+  function scrollers(){var r=[];document.querySelectorAll('div,ul,[role=navigation]').forEach(function(el){if(el.scrollHeight>el.clientHeight+40&&el.clientHeight>120){var oy=getComputedStyle(el).overflowY;if((oy==='auto'||oy==='scroll')&&el.querySelector('a[href*="/groups/"]'))r.push(el)}});return r}
+  function close(){box.remove();window.__fbpCap=null;done=true}
+  function finish(){
+    if(done&&!$('fbpCopy'))return;done=true;collect();
+    var out=order.map(function(s){return {name:map[s]||s,url:'https://www.facebook.com/groups/'+s+'/'}});
+    var unnamed=order.filter(function(s){return !map[s]}).length;
+    $('fbpBar').style.width='100%';
+    $('fbpMsg').innerHTML='<b>'+out.length+'</b> grupo(s) encontrados'+(unnamed?' ('+unnamed+' sin nombre: se usará su ID)':'')+'.';
+    $('fbpHint').innerHTML=out.length<5&&!/\/groups\/joins/.test(location.pathname)?'¿Faltan grupos? Abre <a href="https://www.facebook.com/groups/joins/" style="color:#0b57d0">Tus grupos</a> y pulsa de nuevo el marcador.':'Pulsa «Copiar» y vuelve a Facebook Publisher → Grupos → Importar → Pegar.';
+    $('fbpX').textContent='Cerrar';
+    var go=$('fbpGo');go.id='fbpCopy';go.textContent='Copiar '+out.length+' grupo(s)';go.disabled=!out.length;
+    go.onclick=function(){var txt='FBP_GROUPS:'+JSON.stringify(out);
+      function ok(){$('fbpMsg').innerHTML='<b>✓ '+out.length+' grupo(s) copiados.</b>';$('fbpHint').textContent='Vuelve a Facebook Publisher → Grupos → Importar → Pegar del portapapeles.';go.textContent='Copiar de nuevo'}
+      function fb(){var ta=document.createElement('textarea');ta.value=txt;box.appendChild(ta);ta.select();var r=false;try{r=document.execCommand('copy')}catch(e){}ta.remove();if(r)ok();else prompt('Copia este texto (Ctrl+C) y pégalo en Facebook Publisher:',txt)}
+      if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(ok,fb);else fb()};
+  }
+  $('fbpX').onclick=close;$('fbpGo').onclick=finish;
+  var onGroupPage=/^\/groups\/[^\/]+/.test(location.pathname)&&!/^\/groups\/(joins|feed|discover)/.test(location.pathname);
+  function step(){
+    if(done)return;collect();iter++;
+    var n=order.length;$('fbpMsg').innerHTML='Buscando grupos… <b>'+n+'</b> encontrados';
+    $('fbpBar').style.width=Math.min(95,30+iter*2)+'%';
+    if(n===last)stable++;else{stable=0;last=n}
+    if(onGroupPage||stable>=6||iter>=MAXI){finish();return}
+    window.scrollTo(0,document.documentElement.scrollHeight);
+    scrollers().forEach(function(el){el.scrollTop=el.scrollHeight});
+    setTimeout(step,1000);
+  }
+  step();
+}
+$('#bookmarklet').href='javascript:'+encodeURIComponent('('+fbpCapture.toString()+')()');
+$('#bookmarklet').addEventListener('click',e=>{e.preventDefault();snack('Arrastra este botón a tu barra de marcadores; se usa dentro de Facebook.','Ver ayuda',()=>openHelp('marcador'))});
+
+/* ============================================================
+   PUBLICACIÓN ASISTIDA
+   ============================================================ */
+let fbWin=null,runTick=null;
+function startRun(fromHist){
+  let entry;
+  if(fromHist){entry=fromHist}else{
+    const r=validateUrl();if(r.error){snack('La URL de origen no es válida');srcEl.focus();return}
+    const groups=selectedGroups();if(!groups.length){snack('Selecciona al menos un grupo');return}
+    if(!r.url&&!txtEl.value.trim()&&!S.media.length){snack('Añade una URL, texto o archivos');return}
+    entry={id:uid(),date:Date.now(),url:r.url||'',text:txtEl.value,mediaCount:S.media.length,appendUrl:S.settings.appendUrl,
+      items:groups.map(g=>({gid:g.id,name:g.name,url:g.url,notes:g.notes||'',status:'pending',at:null}))};
+    S.history.unshift(entry);persist.history();
+  }
+  const idx=entry.items.findIndex(i=>i.status==='pending');
+  S.run={entry,idx:idx<0?entry.items.length:idx,opened:false,coolUntil:0,coolTotal:0};
+  $('#runDlg').showModal();renderRun();
+}
+$('#startBtn').onclick=()=>startRun();
+function runText(item){const e=S.run.entry;const prev=S.settings.appendUrl;S.settings.appendUrl=e.appendUrl!==false;const t=finalText(item,e.text,e.url);S.settings.appendUrl=prev;return t}
+function openTarget(item){
+  const e=S.run.entry;const mode=S.settings.mode;
+  const url=mode==='share'&&e.url?`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(e.url)}`:item.url;
+  if(mode==='side'){const w=Math.min(900,Math.round(screen.availWidth*0.55)),h=screen.availHeight-40,l=screen.availWidth-w;
+    fbWin=window.open(url,'fbp_target',`popup=yes,width=${w},height=${h},left=${l},top=0`)}
+  else fbWin=window.open(url,'fbp_target');
+  if(!fbWin){snack('El navegador bloqueó la ventana. Permite las ventanas emergentes para este archivo.','Ayuda',()=>openHelp('problemas'),8000);return false}
+  try{fbWin.focus()}catch(_){}return true;
+}
+async function stepOpen(){
+  const it=S.run.entry.items[S.run.idx];if(!it)return;
+  const ok=await copyText(runText(it));
+  const opened=openTarget(it);S.run.opened=opened||S.run.opened;renderRun();
+  snack(ok?(opened?'Texto copiado y grupo abierto. Pega con Ctrl+V en Facebook.':'Texto copiado'):'No se pudo copiar automáticamente: usa «Copiar texto».');
+}
+function mark(status){
+  const R=S.run;const it=R.entry.items[R.idx];if(!it)return;
+  it.status=status;it.at=Date.now();
+  if(status==='done'){const g=S.groups.find(x=>x.id===it.gid);if(g){g.lastShared=it.at;save('fbp.groups',S.groups)}}
+  persist.history();
+  const next=R.entry.items.findIndex((x,i)=>i>R.idx&&x.status==='pending');const anyNext=next>=0?next:R.entry.items.findIndex(x=>x.status==='pending');
+  R.idx=anyNext<0?R.entry.items.length:anyNext;R.opened=false;
+  const pause=+S.settings.pause||0;
+  if(status==='done'&&pause>0&&anyNext>=0){R.coolUntil=Date.now()+pause*1000;R.coolTotal=pause}else R.coolUntil=0;
+  renderRun();
+}
+function beep(){if(!S.settings.sound)return;try{const a=new (window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.frequency.value=880;g.gain.setValueAtTime(.08,a.currentTime);g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+.35);o.connect(g).connect(a.destination);o.start();o.stop(a.currentTime+.36);setTimeout(()=>a.close(),600)}catch(e){}}
+function renderRun(){
+  const R=S.run;if(!R)return;const items=R.entry.items;const done=items.filter(i=>i.status!=='pending').length;
+  $('#runBar').style.width=(done/items.length*100)+'%';$('#runCount').textContent=`${done} de ${items.length}`;
+  $('#runQueue').innerHTML=items.map((it,i)=>`<div class="q ${i===R.idx?'cur':''}" data-q="${i}"><span class="dot ${it.status}">${it.status==='done'?ic('check'):it.status==='skipped'?ic('close'):''}</span><span class="n">${esc(it.name)}</span></div>`).join('');
+  const main=$('#runMain');clearInterval(runTick);
+  if(R.idx>=items.length){
+    const d=items.filter(i=>i.status==='done').length,s=items.filter(i=>i.status==='skipped').length;
+    main.innerHTML=`<div class="summary"><div class="empty" style="padding:0"><div class="ill" style="background:var(--success-container);color:var(--success)">${ic('task_alt')}</div></div>
+      <h2 style="font-size:24px;line-height:32px;margin:0 0 8px">¡Listo! Has terminado esta publicación</h2><p class="muted">Todo queda registrado en el Historial.</p>
+      <div class="stats"><div class="stat"><div class="k">${ic('check_circle')}Publicados</div><div class="v" style="color:var(--success)">${d}</div></div><div class="stat"><div class="k">${ic('skip_next')}Omitidos</div><div class="v">${s}</div></div></div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn outlined" id="rHist">${ic('history')}Ver historial</button><button class="btn filled" id="rEnd">Cerrar</button></div></div>`;
+    $('#rHist').onclick=()=>{closeRun(true);location.hash='historial'};$('#rEnd').onclick=()=>closeRun(true);document.title='Facebook Publisher';return;
+  }
+  const it=items[R.idx];
+  if(R.coolUntil>Date.now()){
+    const C=2*Math.PI*62;
+    const upd=()=>{const left=Math.max(0,Math.ceil((R.coolUntil-Date.now())/1000));const b=$('#coolN');if(!b)return;b.textContent=left;
+      $('#coolFg').style.strokeDashoffset=C*(1-left/R.coolTotal);document.title=`(${left}s) Facebook Publisher`;
+      if(left<=0){R.coolUntil=0;beep();renderRun()}};
+    main.innerHTML=`<div class="cool"><div class="ring"><svg viewBox="0 0 140 140"><circle class="bg" cx="70" cy="70" r="62"/><circle class="fg" id="coolFg" cx="70" cy="70" r="62" stroke-dasharray="${C}" stroke-dashoffset="0"/></svg><b id="coolN"></b></div>
+      <h3 style="font-size:22px;line-height:28px;margin:0">Pausa antes del siguiente grupo</h3><p class="muted" style="margin:0;max-width:420px">Espaciar las publicaciones reduce el riesgo de que Facebook las marque como spam. <a href="#" data-help="buenas-practicas">¿Por qué?</a></p>
+      <p style="margin:0">Siguiente: <b>${esc(it.name)}</b></p><button class="btn text" id="coolSkip">${ic('skip')}Saltar espera</button></div>`;
+    $('#coolSkip').onclick=()=>{R.coolUntil=0;renderRun()};upd();runTick=setInterval(upd,1000);return;
+  }
+  document.title=`▶ ${it.name} · Facebook Publisher`;
+  const mode=S.settings.mode;const imgs=S.media.filter(m=>m.type==='image'),vids=S.media.filter(m=>m.type==='video');
+  const txt=runText(it);
+  main.innerHTML=`<div class="run-group"><div class="gav">${esc(initials(it.name))}</div><div style="min-width:0"><div class="muted small">Grupo ${R.idx+1} de ${items.length}</div><h3>${esc(it.name)}</h3><a class="small" href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.url.replace('https://www.',''))}</a></div></div>
+    ${it.notes?`<div class="note">${ic('gavel')}<div><b>Normas del grupo:</b> ${esc(it.notes)}</div></div>`:''}<div class="rsteps">
+    <div class="rstep"><span class="step ${R.opened?'ok':''}">${R.opened?'✓':'1'}</span><div class="main"><h4>${mode==='share'&&R.entry.url?'Copiar texto y abrir «Compartir»':'Copiar texto y abrir el grupo'}</h4>
+      <p>${mode==='share'&&R.entry.url?`Se abrirá el diálogo de Facebook. Elige <b>Compartir en un grupo</b> y busca «${esc(it.name)}».`:mode==='side'?'El grupo se abrirá en una ventana al lado de esta.':'El grupo se abrirá en una pestaña nueva.'}</p>
+      <div class="acts"><button class="btn ${R.opened?'tonal':'filled'}" id="rOpen">${ic(R.opened?'refresh':'open')}${R.opened?'Volver a abrir':'Copiar y abrir'} <kbd>Enter</kbd></button>
+      <button class="btn text" id="rCopy">${ic('copy')}Copiar texto <kbd>C</kbd></button></div></div></div>
+    <div class="rstep"><span class="step">2</span><div class="main"><h4>Pegar y publicar en Facebook</h4>
+      <p>Haz clic en <b>«Escribe algo…»</b>, pega con <kbd>Ctrl</kbd>+<kbd>V</kbd>${R.entry.url&&mode!=='share'?' y espera a que aparezca la vista previa del enlace':''}. Después pulsa <b>Publicar</b>.</p>
+      <details class="adv"><summary>Ver el texto que se pegará${ic('chevron')}</summary><div class="text-peek" style="margin-top:8px">${esc(txt)||'<i>(sin texto)</i>'}</div></details>
+      ${imgs.length||vids.length?`<p style="margin-top:10px"><b>Archivos:</b> copia cada imagen y pégala en el cuadro de publicación. Los vídeos se adjuntan desde «Foto/vídeo».</p><div class="acts">
+        ${imgs.map((m,i)=>`<button class="btn outlined" data-rimg="${m.id}">${ic('image')}Copiar imagen ${i+1}</button>`).join('')}
+        ${vids.map(m=>`<button class="btn outlined" data-rvid="${m.id}">${ic('download')}${esc(m.name.slice(0,24))}</button>`).join('')}</div>`:''}
+      ${S.media.length&&R.entry.mediaCount===0?'':''}
+    </div></div>
+    <div class="rstep"><span class="step">3</span><div class="main"><h4>Confirmar</h4><p>Marca el resultado para pasar al siguiente grupo.</p>
+      <div class="acts"><button class="btn success" id="rDone">${ic('check')}Publicado <kbd>P</kbd></button><button class="btn outlined" id="rSkip">${ic('skip')}Omitir <kbd>S</kbd></button>
+      <a class="hlp" href="#ayuda/asistente" data-help="asistente">${ic('help')}Ayuda</a></div></div></div></div>
+    ${R.entry.mediaCount>0&&!S.media.length?`<div class="note">${ic('info')}<div>Esta publicación tenía ${R.entry.mediaCount} archivo(s) que ya no están cargados (los archivos no se guardan entre sesiones). Vuelve a añadirlos en «Publicar» si los necesitas.</div></div>`:''}`;
+  $('#rOpen').onclick=stepOpen;$('#rCopy').onclick=async()=>{snack(await copyText(txt)?'Texto copiado':'No se pudo copiar')};
+  $('#rDone').onclick=()=>mark('done');$('#rSkip').onclick=()=>mark('skipped');
+  $$('[data-rimg]',main).forEach(b=>b.onclick=()=>copyImage(S.media.find(m=>m.id===b.dataset.rimg)));
+  $$('[data-rvid]',main).forEach(b=>b.onclick=()=>{const m=S.media.find(x=>x.id===b.dataset.rvid);download(m.name,m.file,m.file.type)});
+  $('#rOpen').focus();
+}
+$('#runQueue').addEventListener('click',e=>{const q=e.target.closest('[data-q]');if(!q)return;const R=S.run;const i=+q.dataset.q;const it=R.entry.items[i];
+  if(it.status!=='pending'){it.status='pending';it.at=null;persist.history()}R.idx=i;R.opened=false;R.coolUntil=0;renderRun()});
+async function closeRun(force){
+  const R=S.run;if(!R){$('#runDlg').close();return}
+  const pending=R.entry.items.filter(i=>i.status==='pending').length;
+  if(!force&&pending&&!await confirmBox('¿Salir de la publicación asistida?',`Quedan ${pending} grupo(s) pendientes. Podrás reanudar desde el Historial.`,'Salir'))return;
+  clearInterval(runTick);S.run=null;$('#runDlg').close();document.title='Facebook Publisher';renderAllGroups();renderHistory();
+}
+$('#runClose').onclick=()=>closeRun();
+$('#runDlg').addEventListener('cancel',e=>{e.preventDefault();closeRun()});
+$('#runDlg').addEventListener('keydown',e=>{
+  if(!S.run||e.ctrlKey||e.metaKey||e.altKey||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)||$('#confirmDlg').open)return;
+  const R=S.run;if(R.idx>=R.entry.items.length)return;
+  if(R.coolUntil>Date.now()){if(e.key==='Enter'){e.preventDefault();R.coolUntil=0;renderRun()}return}
+  const k=e.key.toLowerCase();
+  if(k==='enter'&&!e.target.closest('button:not(#rOpen)')){e.preventDefault();stepOpen()}
+  else if(k==='p'){e.preventDefault();mark('done')}else if(k==='s'){e.preventDefault();mark('skipped')}
+  else if(k==='c'){e.preventDefault();$('#rCopy').click()}
+});
+
+/* ============================================================
+   HISTORIAL
+   ============================================================ */
+function renderHistory(){
+  renderBadges();const box=$('#histBox');
+  if(!S.history.length){box.innerHTML=`<div class="card empty"><div class="ill">${ic('history')}</div><h3>Aún no hay actividad</h3><p>Cuando inicies una publicación asistida aparecerá aquí, con el estado de cada grupo.</p><button class="btn filled" data-nav="publicar">${ic('send')}Ir a Publicar</button></div>`;return}
+  box.innerHTML=S.history.map(h=>{const d=h.items.filter(i=>i.status==='done').length,s=h.items.filter(i=>i.status==='skipped').length,p=h.items.length-d-s;
+    const title=(h.text||'').trim().split('\n')[0]||h.url||'Publicación sin texto';
+    return `<details class="hist"><summary><div class="main"><div class="title">${esc(title.slice(0,90))}</div><div class="small muted">${esc(fmtDate(h.date))} · ${h.items.length} grupo(s)${h.url?' · '+esc(parseFbUrl(h.url).kind||''):''}</div></div>
+      <span class="pill ok">${d} publicados</span>${s?`<span class="pill">${s} omitidos</span>`:''}${p?`<span class="pill warn">${p} pendientes</span>`:''}
+      <div class="prog hide-sm" aria-hidden="true"><i style="width:${(d+s)/h.items.length*100}%"></i></div>${ic('chevron','exp')}</summary>
+      <div class="det">${h.url?`<p class="small" style="margin:0 0 8px">${ic('link')} <a href="${esc(h.url)}" target="_blank" rel="noopener">${esc(h.url)}</a></p>`:''}${h.text?`<pre>${esc(h.text)}</pre>`:''}
+        <div class="list" style="margin-bottom:12px">${h.items.map(i=>`<div class="row" style="min-height:44px"><span class="dot ${i.status}">${i.status==='done'?ic('check'):i.status==='skipped'?ic('close'):''}</span><div class="main"><div class="title">${esc(i.name)}</div></div><span class="small muted">${i.at?esc(ago(i.at)):'Pendiente'}</span><a class="icon-btn sm" href="${esc(i.url)}" target="_blank" rel="noopener" aria-label="Abrir grupo">${ic('open')}</a></div>`).join('')}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">${p?`<button class="btn filled" data-hres="${h.id}">${ic('play')}Reanudar (${p})</button>`:''}
+          <button class="btn outlined" data-hreuse="${h.id}">${ic('refresh')}Reutilizar contenido</button><button class="btn text danger" data-hdel="${h.id}">${ic('delete')}Eliminar</button></div></div></details>`}).join('');
+}
+$('#histBox').addEventListener('click',e=>{
+  const r=e.target.closest('[data-hres]'),u=e.target.closest('[data-hreuse]'),d=e.target.closest('[data-hdel]');
+  if(r)startRun(S.history.find(h=>h.id===r.dataset.hres));
+  if(u){const h=S.history.find(x=>x.id===u.dataset.hreuse);srcEl.value=h.url||'';txtEl.value=h.text||'';srcEl.dispatchEvent(new Event('input'));txtEl.dispatchEvent(new Event('input'));location.hash='publicar';snack('Contenido cargado en Publicar')}
+  if(d){const before=S.history.slice();S.history=S.history.filter(x=>x.id!==d.dataset.hdel);persist.history();snack('Entrada eliminada','Deshacer',()=>{S.history=before;persist.history()})}
+});
+$('#clearHist').onclick=async()=>{if(!S.history.length)return;if(await confirmBox('¿Borrar todo el historial?','Esta acción no afecta a lo publicado en Facebook ni a tus grupos.','Borrar',true)){S.history=[];persist.history();snack('Historial borrado')}};
+
+/* ============================================================
+   AJUSTES
+   ============================================================ */
+function openSettings(){const s=S.settings;$('#setMode').value=s.mode;$('#setPause').value=s.pause;$('#setAppend').checked=s.appendUrl;$('#setRecent').checked=s.warnRecent;$('#setSound').checked=s.sound;applyTheme();$('#settingsDlg').showModal()}
+$('#settingsBtn').onclick=openSettings;
+$('#setMode').onchange=e=>{S.settings.mode=e.target.value;persist.settings()};
+$('#setPause').onchange=e=>{S.settings.pause=Math.max(0,Math.min(900,parseInt(e.target.value)||0));e.target.value=S.settings.pause;persist.settings();renderSummary()};
+$('#setAppend').onchange=e=>{S.settings.appendUrl=e.target.checked;persist.settings();renderPreview()};
+$('#setRecent').onchange=e=>{S.settings.warnRecent=e.target.checked;persist.settings();renderDest()};
+$('#setSound').onchange=e=>{S.settings.sound=e.target.checked;persist.settings()};
+$('#backupOut').onclick=()=>download(`facebook-publisher-copia-${new Date().toISOString().slice(0,10)}.json`,JSON.stringify({app:'Facebook Publisher',type:'backup',version:1,date:new Date().toISOString(),groups:S.groups,templates:S.templates,settings:S.settings,history:S.history,draft:S.draft},null,2));
+$('#backupInBtn').onclick=()=>$('#backupIn').click();
+$('#backupIn').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
+  try{const d=JSON.parse(await f.text());if(d.type!=='backup')throw 0;
+    if(!await confirmBox('¿Restaurar copia de seguridad?','Se reemplazarán tus grupos, plantillas, ajustes e historial actuales.','Restaurar'))return;
+    S.groups=d.groups||[];S.templates=d.templates||[];S.settings=Object.assign({},DEF_SETTINGS,d.settings||{});S.history=d.history||[];S.sel=null;
+    ['groups','templates','settings','history'].forEach(k=>persist[k]());openSettings();snack('Copia restaurada')}catch(_){snack('El archivo no es una copia de seguridad válida')}};
+$('#wipeAll').onclick=async()=>{if(!await confirmBox('¿Borrar todos los datos?','Se eliminarán grupos, plantillas, historial, ajustes y borrador de este navegador. No se puede deshacer.','Borrar todo',true))return;
+  Object.keys(localStorage).filter(k=>k.startsWith('fbp.')).forEach(k=>localStorage.removeItem(k));location.reload()};
+
+/* ============================================================
+   CENTRO DE AYUDA
+   ============================================================ */
+const H=(id,cat,title,keys,body)=>({id,cat,title,keys,body});
+const HELP=[
+H('primeros-pasos','Empezar','Primeros pasos','inicio empezar tutorial guía',`
+<p>Facebook Publisher te ayuda a compartir una misma publicación en muchos grupos de Facebook en minutos, con orden y sin poner en riesgo tu cuenta.</p>
+<h3>1. Añade tus grupos</h3><p>Ve a <a href="#grupos" data-nav="grupos">Grupos</a> y pulsa <b>Añadir grupo</b>, o captúralos todos de una vez con el <a data-help="marcador">marcador de captura</a>.</p>
+<h3>2. Prepara la publicación</h3><p>En <b>Publicar</b>, pega la <a data-help="url-origen">URL de la publicación</a> que quieres difundir y, si quieres, escribe un <a data-help="editor">texto</a> y añade <a data-help="multimedia">imágenes, vídeo o audio</a>.</p>
+<h3>3. Elige los destinos</h3><p>Marca los <a data-help="destinos">grupos de destino</a>. Puedes seleccionarlos rápidamente por etiqueta.</p>
+<h3>4. Publicación asistida</h3><p>Pulsa <b>Iniciar publicación asistida</b>. Para cada grupo, la app copia el texto y abre el grupo; tú pegas, publicas y confirmas. <a data-help="asistente">Más información</a>.</p>
+<div class="callout">Consejo: guarda tus textos habituales como <a data-help="plantillas">plantillas</a> y usa <a data-help="variables">{grupo}</a> para personalizar cada publicación.</div>`),
+H('como-funciona','Empezar','Cómo funciona (y por qué no publica sola)','api bookmarklet automatico automatizar bot seguridad bloqueo meta graph',`
+<p>Hemos diseñado Facebook Publisher para que <b>ahorres tiempo sin arriesgar tu cuenta</b>. Estas son las decisiones clave:</p>
+<h3>La API de Facebook ya no permite publicar en grupos</h3><p>Meta retiró en abril de 2024 la API de Grupos (el permiso <code>publish_to_groups</code>). Ninguna aplicación externa puede publicar en grupos por API, así que cualquier herramienta que lo prometa usa automatización no autorizada.</p>
+<h3>¿Por qué no un marcador que publique automáticamente?</h3>
+<p>Un <i>bookmarklet</i> que se ejecuta dentro de Facebook con tu sesión iniciada podría, en teoría, rellenar y enviar publicaciones. Lo descartamos porque:</p>
+<ul><li><b>Riesgo para tu cuenta:</b> las Condiciones de Meta prohíben las acciones automatizadas. Publicar en serie de forma automática activa los sistemas anti-spam: bloqueos temporales, publicaciones ocultas o restricción de la cuenta.</li>
+<li><b>Fragilidad:</b> Facebook cambia su interfaz con frecuencia; un automatismo deja de funcionar sin previo aviso.</li>
+<li><b>Seguridad:</b> un script con acceso total a tu sesión es un riesgo si se modifica o se copia de fuentes no fiables.</li></ul>
+<h3>Lo que sí hacemos: un modelo híbrido</h3>
+<table><tr><th>Tarea</th><th>Quién la hace</th></tr>
+<tr><td>Capturar la lista de tus grupos</td><td>El <a data-help="marcador">marcador</a>, que solo <b>lee</b> la página y copia la lista</td></tr>
+<tr><td>Preparar texto, variables y archivos</td><td>La app</td></tr>
+<tr><td>Copiar el texto y abrir cada grupo</td><td>La app, con un clic o <kbd>Enter</kbd></td></tr>
+<tr><td>Pegar y pulsar «Publicar»</td><td>Tú: es una acción humana real</td></tr>
+<tr><td>Pausas, seguimiento e historial</td><td>La app</td></tr></table>
+<p>Así cada grupo te lleva unos 10–20 segundos en lugar de varios minutos, y tu cuenta se comporta como la de una persona.</p>`),
+H('url-origen','Publicar','Publicación de origen (URL)','url enlace link origen post reel video limpiar rastreo',`
+<p>Es la publicación de Facebook que quieres difundir. Es opcional: también puedes publicar solo texto y archivos.</p>
+<h3>Cómo obtener la URL</h3><ol><li>En Facebook, abre la publicación o pulsa <b>Compartir → Copiar enlace</b>.</li><li>Pégala en el campo <b>URL de la publicación</b> (o usa el botón de pegar).</li></ol>
+<h3>Formatos admitidos</h3><p>Publicaciones (<code>/posts/</code>, <code>permalink.php</code>, <code>story.php</code>), fotos, vídeos, reels, eventos, enlaces <code>fb.watch</code> y enlaces cortos <code>/share/</code>.</p>
+<h3>Limpieza automática</h3><p>La app elimina los parámetros de rastreo (como <code>mibextid</code>, <code>__cft__</code> o <code>rdid</code>) y convierte enlaces móviles (<code>m.facebook.com</code>) a <code>www.facebook.com</code>, para que la vista previa sea más limpia.</p>
+<div class="callout warn">Para que los miembros del grupo puedan ver el contenido, la publicación original debe ser <b>pública</b>. Si es de un grupo privado, solo la verán los miembros de ese grupo.</div>
+<p>Relacionado: <a data-help="modos-apertura">modos de apertura</a> · <a data-help="ajustes">añadir la URL al final del texto</a>.</p>`),
+H('editor','Publicar','Redactar el contenido','texto editor negrita cursiva emoji hashtag formato',`
+<p>El texto se copiará en cada grupo. Facebook no admite formato enriquecido en grupos, pero puedes usar:</p>
+<ul><li><b>Negrita y cursiva</b> (<kbd>Ctrl</kbd>+<kbd>B</kbd> / <kbd>Ctrl</kbd>+<kbd>I</kbd>): convierten el texto seleccionado a caracteres Unicode con estilo. Pulsa de nuevo para quitarlo. Solo afecta a letras sin tilde y números.</li>
+<li><b>Emojis</b> y <b>hashtags</b> desde la barra de herramientas.</li>
+<li><a data-help="variables">Variables</a> como <code>{grupo}</code> para personalizar cada publicación.</li>
+<li><a data-help="plantillas">Plantillas</a> para reutilizar textos.</li></ul>
+<div class="callout">Usa la negrita Unicode con moderación: los lectores de pantalla la leen mal y algunos buscadores no la indexan.</div>
+<p>El texto y la URL se guardan automáticamente como borrador en este navegador.</p>`),
+H('variables','Publicar','Variables de personalización','variables grupo fecha enlace personalizar',`
+<p>Las variables se sustituyen automáticamente en cada grupo:</p>
+<table><tr><th>Variable</th><th>Se convierte en</th></tr><tr><td><code>{grupo}</code></td><td>Nombre del grupo de destino</td></tr><tr><td><code>{fecha}</code></td><td>Fecha de hoy, p. ej. «15 de noviembre»</td></tr><tr><td><code>{enlace}</code></td><td>URL de la publicación de origen</td></tr></table>
+<p>Ejemplo: <code>¡Hola, comunidad de {grupo}! 👋</code></p>
+<p>Si usas <code>{enlace}</code>, la URL no se añadirá otra vez al final del texto.</p>`),
+H('plantillas','Publicar','Plantillas de texto','plantillas guardar reutilizar',`
+<p>Guarda textos que usas a menudo (anuncios, promociones, presentaciones) y aplícalos con un clic.</p>
+<ol><li>Escribe el texto en el editor.</li><li>Pulsa <b>Plantillas → Guardar texto actual como plantilla</b> y ponle un nombre.</li><li>Para usarla, ábrela desde el mismo menú. Si ya había texto, puedes deshacerlo desde el aviso.</li></ol>
+<p>Las plantillas se incluyen en la <a data-help="privacidad">copia de seguridad</a>.</p>`),
+H('multimedia','Publicar','Imágenes, vídeo y audio','imagen foto video audio adjuntar archivo convertir mp3',`
+<p>Arrastra archivos a la zona punteada, haz clic en ella o pega una imagen con <kbd>Ctrl</kbd>+<kbd>V</kbd>.</p>
+<h3>Cómo llegan a Facebook</h3><p>Por seguridad, ninguna web puede subir archivos a otra pestaña. En la <a data-help="asistente">publicación asistida</a> tendrás botones para:</p>
+<ul><li><b>Copiar imagen N</b>: la copia al portapapeles; pégala con <kbd>Ctrl</kbd>+<kbd>V</kbd> en el cuadro de publicación de Facebook.</li><li><b>Vídeos</b>: adjúntalos con el botón «Foto/vídeo» de Facebook; también puedes volver a descargarlos desde la app.</li></ul>
+<h3>Audio</h3><p>Los grupos de Facebook no aceptan archivos de audio sueltos. Pulsa <b>Convertir a vídeo</b> en el audio: la app crea un vídeo con la primera imagen como portada (o un fondo con el título) y la barra de progreso. La conversión tarda lo mismo que el audio; mantén la pestaña visible.</p>
+<div class="callout warn">Los archivos no se guardan entre sesiones (solo el texto y la URL). Si recargas la página, vuelve a añadirlos.</div>
+<p>Si adjuntas imágenes o vídeos, Facebook suele mostrarlos en lugar de la vista previa del enlace.</p>`),
+H('destinos','Publicar','Elegir grupos de destino','destinos seleccionar grupos etiquetas 24 horas',`
+<p>En <b>Destinos</b> aparecen solo los grupos <b>activos</b>. Marca o desmarca los que quieras para esta publicación; esta selección no cambia el estado de los grupos.</p>
+<ul><li><b>Seleccionar por etiqueta:</b> pulsa una etiqueta para seleccionar solo los grupos que la tienen.</li><li><b>Avisos de 24 h:</b> los grupos donde ya publicaste hace poco aparecen marcados. Usa «Excluir los de las últimas 24 h» para no repetir.</li></ul>
+<p>Para activar, desactivar o etiquetar grupos, ve a <a data-help="grupos">Gestionar grupos</a>.</p>`),
+H('vista-previa','Publicar','Vista previa','vista previa preview',`
+<p>Muestra una aproximación de cómo se verá la publicación en el <b>primer grupo seleccionado</b>, con las <a data-help="variables">variables</a> ya sustituidas.</p><p>Si no adjuntas archivos y hay URL, se muestra una tarjeta de enlace. Facebook generará la tarjeta real al pegar el enlace, con la imagen y el texto de la publicación original.</p>`),
+H('asistente','Publicar','Publicación asistida paso a paso','asistente publicar cola atajos enter pausa reanudar',`
+<p>Es el corazón de la app: te guía grupo a grupo.</p>
+<ol><li><b>Copiar y abrir</b> (<kbd>Enter</kbd>): copia el texto personalizado para ese grupo y lo abre en Facebook (en ventana lateral, pestaña o diálogo Compartir, según tus <a data-help="modos-apertura">ajustes</a>).</li>
+<li><b>Pegar y publicar:</b> en Facebook, haz clic en «Escribe algo…», pega con <kbd>Ctrl</kbd>+<kbd>V</kbd>, añade las imágenes si las hay y pulsa «Publicar».</li>
+<li><b>Confirmar:</b> vuelve a la app y pulsa <b>Publicado</b> (<kbd>P</kbd>) u <b>Omitir</b> (<kbd>S</kbd>).</li></ol>
+<p>Tras cada publicación hay una <a data-help="buenas-practicas">pausa configurable</a> con cuenta atrás y aviso sonoro. Puedes saltarla.</p>
+<h3>Otros controles</h3><ul><li>Haz clic en un grupo de la cola (izquierda) para ir a él, incluso si ya estaba marcado.</li><li><kbd>C</kbd> vuelve a copiar el texto.</li><li>Si cierras el asistente, el progreso queda en el <a data-help="historial">Historial</a> y puedes <b>Reanudar</b>.</li></ul>
+<div class="callout">Ventana lateral: coloca la app a la izquierda de la pantalla y Facebook se abrirá a la derecha; así no tienes que cambiar de pestaña.</div>`),
+H('modos-apertura','Publicar','Modos de apertura: ventana lateral, pestaña o «Compartir»','ventana lateral pestaña compartir sharer dialogo',`
+<table><tr><th>Modo</th><th>Cuándo usarlo</th></tr>
+<tr><td><b>Ventana lateral</b> (recomendado)</td><td>Abre el grupo en una ventana a la derecha y la reutiliza en cada grupo. Es lo más rápido.</td></tr>
+<tr><td><b>Pestaña nueva</b></td><td>Si prefieres trabajar con pestañas. Se reutiliza siempre la misma.</td></tr>
+<tr><td><b>Diálogo «Compartir»</b></td><td>Abre el diálogo oficial de compartir de la publicación original. Ahí eliges «Compartir en un grupo» y buscas el grupo. Así se comparte la publicación de forma nativa, con su autor y sus reacciones, pero exige buscar el grupo cada vez.</td></tr></table>
+<p>Cámbialo en <b>Ajustes</b>.</p>`),
+H('grupos','Grupos','Gestionar grupos','grupos añadir eliminar activar desactivar editar etiquetas notas',`
+<ul><li><b>Añadir:</b> pulsa <b>Añadir grupo</b> e introduce la URL (o el ID numérico o el nombre corto) y un nombre.</li>
+<li><b>Activar/desactivar:</b> usa el interruptor. Los grupos inactivos se conservan pero no aparecen como destino; es útil para grupos con normas temporales.</li>
+<li><b>Etiquetas:</b> agrupa por temática o zona (p. ej. «ventas», «Madrid») para seleccionarlos de golpe al publicar.</li>
+<li><b>Notas / normas:</b> se mostrarán como recordatorio en el asistente, p. ej. «solo los lunes».</li>
+<li><b>Acciones masivas:</b> marca varios grupos para activarlos, desactivarlos, etiquetarlos o eliminarlos.</li>
+<li><b>Eliminar:</b> solo los quita de tu lista; no sales del grupo en Facebook. Puedes deshacerlo desde el aviso.</li></ul>
+<p>Pulsa <kbd>/</kbd> para buscar.</p>`),
+H('marcador','Grupos','Capturar grupos con el marcador','bookmarklet marcador capturar importar automatico lista grupos',`
+<p>El marcador lee tu lista de grupos directamente desde Facebook, con tu sesión iniciada, y la copia al portapapeles. <b>No publica nada, no envía datos a ningún servidor y no se ejecuta solo.</b></p>
+<h3>Instalarlo (una vez)</h3><ol><li>Muestra la barra de marcadores (<kbd>Ctrl</kbd>+<kbd>Mayús</kbd>+<kbd>B</kbd>).</li><li>En <a href="#grupos" data-nav="grupos">Grupos</a>, arrastra el botón azul <b>FB Publisher · Capturar grupos</b> a la barra.</li></ol>
+<h3>Usarlo</h3><ol><li>Abre <a href="https://www.facebook.com/groups/joins/" target="_blank" rel="noopener">facebook.com/groups/joins</a> («Tus grupos»). También funciona desde la lista lateral «Grupos a los que te has unido».</li><li>Pulsa el marcador. Aparecerá un panel arriba a la derecha y la página <b>se desplazará sola</b> hasta cargar todos tus grupos; verás el contador subir.</li><li>Cuando el contador deje de crecer, pulsa <b>Copiar N grupos</b>. Puedes pulsar <b>Terminar ya</b> en cualquier momento.</li><li>Vuelve a la app → <b>Grupos → Importar → Pegar del portapapeles → Importar</b>.</li></ol>
+<p>Si lo pulsas dentro de un grupo concreto, captura solo ese grupo. Si algún nombre no se puede leer, el grupo se importa con su ID y puedes renombrarlo después.</p>
+<div class="callout warn">Si ya tenías instalado el marcador, <b>bórralo y vuelve a arrastrar el botón azul</b>: el marcador guarda su propia copia del código y no se actualiza solo.</div>
+<div class="callout">Revisa la lista antes de importar: si aparece algún grupo que no quieres, desactívalo o elimínalo después.</div>`),
+H('importar','Grupos','Importar y exportar grupos','importar exportar json csv lista',`
+<p><b>Importar</b> acepta:</p><ul><li>El resultado del <a data-help="marcador">marcador</a> (<code>FBP_GROUPS:[…]</code>).</li><li>Un archivo JSON exportado desde esta app.</li><li>Una lista de texto con un grupo por línea: <code>Nombre | URL</code>, <code>Nombre; URL</code> o solo la URL.</li></ul>
+<p>Los duplicados (misma URL) se omiten automáticamente.</p><p><b>Exportar</b> descarga tus grupos en JSON para compartirlos con tu equipo o usarlos en otro navegador.</p>`),
+H('historial','Historial','Historial y reanudación','historial reanudar reutilizar',`
+<p>Cada sesión de publicación asistida se guarda con la fecha, el texto, la URL y el estado de cada grupo (publicado, omitido o pendiente).</p>
+<ul><li><b>Reanudar:</b> continúa por los grupos pendientes.</li><li><b>Reutilizar contenido:</b> carga el texto y la URL en Publicar para una nueva campaña.</li><li>Los grupos marcados como publicados actualizan su «Último uso», que sirve para los avisos de 24 h.</li></ul>`),
+H('buenas-practicas','Buenas prácticas','Evitar bloqueos y spam','spam bloqueo pausa limites buenas practicas restriccion',`
+<p>Facebook limita la frecuencia con la que una cuenta puede publicar el mismo contenido. Para que tus publicaciones lleguen:</p>
+<ul><li><b>Respeta una pausa</b> entre grupos (30–60 s por defecto; más si son muchos grupos).</li><li><b>Personaliza</b> el texto con <a data-help="variables">{grupo}</a> y un saludo propio de cada comunidad.</li><li><b>Respeta las normas</b> de cada grupo: anótalas en sus notas.</li><li><b>No publiques en el mismo grupo varias veces al día</b>: usa los avisos de 24 h.</li><li><b>Reparte</b> campañas grandes en varias sesiones a lo largo del día.</li></ul>
+<div class="callout warn">Si Facebook muestra «Has publicado demasiado rápido» o un control de seguridad, detente y continúa más tarde con <b>Reanudar</b> desde el Historial.</div>`),
+H('ajustes','Ajustes','Ajustes','ajustes configuracion tema oscuro claro pausa url sonido',`
+<ul><li><b>Tema:</b> claro, oscuro o según el sistema (también con el botón de la barra superior).</li><li><b>Cómo abrir cada grupo:</b> ver <a data-help="modos-apertura">modos de apertura</a>.</li><li><b>Pausa entre grupos:</b> en segundos; 0 la desactiva.</li><li><b>Añadir la URL al final:</b> si el texto no incluye ya el enlace, se añade al final para que Facebook genere la vista previa.</li><li><b>Avisar de grupos recientes</b> y <b>sonido</b> al terminar la pausa.</li><li><b>Copia de seguridad</b> y <b>borrar datos</b>: ver <a data-help="privacidad">Tus datos</a>.</li></ul>`),
+H('privacidad','Ajustes','Tus datos y privacidad','privacidad datos local almacenamiento copia seguridad backup',`
+<p>Facebook Publisher funciona en un solo archivo HTML, <b>sin servidor</b>:</p>
+<ul><li>Grupos, plantillas, historial, ajustes y borrador se guardan en el <code>localStorage</code> de este navegador.</li><li>Nunca se piden ni se guardan tus credenciales de Facebook.</li><li>Los archivos multimedia solo están en memoria mientras la página está abierta.</li><li>No hay analítica ni envío de datos a terceros. Solo se carga la fuente tipográfica de Google Fonts, y la app funciona sin ella.</li></ul>
+<p>Si borras los datos del navegador perderás tu información: haz una <b>copia de seguridad</b> en Ajustes y restáurala en otro equipo o navegador.</p>`),
+H('atajos','Ajustes','Atajos de teclado','atajos teclado shortcuts',`
+<table><tr><th>Atajo</th><th>Acción</th></tr>
+<tr><td><kbd>Alt</kbd>+<kbd>1</kbd> / <kbd>2</kbd> / <kbd>3</kbd> / <kbd>4</kbd></td><td>Publicar / Grupos / Historial / Ayuda</td></tr>
+<tr><td><kbd>Ctrl</kbd>+<kbd>Enter</kbd></td><td>Iniciar publicación asistida</td></tr>
+<tr><td><kbd>Ctrl</kbd>+<kbd>B</kbd> / <kbd>Ctrl</kbd>+<kbd>I</kbd></td><td>Negrita / cursiva (en el editor)</td></tr>
+<tr><td><kbd>/</kbd></td><td>Buscar grupos</td></tr><tr><td><kbd>F1</kbd> o <kbd>?</kbd></td><td>Centro de Ayuda</td></tr>
+<tr><td colspan="2"><b>En la publicación asistida</b></td></tr>
+<tr><td><kbd>Enter</kbd></td><td>Copiar texto y abrir grupo (o saltar la pausa)</td></tr><tr><td><kbd>P</kbd></td><td>Marcar como publicado</td></tr><tr><td><kbd>S</kbd></td><td>Omitir grupo</td></tr><tr><td><kbd>C</kbd></td><td>Copiar el texto de nuevo</td></tr></table>`),
+H('problemas','Ajustes','Solución de problemas','problemas error ventana bloqueada portapapeles no copia popup',`
+<h3>No se abre la ventana del grupo</h3><p>El navegador bloqueó la ventana emergente. Pulsa el icono de ventana bloqueada en la barra de direcciones y elige «Permitir siempre» para este archivo. También puedes cambiar a <a data-help="modos-apertura">Pestaña nueva</a>.</p>
+<h3>No se copia el texto</h3><p>Algunos navegadores restringen el portapapeles en archivos locales. Usa el botón <b>Copiar texto</b> o abre el texto con «Ver el texto que se pegará» y cópialo a mano. Si el problema persiste, sirve el archivo desde un servidor local (<code>https://</code> o <code>localhost</code>).</p>
+<h3>«Copiar imagen» no funciona</h3><p>Firefox antiguo y Safari tienen soporte limitado. Arrastra la imagen desde tu carpeta al cuadro de Facebook.</p>
+<h3>No aparece la vista previa del enlace en Facebook</h3><p>La publicación original no es pública, o Facebook tarda unos segundos. Espera antes de publicar.</p>
+<h3>El marcador no hace nada</h3><p>Asegúrate de usarlo en una pestaña de facebook.com. En Firefox, comprueba que los marcadores <code>javascript:</code> están permitidos.</p>`),
+];
+const HELP_CATS=['Empezar','Publicar','Grupos','Historial','Buenas prácticas','Ajustes'];
+const HELP_ICON={'primeros-pasos':'rocket_launch','como-funciona':'lightbulb','url-origen':'link','editor':'edit_note','variables':'data_object','plantillas':'description','multimedia':'perm_media','destinos':'checklist','vista-previa':'preview','asistente':'touch_app','modos-apertura':'open_in_new','grupos':'groups','marcador':'bookmark_add','importar':'swap_vert','historial':'history','buenas-practicas':'verified_user','ajustes':'settings','privacidad':'shield','atajos':'keyboard','problemas':'build'};
+const normTxt=t=>t.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+let helpQuery=null;
+function renderHelp(q){
+  q=(q==null?$('#helpSearch').value:q).trim();if(q===helpQuery)return;helpQuery=q;
+  const nq=normTxt(q);const list=q?HELP.filter(a=>normTxt(a.title+' '+a.keys+' '+a.body.replace(/<[^>]+>/g,' ')).includes(nq)):HELP;
+  $('#toc').innerHTML=HELP_CATS.map(c=>{const it=list.filter(a=>a.cat===c);return it.length?`<div class="cat">${c}</div>`+it.map(a=>`<a href="#ayuda/${a.id}" data-toc="${a.id}">${esc(a.title)}</a>`).join(''):''}).join('');
+  const cnt=$('#helpCount');cnt.hidden=!q;cnt.textContent=`${list.length} artículo${list.length===1?'':'s'} para «${q}»`;
+  $('#helpBody').innerHTML=list.length?list.map(a=>`<article class="help-article" id="help-${a.id}"><h2>${ic(HELP_ICON[a.id]||'article')}${esc(a.title)}</h2>${a.body}
+    <div class="feedback">¿Te ha resultado útil? <button class="btn outlined sm" data-fb="1">Sí</button><button class="btn outlined sm" data-fb="0">No</button></div></article>`).join('')
+    :`<div class="empty compact"><div class="ill">${ic('search_off')}</div><h3>Sin resultados</h3><p>Prueba con otras palabras, por ejemplo «marcador», «pausa» o «imágenes».</p></div>`;
+}
+function focusArticle(id){
+  if(!$('#help-'+id)&&helpQuery){$('#helpSearch').value='';renderHelp('')}
+  const el=$('#help-'+id);if(!el)return;
+  $$('#toc a').forEach(a=>a.classList.toggle('active',a.dataset.toc===id));
+  requestAnimationFrame(()=>{el.scrollIntoView({block:'start',behavior:'smooth'});el.classList.add('help-hl');setTimeout(()=>el.classList.remove('help-hl'),1200)});
+}
+function updateHelpBack(){const b=$('#helpBack');
+  if(helpReturn){b.hidden=false;$('#helpBackTxt').textContent=helpReturn.run&&S.run?'Volver a la publicación asistida':`Volver a ${VIEW_NAMES[helpReturn.view]||'Publicar'}`}else b.hidden=true}
+function openHelp(id){
+  const inHelp=$('#view-ayuda').classList.contains('active');
+  if(!inHelp){const runOpen=$('#runDlg').open;helpReturn={view:lastView,run:runOpen}}
+  $$('dialog[open]').forEach(d=>d.close());closePop();
+  const target='ayuda'+(id&&id!=='inicio'&&HELP.some(a=>a.id===id)?'/'+id:'');
+  if(location.hash.slice(1)===target)route();else location.hash=target;
+}
+$('#helpBack').onclick=()=>{const r=helpReturn;helpReturn=null;location.hash=r?r.view:'publicar';
+  if(r&&r.run&&S.run){$('#runDlg').showModal();renderRun()}};
+document.addEventListener('click',e=>{
+  const h=e.target.closest('[data-help]');if(h){e.preventDefault();e.stopPropagation();openHelp(h.dataset.help);return}
+  const fb=e.target.closest('[data-fb]');if(fb){fb.parentElement.innerHTML=fb.dataset.fb==='1'?'¡Gracias por tu opinión!':'Gracias. Consulta también <a data-help="problemas" href="#ayuda/problemas">Solución de problemas</a>.'}
+},true);
+$('#helpBtn').onclick=()=>openHelp();
+$('#helpSearch').addEventListener('input',debounce(e=>{renderHelp(e.target.value);window.scrollTo({top:0})},150));
+window.addEventListener('scroll',debounce(()=>{if(!$('#view-ayuda').classList.contains('active'))return;
+  let cur=null;$$('.help-article').forEach(a=>{if(a.getBoundingClientRect().top<140)cur=a.id.slice(5)});
+  if(cur)$$('#toc a').forEach(a=>a.classList.toggle('active',a.dataset.toc===cur))},80),{passive:true});
+
+/* ---------- Atajos globales ---------- */
+document.addEventListener('keydown',e=>{
+  if(document.querySelector('dialog[open]'))return;
+  const typing=/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)||e.target.isContentEditable;
+  if(e.key==='F1'){e.preventDefault();openHelp();return}
+  if(e.altKey&&['1','2','3','4'].includes(e.key)){e.preventDefault();location.hash=VIEWS[+e.key-1];return}
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();if(!$('#startBtn').disabled){location.hash='publicar';startRun()}return}
+  if(typing)return;
+  if(e.key==='?'){e.preventDefault();openHelp('atajos')}
+  if(e.key==='/'){e.preventDefault();location.hash='grupos';setTimeout(()=>$('#gSearch').focus(),30)}
+});
+
+/* ---------- Inicio ---------- */
+if(document.fonts&&document.fonts.load){document.fonts.load('24px "Material Symbols Rounded"').then(f=>{if(f.length)document.documentElement.classList.add('ms-ready')}).catch(()=>{})}
+$('#welcomeClose').onclick=()=>{$('#welcome').hidden=true;save('fbp.welcomed',true)};
+if(!load('fbp.welcomed',false)&&!S.groups.length)$('#welcome').hidden=false;
+window.addEventListener('storage',e=>{if(e.key==='fbp.groups'){S.groups=load('fbp.groups',[]);renderAllGroups()}});
+hydrateIcons();applyTheme();route();validateUrl();updateCount();renderMedia();renderAllGroups();renderHistory();
+</script>
+</body>
+</html>
