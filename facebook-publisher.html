@@ -62,6 +62,10 @@ kbd{border:1px solid var(--outline-2);border-bottom-width:2px;color:var(--text-2
 :focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 .ms{font-family:"Material Symbols Rounded";font-weight:normal;font-style:normal;font-size:24px;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;direction:ltr;-webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;user-select:none;flex:none;overflow:hidden;width:1em}
 .ms.sm{font-size:16px;vertical-align:-3px}
+.inl{display:inline-flex;align-items:center;gap:6px;font-size:12px;line-height:16px;color:var(--text-2)}
+.inl>.ms{font-size:18px}
+.dest-foot{margin-top:12px;display:flex;gap:4px 16px;flex-wrap:wrap;align-items:center}
+.dest-foot .btn.text{margin-left:-12px}
 .ms.fill{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
 [hidden]{display:none!important}
 :root:not(.ms-ready) .ms{color:transparent!important}
@@ -710,6 +714,7 @@ details.adv[open] summary .ms{transform:rotate(180deg)}
       <div class="field"><label for="gName">Nombre *</label><input class="input" id="gName" required maxlength="140" placeholder="Ej.: Compraventa Madrid Centro"></div>
       <div class="field"><label for="gTags">Etiquetas</label><input class="input" id="gTags" placeholder="Separadas por comas: ventas, local, empleo" list="tagList"><datalist id="tagList"></datalist></div>
       <div class="field"><label for="gNotes">Notas / normas del grupo</label><textarea class="input textarea" id="gNotes" style="min-height:80px" placeholder="Ej.: solo se permiten enlaces los lunes"></textarea><div class="hint">Se mostrarán como recordatorio al publicar en este grupo.</div></div>
+      <div class="set-row"><div class="main"><div class="t">Requiere aprobación</div><div class="d">Los administradores revisan las publicaciones antes de mostrarlas. Se marca sola al usar «Enviado a aprobación».</div></div><label class="switch"><input type="checkbox" id="gApproval"><span></span></label></div>
       <div class="set-row" style="border:0"><div class="main"><div class="t">Activo para compartir</div><div class="d">Los grupos inactivos se conservan pero no aparecen como destino.</div></div><label class="switch"><input type="checkbox" id="gActive" checked><span></span></label></div>
     </div>
     <div class="dlg-f">
@@ -848,10 +853,10 @@ const okTs=v=>typeof v==='number'&&isFinite(v)&&v>0?v:null;
 function cleanGroups(list){const seen=new Set();return (Array.isArray(list)?list:[]).map(g=>{if(!g||typeof g!=='object')return null;const url=normGroupUrl(str(g.url,300));if(!url)return null;
   const k=groupKey(url);if(seen.has(k))return null;seen.add(k);
   return {id:okId(g.id)||uid(),name:str(g.name,140).trim()||url.split('/groups/')[1].replace('/',''),url,tags:(Array.isArray(g.tags)?g.tags:[]).map(t=>str(t,40).trim()).filter(Boolean).slice(0,20),
-    notes:str(g.notes,500),active:g.active!==false,lastShared:okTs(g.lastShared),created:okTs(g.created)||Date.now()}}).filter(Boolean)}
+    notes:str(g.notes,500),active:g.active!==false,approval:g.approval===true,lastShared:okTs(g.lastShared),created:okTs(g.created)||Date.now()}}).filter(Boolean)}
 function cleanHistory(list){return (Array.isArray(list)?list:[]).map(h=>{if(!h||typeof h!=='object')return null;
   const items=(Array.isArray(h.items)?h.items:[]).map(i=>{const url=i&&normGroupUrl(str(i.url,300));if(!url)return null;
-    return {gid:okId(i.gid)||'',name:str(i.name,140),url,notes:str(i.notes,500),status:['pending','done','skipped'].includes(i.status)?i.status:'pending',at:okTs(i.at)}}).filter(Boolean);
+    return {gid:okId(i.gid)||'',name:str(i.name,140),url,notes:str(i.notes,500),status:['pending','done','skipped'].includes(i.status)?i.status:'pending',at:okTs(i.at),review:i.status==='done'&&['awaiting','approved','rejected'].includes(i.review)?i.review:undefined,rat:okTs(i.rat)}}).filter(Boolean);
   if(!items.length)return null;const u=parseFbUrl(str(h.url,2000));
   return {id:okId(h.id)||uid(),date:okTs(h.date)||Date.now(),url:u.url||'',text:str(h.text,63206),mediaCount:clamp(h.mediaCount,0,999,0),appendUrl:h.appendUrl!==false,items}}).filter(Boolean).slice(0,300)}
 function cleanTemplates(list){return (Array.isArray(list)?list:[]).map(t=>t&&typeof t==='object'&&typeof t.text==='string'?{id:okId(t.id)||uid(),name:str(t.name,80)||'Plantilla',text:str(t.text,63206)}:null).filter(Boolean)}
@@ -1177,9 +1182,9 @@ function renderDest(){
   box.innerHTML=`${tags.length?`<div class="chips" style="margin-bottom:12px" id="destTags"><span class="muted small" style="align-self:center">Seleccionar por etiqueta:</span>${tags.map(t=>`<button class="chip" data-dtag="${esc(t)}">${ic('tag')}${esc(t)}</button>`).join('')}</div>`:''}
     <div class="list"><div class="list-head"><input type="checkbox" class="cb" id="destAll" aria-label="Seleccionar todos" ${avail.length&&nSel===avail.length?'checked':''} ${avail.length?'':'disabled'}><label for="destAll" style="flex:1;cursor:pointer">Todos los disponibles (${avail.length})</label><span>Último uso</span></div>
     <div class="scroll-list">${act.map(g=>`<div class="row ${isRecent(g)?'off':''}"><label class="click"><input type="checkbox" class="cb" data-dsel="${g.id}" ${S.sel.has(g.id)?'checked':''} ${isRecent(g)?'disabled':''}>
-      <div class="main"><div class="title">${esc(g.name)}</div><div class="meta">${(g.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}${esc(g.url.replace('https://www.',''))}</div></div></label>
+      <div class="main"><div class="title">${esc(g.name)}</div><div class="meta">${(g.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}${g.approval?'<span class="tag">Requiere aprobación</span>':''}${esc(g.url.replace('https://www.',''))}</div></div></label>
       ${isRecent(g)?`<span class="pill warn" title="Publicaste aquí ${esc(ago(g.lastShared))}. Para proteger tu cuenta, cada grupo se puede usar una vez cada ${SAFE.RECENT_H} h.">${ic('lock_clock')}Desde ${esc(hhmm(availAt(g)))}</span>`:`<span class="small muted">${g.lastShared?esc(ago(g.lastShared)):'Nunca'}</span>`}</div>`).join('')}</div></div>
-    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="btn text" data-nav="grupos">${ic('edit')}Gestionar grupos</button>${act.length>avail.length?`<span class="small muted">${ic('lock_clock')} ${act.length-avail.length} grupo(s) en espera de ${SAFE.RECENT_H} h · <a href="#ayuda/buenas-practicas" data-help="buenas-practicas">¿Por qué?</a></span>`:''}<span class="small muted ml-auto">${ic('save')} Selección guardada</span></div>`;
+    <div class="dest-foot"><button class="btn text" data-nav="grupos">${ic('edit')}Gestionar grupos</button>${act.length>avail.length?`<span class="inl">${ic('lock_clock')}<span>${act.length-avail.length} grupo(s) en espera de ${SAFE.RECENT_H} h · <a href="#ayuda/buenas-practicas" data-help="buenas-practicas">¿Por qué?</a></span></span>`:''}<span class="inl ml-auto">${ic('cloud_done')}Selección guardada</span></div>`;
   const ind=$('#destAll');if(ind)ind.indeterminate=nSel>0&&nSel<avail.length;
   $('#st3').classList.toggle('ok',nSel>0);
 }
@@ -1212,7 +1217,7 @@ let editingId=null;
 function openGroupDlg(id){
   editingId=id||null;const g=id?S.groups.find(x=>x.id===id):null;
   $('#groupDlgTitle').textContent=g?'Editar grupo':'Añadir grupo';
-  $('#gUrl').value=g?g.url:'';$('#gName').value=g?g.name:'';$('#gTags').value=g?(g.tags||[]).join(', '):'';$('#gNotes').value=g?g.notes||'':'';$('#gActive').checked=g?g.active:true;
+  $('#gUrl').value=g?g.url:'';$('#gName').value=g?g.name:'';$('#gTags').value=g?(g.tags||[]).join(', '):'';$('#gNotes').value=g?g.notes||'':'';$('#gActive').checked=g?g.active:true;$('#gApproval').checked=!!(g&&g.approval);
   $('#gUrl').classList.remove('invalid');$('#gUrlHint').className='hint';$('#gUrlHint').textContent='También vale el ID numérico o el nombre corto del grupo.';
   $('#tagList').innerHTML=allTags().map(t=>`<option value="${esc(t)}">`).join('');
   $('#groupDlg').showModal();setTimeout(()=>$('#gUrl').focus(),50);
@@ -1225,7 +1230,7 @@ $('#groupForm').addEventListener('submit',e=>{
   e.preventDefault();const url=normGroupUrl($('#gUrl').value);const name=$('#gName').value.trim();
   if(!url){$('#gUrl').classList.add('invalid');$('#gUrl').focus();return}
   if(!name){$('#gName').focus();return}
-  const data={url,name,tags:[...new Set($('#gTags').value.split(',').map(s=>s.trim()).filter(Boolean))],notes:$('#gNotes').value.trim(),active:$('#gActive').checked};
+  const data={url,name,tags:[...new Set($('#gTags').value.split(',').map(s=>s.trim()).filter(Boolean))],notes:$('#gNotes').value.trim(),active:$('#gActive').checked,approval:$('#gApproval').checked};
   if(upsertGroup(data,editingId)){$('#groupDlg').close();snack(editingId?'Grupo actualizado':'Grupo añadido')}
 });
 $$('dialog [data-close]').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
@@ -1246,14 +1251,14 @@ function renderGroups(){
   const allChecked=list.every(g=>S.gChecked.has(g.id));
   box.innerHTML=`<div class="list" style="background:var(--surface)"><div class="list-head"><input type="checkbox" class="cb" id="gAll" ${allChecked?'checked':''} aria-label="Seleccionar todos"><span style="flex:1">${list.length} grupo${list.length>1?'s':''} · ${S.groups.filter(g=>g.active).length} activos</span><span style="width:110px" class="hide-sm">Último uso</span><span style="width:52px">Activo</span><span style="width:72px"></span></div>
   ${list.map(g=>`<div class="row ${g.active?'':'off'}"><input type="checkbox" class="cb" data-gc="${g.id}" ${S.gChecked.has(g.id)?'checked':''} aria-label="Seleccionar ${esc(g.name)}">
-    <span class="avatar hide-sm" aria-hidden="true">${esc(initials(g.name))}</span><div class="main"><div class="title">${esc(g.name)}</div><div class="meta">${(g.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}<a href="${esc(g.url)}" target="_blank" rel="noopener">${esc(g.url.replace('https://www.',''))}</a>${g.notes?` · <span title="${esc(g.notes)}">📝 ${esc(g.notes.slice(0,40))}</span>`:''}</div></div>
+    <span class="avatar hide-sm" aria-hidden="true">${esc(initials(g.name))}</span><div class="main"><div class="title">${esc(g.name)}</div><div class="meta">${(g.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}<a href="${esc(g.url)}" target="_blank" rel="noopener">${esc(g.url.replace('https://www.',''))}</a>${g.approval?` · <span class="pill info" style="height:20px;font-size:11px">${ic('pending','sm')}Requiere aprobación</span>`:''}${g.notes?` · <span title="${esc(g.notes)}">📝 ${esc(g.notes.slice(0,40))}</span>`:''}</div></div>
     <span class="small muted hide-sm" style="width:110px">${g.lastShared?esc(ago(g.lastShared)):'Nunca'}</span>
     <label class="switch" title="${g.active?'Desactivar':'Activar'}"><input type="checkbox" data-gact="${g.id}" ${g.active?'checked':''} aria-label="Activo"><span></span></label>
     <span style="width:72px;display:flex"><button class="icon-btn sm" data-gedit="${g.id}" aria-label="Editar">${ic('edit')}</button><button class="icon-btn sm" data-gdel="${g.id}" aria-label="Eliminar">${ic('delete')}</button></span>
   </div>`).join('')}</div>`;
 }
 function renderAllGroups(){renderGroups();renderDest();renderPreview();renderSummary();renderBadges()}
-function renderBadges(){$('#navGroupsBadge').textContent='';const p=S.history.filter(h=>h.items.some(i=>i.status==='pending')).length;$('#navHistBadge').textContent=p?String(p):'';$('#navHistBadge').title=p?`${p} publicación(es) con grupos pendientes`:''}
+function renderBadges(){$('#navGroupsBadge').textContent='';const runs=S.history.filter(h=>h.items.some(i=>i.status==='pending')).length,aw=awaitingItems().length,p=runs+aw;$('#navHistBadge').textContent=p?String(p):'';$('#navHistBadge').title=p?`${aw} en aprobación · ${runs} publicación(es) con grupos por hacer`:''}
 $('#gSearch').addEventListener('input',renderGroups);
 $('#gFilters').addEventListener('click',e=>{const b=e.target.closest('[data-f]');if(!b)return;S.gFilter=b.dataset.f;$$('#gFilters .chip').forEach(x=>x.classList.toggle('on',x===b));renderGroups()});
 $('#gTagFilters').addEventListener('click',e=>{const b=e.target.closest('[data-gtag]');if(!b)return;S.gTag=S.gTag===b.dataset.gtag?null:b.dataset.gtag;renderGroups()});
@@ -1461,10 +1466,10 @@ async function stepOpen(){
   const opened=openTarget(it);S.run.opened=opened||S.run.opened;renderRun();
   snack(ok?(opened?'Texto copiado y grupo abierto. Pega con Ctrl+V en Facebook.':'Texto copiado'):'No se pudo copiar automáticamente: usa «Copiar texto».');
 }
-function mark(status){
+function mark(status,review){
   const R=S.run;const it=R.entry.items[R.idx];if(!it)return;
-  it.status=status;it.at=Date.now();
-  if(status==='done'){const g=S.groups.find(x=>x.id===it.gid);if(g){g.lastShared=it.at;save('fbp.groups',S.groups)}}
+  it.status=status;it.at=Date.now();it.review=status==='done'&&review?review:undefined;
+  if(status==='done'){const g=S.groups.find(x=>x.id===it.gid);if(g){g.lastShared=it.at;if(review==='awaiting')g.approval=true;save('fbp.groups',S.groups)}}
   persist.history();
   const next=R.entry.items.findIndex((x,i)=>i>R.idx&&x.status==='pending');const anyNext=next>=0?next:R.entry.items.findIndex(x=>x.status==='pending');
   R.idx=anyNext<0?R.entry.items.length:anyNext;R.opened=false;
@@ -1482,10 +1487,10 @@ function renderRun(){
   $('#runQueue').innerHTML=items.map((it,i)=>`<div class="q ${i===R.idx?'cur':''}" data-q="${i}"><span class="dot ${it.status}">${it.status==='done'?ic('check'):it.status==='skipped'?ic('close'):''}</span><span class="n">${esc(it.name)}</span></div>`).join('');
   const main=$('#runMain');clearInterval(runTick);
   if(R.idx>=items.length){
-    const d=items.filter(i=>i.status==='done').length,s=items.filter(i=>i.status==='skipped').length;
+    const a=items.filter(i=>i.status==='done'&&i.review==='awaiting').length,d=items.filter(i=>i.status==='done').length-a,s=items.filter(i=>i.status==='skipped').length;
     main.innerHTML=`<div class="summary"><div class="empty" style="padding:0"><div class="ill" style="background:var(--success-container);color:var(--success)">${ic('task_alt')}</div></div>
       <h2 style="font-size:24px;line-height:32px;margin:0 0 8px">¡Listo! Has terminado esta publicación</h2><p class="muted">Todo queda registrado en el Historial.</p>
-      <div class="stats"><div class="stat"><div class="k">${ic('check_circle')}Publicados</div><div class="v" style="color:var(--success)">${d}</div></div><div class="stat"><div class="k">${ic('skip_next')}Omitidos</div><div class="v">${s}</div></div></div>
+      <div class="stats"><div class="stat"><div class="k">${ic('check_circle')}Publicados</div><div class="v" style="color:var(--success)">${d}</div></div>${a?`<div class="stat"><div class="k">${ic('pending')}En aprobación</div><div class="v" style="color:var(--primary)">${a}</div></div>`:''}<div class="stat"><div class="k">${ic('skip_next')}Omitidos</div><div class="v">${s}</div></div></div>
       <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn outlined" id="rHist">${ic('history')}Ver historial</button><button class="btn filled" id="rEnd">Cerrar</button></div></div>`;
     $('#rHist').onclick=()=>{closeRun(true);location.hash='historial'};$('#rEnd').onclick=()=>closeRun(true);document.title='Facebook Publisher';
     const same=hasForm()&&(parseFbUrl(srcEl.value).url||'')===R.entry.url&&txtEl.value===R.entry.text;
@@ -1533,13 +1538,14 @@ function renderRun(){
         ${vids.map(m=>`<button class="btn outlined" data-rvid="${m.id}">${ic('download')}${esc(m.name.slice(0,24))}</button>`).join('')}</div>`:''}
       ${S.media.length&&R.entry.mediaCount===0?'':''}
     </div></div>
-    <div class="rstep"><span class="step">3</span><div class="main"><h4>Confirmar</h4><p>Marca el resultado para pasar al siguiente grupo.</p>
-      <div class="acts"><button class="btn success" id="rDone">${ic('check')}Publicado <kbd>P</kbd></button><button class="btn outlined" id="rSkip">${ic('skip')}Omitir <kbd>S</kbd></button>
+    <div class="rstep"><span class="step">3</span><div class="main"><h4>Confirmar</h4><p>Marca el resultado para pasar al siguiente grupo. Si Facebook dice que tu publicación <b>está pendiente</b> de que la aprueben los administradores, elige «Enviado a aprobación».</p>
+      ${grpApproval(it.gid)?`<p class="small" style="margin:-4px 0 10px;color:var(--primary)">${ic('pending','sm')} Este grupo suele requerir aprobación.</p>`:''}
+      <div class="acts"><button class="btn ${grpApproval(it.gid)?'outlined':'success'}" id="rDone">${ic('check')}Publicado <kbd>P</kbd></button><button class="btn ${grpApproval(it.gid)?'success':'tonal'}" id="rReview">${ic('pending')}Enviado a aprobación <kbd>A</kbd></button><button class="btn outlined" id="rSkip">${ic('skip')}Omitir <kbd>S</kbd></button>
       <a class="hlp" href="#ayuda/asistente" data-help="asistente">${ic('help')}Ayuda</a></div>
       <p class="small muted" style="margin:12px 0 0">¿Facebook te muestra «Has publicado demasiado rápido», un control de seguridad o una restricción? <button class="hlp" id="rPanic" style="color:var(--error)">${ic('report')}Detener y proteger mi cuenta</button></p></div></div></div>
-    ${R.entry.mediaCount>0&&!S.media.length?`<div class="note">${ic('info')}<div>Esta publicación tenía ${R.entry.mediaCount} archivo(s) que ya no están cargados (los archivos no se guardan entre sesiones). Vuelve a añadirlos en «Publicar» si los necesitas.</div></div>`:''}`;
+    ${R.entry.mediaCount>0&&!S.media.length?`<div class="note">${ic('info')}<div>Esta publicación tenía ${R.entry.mediaCount} archivo(s) que ya no están en el formulario. Vuelve a añadirlos en «Publicar» si los necesitas.</div></div>`:''}`;
   $('#rOpen').onclick=stepOpen;$('#rCopy').onclick=async()=>{snack(await copyText(txt)?'Texto copiado':'No se pudo copiar')};
-  $('#rDone').onclick=()=>mark('done');$('#rSkip').onclick=()=>mark('skipped');$('#rPanic').onclick=panicStop;
+  $('#rDone').onclick=()=>mark('done');$('#rReview').onclick=()=>mark('done','awaiting');$('#rSkip').onclick=()=>mark('skipped');$('#rPanic').onclick=panicStop;
   $$('[data-rimg]',main).forEach(b=>b.onclick=()=>copyImage(S.media.find(m=>m.id===b.dataset.rimg)));
   $$('[data-rvid]',main).forEach(b=>b.onclick=()=>{const m=S.media.find(x=>x.id===b.dataset.rvid);download(m.name,m.file,m.file.type)});
   $('#rOpen').focus();
@@ -1561,27 +1567,38 @@ $('#runDlg').addEventListener('keydown',e=>{
   if(!gate().ok)return;
   const k=e.key.toLowerCase();
   if(k==='enter'&&!e.target.closest('button:not(#rOpen)')){e.preventDefault();stepOpen()}
-  else if(k==='p'){e.preventDefault();mark('done')}else if(k==='s'){e.preventDefault();mark('skipped')}
+  else if(k==='p'){e.preventDefault();mark('done')}else if(k==='a'){e.preventDefault();mark('done','awaiting')}else if(k==='s'){e.preventDefault();mark('skipped')}
   else if(k==='c'){e.preventDefault();$('#rCopy').click()}
 });
 
 /* ============================================================
    HISTORIAL
    ============================================================ */
+const grpApproval=gid=>{const g=S.groups.find(x=>x.id===gid);return !!(g&&g.approval)};
+function awaitingItems(){return S.history.flatMap(h=>h.items.filter(i=>i.status==='done'&&i.review==='awaiting').map(i=>({h,i})))}
+function setReview(hid,idx,val){const h=S.history.find(x=>x.id===hid);const i=h&&h.items[idx];if(!i)return;const prev=i.review;i.review=val;i.rat=Date.now();persist.history();
+  snack(val==='approved'?`«${i.name}»: aprobada`:`«${i.name}»: rechazada`,'Deshacer',()=>{i.review=prev;persist.history()})}
+function reviewBtns(hid,idx){return `<button class="btn tonal sm" data-rv="approved" data-h="${hid}" data-i="${idx}">${ic('check')}Aprobada</button><button class="btn text sm danger" data-rv="rejected" data-h="${hid}" data-i="${idx}">${ic('close')}Rechazada</button>`}
+function reviewPill(i){return i.review==='awaiting'?`<span class="pill info">${ic('pending')}En aprobación</span>`:i.review==='approved'?`<span class="pill ok">${ic('check')}Aprobada</span>`:i.review==='rejected'?`<span class="pill err">${ic('block')}Rechazada</span>`:''}
 function renderHistory(){
   renderBadges();const box=$('#histBox');
   if(!S.history.length){box.innerHTML=`<div class="card empty"><div class="ill">${ic('history')}</div><h3>Aún no hay actividad</h3><p>Cuando inicies una publicación asistida aparecerá aquí, con el estado de cada grupo.</p><button class="btn filled" data-nav="publicar">${ic('send')}Ir a Publicar</button></div>`;return}
-  box.innerHTML=S.history.map(h=>{const d=h.items.filter(i=>i.status==='done').length,s=h.items.filter(i=>i.status==='skipped').length,p=h.items.length-d-s;
+  const aw=awaitingItems();
+  const panel=aw.length?`<div class="card filled"><div class="card-head" style="margin-bottom:8px">${ic('pending')}<div><h2>Pendientes de aprobación (${aw.length})</h2><div class="sub">Comprueba en cada grupo (menú «Tu contenido») si los administradores las aprobaron.</div></div><a class="hlp ml-auto" href="#ayuda/no-aparece" data-help="no-aparece">${ic('help')}¿Por qué no aparece?</a></div>
+    <div class="list">${aw.map(({h,i})=>`<div class="row" style="flex-wrap:wrap"><span class="avatar" aria-hidden="true">${esc(initials(i.name))}</span><div class="main" style="min-width:160px"><div class="title">${esc(i.name)}</div><div class="meta">Enviada ${esc(ago(i.at))} · ${esc(((h.text||'').trim().split('\n')[0]||h.url||'').slice(0,60))}</div></div>
+      <a class="btn text sm" href="${esc(i.url)}" target="_blank" rel="noopener">${ic('open')}Abrir grupo</a>${reviewBtns(h.id,h.items.indexOf(i))}</div>`).join('')}</div></div>`:'';
+  box.innerHTML=panel+S.history.map(h=>{const a=h.items.filter(i=>i.review==='awaiting').length,d=h.items.filter(i=>i.status==='done').length,s=h.items.filter(i=>i.status==='skipped').length,p=h.items.length-d-s;
     const title=(h.text||'').trim().split('\n')[0]||h.url||'Publicación sin texto';
     return `<details class="hist"><summary><div class="main"><div class="title">${esc(title.slice(0,90))}</div><div class="small muted">${esc(fmtDate(h.date))} · ${h.items.length} grupo(s)${h.url?' · '+esc(parseFbUrl(h.url).kind||''):''}</div></div>
-      <span class="pill ok">${d} publicados</span>${s?`<span class="pill">${s} omitidos</span>`:''}${p?`<span class="pill warn">${p} pendientes</span>`:''}
+      <span class="pill ok">${d-a} publicados</span>${a?`<span class="pill info">${a} en aprobación</span>`:''}${s?`<span class="pill">${s} omitidos</span>`:''}${p?`<span class="pill warn">${p} pendientes</span>`:''}
       <div class="prog hide-sm" aria-hidden="true"><i style="width:${(d+s)/h.items.length*100}%"></i></div>${ic('chevron','exp')}</summary>
-      <div class="det">${h.url?`<p class="small" style="margin:0 0 8px">${ic('link')} <a href="${esc(h.url)}" target="_blank" rel="noopener">${esc(h.url)}</a></p>`:''}${h.text?`<pre>${esc(h.text)}</pre>`:''}
-        <div class="list" style="margin-bottom:12px">${h.items.map(i=>`<div class="row" style="min-height:44px"><span class="dot ${i.status}">${i.status==='done'?ic('check'):i.status==='skipped'?ic('close'):''}</span><div class="main"><div class="title">${esc(i.name)}</div></div><span class="small muted">${i.at?esc(ago(i.at)):'Pendiente'}</span><a class="icon-btn sm" href="${esc(i.url)}" target="_blank" rel="noopener" aria-label="Abrir grupo">${ic('open')}</a></div>`).join('')}</div>
+      <div class="det">${h.url?`<p class="inl" style="margin:0 0 10px;word-break:break-all">${ic('link')}<a href="${esc(h.url)}" target="_blank" rel="noopener">${esc(h.url)}</a></p>`:''}${h.text?`<pre>${esc(h.text)}</pre>`:''}
+        <div class="list" style="margin-bottom:12px">${h.items.map((i,ix)=>`<div class="row" style="min-height:44px;flex-wrap:wrap"><span class="dot ${i.status}">${i.status==='done'?ic(i.review==='awaiting'?'pending':i.review==='rejected'?'block':'check'):i.status==='skipped'?ic('close'):''}</span><div class="main" style="min-width:140px"><div class="title">${esc(i.name)}</div></div>${reviewPill(i)}${i.review==='awaiting'?reviewBtns(h.id,ix):''}<span class="small muted">${i.at?esc(ago(i.at)):'Pendiente'}</span><a class="icon-btn sm" href="${esc(i.url)}" target="_blank" rel="noopener" aria-label="Abrir grupo">${ic('open')}</a></div>`).join('')}</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">${p?`<button class="btn filled" data-hres="${h.id}">${ic('play')}Reanudar (${p})</button>`:''}
           <button class="btn outlined" data-hreuse="${h.id}">${ic('refresh')}Reutilizar contenido</button><button class="btn text danger" data-hdel="${h.id}">${ic('delete')}Eliminar</button></div></div></details>`}).join('');
 }
 $('#histBox').addEventListener('click',e=>{
+  const rv=e.target.closest('[data-rv]');if(rv){e.preventDefault();setReview(rv.dataset.h,+rv.dataset.i,rv.dataset.rv);return}
   const r=e.target.closest('[data-hres]'),u=e.target.closest('[data-hreuse]'),d=e.target.closest('[data-hdel]');
   if(r)startRun(S.history.find(h=>h.id===r.dataset.hres));
   if(u){const h=S.history.find(x=>x.id===u.dataset.hreuse);srcEl.value=h.url||'';txtEl.value=h.text||'';srcEl.dispatchEvent(new Event('input'));txtEl.dispatchEvent(new Event('input'));location.hash='publicar';snack('Contenido cargado en Publicar')}
@@ -1683,7 +1700,7 @@ H('asistente','Publicar','Publicación asistida paso a paso','asistente publicar
 <p>Te guía grupo a grupo. Antes de empezar verás la <b>Comprobación de seguridad</b>, con los límites, posibles señales de spam y las normas de los grupos.</p>
 <ol><li><b>Copiar y abrir</b> (<kbd>Enter</kbd>): copia el texto personalizado para ese grupo y lo abre en Facebook (en ventana lateral, pestaña o diálogo Compartir, según tus <a data-help="modos-apertura">ajustes</a>).</li>
 <li><b>Pegar y publicar:</b> en Facebook, haz clic en «Escribe algo…», pega con <kbd>Ctrl</kbd>+<kbd>V</kbd>, añade las imágenes si las hay y pulsa «Publicar».</li>
-<li><b>Confirmar:</b> vuelve a la app y pulsa <b>Publicado</b> (<kbd>P</kbd>) u <b>Omitir</b> (<kbd>S</kbd>).</li></ol>
+<li><b>Confirmar:</b> vuelve a la app y pulsa <b>Publicado</b> (<kbd>P</kbd>), <b>Enviado a aprobación</b> (<kbd>A</kbd>) si Facebook indica que está pendiente de revisión, u <b>Omitir</b> (<kbd>S</kbd>). <a data-help="no-aparece">¿No aparece tu publicación?</a></li></ol>
 <p>Tras cada publicación hay una <a data-help="buenas-practicas">pausa de seguridad</a> que no se puede saltar. Si llegas al límite por hora o por día, el asistente espera o te propone continuar más tarde.</p>
 <h3>Continuar otro día</h3><ul><li>El progreso se guarda al momento. Si cierras el asistente o el navegador, en <b>Publicar</b> verás el aviso <b>Reanudar</b>; también puedes reanudar desde el <a data-help="historial">Historial</a>.</li><li>Haz clic en un grupo pendiente u omitido de la cola para ir a él. <kbd>C</kbd> vuelve a copiar el texto.</li></ul>
 <h3>Al terminar</h3><p>Puedes <b>vaciar el formulario</b> (URL, texto y archivos) para empezar otra publicación. Tus grupos y la selección se conservan. Elige en Ajustes si quieres que se pregunte, se vacíe siempre o se conserve.</p>
@@ -1712,9 +1729,20 @@ H('marcador','Grupos','Capturar grupos con el marcador','bookmarklet marcador ca
 H('importar','Grupos','Importar y exportar grupos','importar exportar json csv lista',`
 <p><b>Importar</b> acepta:</p><ul><li>El resultado del <a data-help="marcador">marcador</a> (<code>FBP_GROUPS:[…]</code>).</li><li>Un archivo JSON exportado desde esta app.</li><li>Una lista de texto con un grupo por línea: <code>Nombre | URL</code>, <code>Nombre; URL</code> o solo la URL.</li></ul>
 <p>Los duplicados (misma URL) se omiten automáticamente.</p><p><b>Exportar</b> descarga tus grupos en JSON para compartirlos con tu equipo o usarlos en otro navegador.</p>`),
-H('historial','Historial','Historial y reanudación','historial reanudar reutilizar',`
-<p>Cada sesión de publicación asistida se guarda con la fecha, el texto, la URL y el estado de cada grupo (publicado, omitido o pendiente).</p>
-<ul><li><b>Reanudar:</b> continúa por los grupos pendientes.</li><li><b>Reutilizar contenido:</b> carga el texto y la URL en Publicar para una nueva campaña.</li><li>Los grupos marcados como publicados actualizan su «Último uso», que sirve para los avisos de 24 h.</li></ul>`),
+H('historial','Historial','Historial, reanudación y aprobaciones','historial reanudar reutilizar aprobacion pendiente aprobada rechazada',`
+<p>Cada publicación asistida se guarda con la fecha, el texto, la URL y el estado de cada grupo:</p>
+<table><tr><th>Estado</th><th>Significado</th></tr><tr><td><b>Publicado</b></td><td>La publicación ya es visible en el grupo.</td></tr><tr><td><b>En aprobación</b></td><td>Facebook indicó que está pendiente de que la aprueben los administradores.</td></tr><tr><td><b>Aprobada / Rechazada</b></td><td>Lo que marcaste al revisarla más tarde.</td></tr><tr><td><b>Omitido</b></td><td>No publicaste en ese grupo.</td></tr><tr><td><b>Por hacer</b></td><td>Aún no has llegado a ese grupo; usa <b>Reanudar</b>.</td></tr></table>
+<h3>Revisar las publicaciones en aprobación</h3><p>En la parte superior del Historial aparece el panel <b>Pendientes de aprobación</b>, y el número en el icono de Historial te avisa de cuántas quedan. Para cada una, pulsa <b>Abrir grupo</b>, entra en <b>Tu contenido</b> y marca <b>Aprobada</b> o <b>Rechazada</b>. <a data-help="no-aparece">Más información</a></p>
+<ul><li><b>Reanudar:</b> continúa por los grupos que faltan.</li><li><b>Reutilizar contenido:</b> carga el texto y la URL en Publicar.</li><li>Los grupos usados cuentan para los <a data-help="buenas-practicas">límites de seguridad</a> aunque estén en aprobación.</li></ul>`),
+H('no-aparece','Historial','Mi publicación no aparece en el grupo','no aparece no sale pendiente aprobacion administradores tu contenido oculta rechazada',`
+<p>Es normal. Casi siempre se debe a una de estas causas:</p>
+<ol><li><b>El grupo revisa las publicaciones.</b> Muchos grupos (sobre todo de compraventa) tienen activada la aprobación de publicaciones. La tuya queda en espera hasta que un administrador la aprueba, lo que puede tardar minutos u horas, o no llegar a aprobarse. Mientras tanto solo la ves tú.</li>
+<li><b>Facebook la está revisando o la ocultó</b>, a veces por los enlaces o por usar el mismo texto en varios grupos seguidos.</li>
+<li><b>El feed no la muestra arriba:</b> los grupos ordenan por «Más relevante». Cambia a <b>Nuevas publicaciones</b>.</li>
+<li><b>La publicación original no es pública</b>, así que los demás miembros no pueden verla.</li></ol>
+<h3>Cómo comprobarlo</h3><p>En el grupo, abre <b>Tu contenido</b> (o «Gestionar tu contenido»): verás las pestañas <b>Pendientes</b>, <b>Publicadas</b> y <b>Rechazadas</b>.</p>
+<h3>Qué hacer en Facebook Publisher</h3><ul><li>En el asistente, si Facebook dice que está pendiente, pulsa <b>Enviado a aprobación</b> (<kbd>A</kbd>). El grupo queda marcado como <b>Requiere aprobación</b> para la próxima vez.</li><li>Revísalas más tarde en el panel <a data-help="historial">Pendientes de aprobación</a> del Historial.</li></ul>
+<div class="callout warn"><b>No vuelvas a publicar</b> mientras está pendiente: duplicarla es justo lo que los administradores denuncian como spam. Si te la rechazan varias veces, revisa las normas del grupo o desactívalo.</div>`),
 H('buenas-practicas','Protección de la cuenta','Protección de tu cuenta de Facebook','spam bloqueo pausa limites buenas practicas restriccion seguridad cuenta riesgo hora dia',`
 <p>Facebook vigila los patrones típicos del spam: publicar muy rápido, en muchos grupos, el mismo texto o en el mismo grupo repetidas veces. Facebook Publisher está diseñado para que <b>tu cuenta se comporte como la de una persona</b>:</p>
 <table><tr><th>Protección</th><th>Cómo funciona</th></tr>
@@ -1751,7 +1779,7 @@ H('atajos','Ajustes','Atajos de teclado','atajos teclado shortcuts',`
 <tr><td><kbd>Ctrl</kbd>+<kbd>B</kbd> / <kbd>Ctrl</kbd>+<kbd>I</kbd></td><td>Negrita / cursiva (en el editor)</td></tr>
 <tr><td><kbd>/</kbd></td><td>Buscar grupos</td></tr><tr><td><kbd>F1</kbd> o <kbd>?</kbd></td><td>Centro de Ayuda</td></tr>
 <tr><td colspan="2"><b>En la publicación asistida</b></td></tr>
-<tr><td><kbd>Enter</kbd></td><td>Copiar texto y abrir grupo (o saltar la pausa)</td></tr><tr><td><kbd>P</kbd></td><td>Marcar como publicado</td></tr><tr><td><kbd>S</kbd></td><td>Omitir grupo</td></tr><tr><td><kbd>C</kbd></td><td>Copiar el texto de nuevo</td></tr></table>`),
+<tr><td><kbd>Enter</kbd></td><td>Copiar texto y abrir grupo (o saltar la pausa)</td></tr><tr><td><kbd>P</kbd></td><td>Marcar como publicado</td></tr><tr><td><kbd>A</kbd></td><td>Marcar como enviado a aprobación</td></tr><tr><td><kbd>S</kbd></td><td>Omitir grupo</td></tr><tr><td><kbd>C</kbd></td><td>Copiar el texto de nuevo</td></tr></table>`),
 H('problemas','Ajustes','Solución de problemas','problemas error ventana bloqueada portapapeles no copia popup',`
 <h3>No se abre la ventana del grupo</h3><p>El navegador bloqueó la ventana emergente. Pulsa el icono de ventana bloqueada en la barra de direcciones y elige «Permitir siempre» para este archivo. También puedes cambiar a <a data-help="modos-apertura">Pestaña nueva</a>.</p>
 <h3>No se copia el texto</h3><p>Algunos navegadores restringen el portapapeles en archivos locales. Usa el botón <b>Copiar texto</b> o abre el texto con «Ver el texto que se pegará» y cópialo a mano. Si el problema persiste, sirve el archivo desde un servidor local (<code>https://</code> o <code>localhost</code>).</p>
@@ -1760,7 +1788,7 @@ H('problemas','Ajustes','Solución de problemas','problemas error ventana bloque
 <h3>El marcador no hace nada</h3><p>Asegúrate de usarlo en una pestaña de facebook.com. En Firefox, comprueba que los marcadores <code>javascript:</code> están permitidos.</p>`),
 ];
 const HELP_CATS=['Empezar','Protección de la cuenta','Publicar','Grupos','Historial','Ajustes'];
-const HELP_ICON={'primeros-pasos':'rocket_launch','como-funciona':'lightbulb','url-origen':'link','editor':'edit_note','variables':'data_object','plantillas':'description','multimedia':'perm_media','destinos':'checklist','vista-previa':'preview','asistente':'touch_app','modos-apertura':'open_in_new','grupos':'groups','marcador':'bookmark_add','importar':'swap_vert','historial':'history','buenas-practicas':'verified_user','aviso-facebook':'report','ajustes':'settings','privacidad':'shield','atajos':'keyboard','problemas':'build'};
+const HELP_ICON={'primeros-pasos':'rocket_launch','como-funciona':'lightbulb','url-origen':'link','editor':'edit_note','variables':'data_object','plantillas':'description','multimedia':'perm_media','destinos':'checklist','vista-previa':'preview','asistente':'touch_app','modos-apertura':'open_in_new','grupos':'groups','marcador':'bookmark_add','importar':'swap_vert','historial':'history','no-aparece':'visibility_off','buenas-practicas':'verified_user','aviso-facebook':'report','ajustes':'settings','privacidad':'shield','atajos':'keyboard','problemas':'build'};
 const normTxt=t=>t.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
 let helpQuery=null;
 function renderHelp(q){
@@ -1813,7 +1841,14 @@ document.addEventListener('keydown',e=>{
 
 /* ---------- Inicio ---------- */
 S.groups=cleanGroups(load('fbp.groups',[]));S.settings=cleanSettings(load('fbp.settings',{}));S.history=cleanHistory(load('fbp.history',[]));S.templates=cleanTemplates(load('fbp.templates',[]));
-if(document.fonts&&document.fonts.load){document.fonts.load('24px "Material Symbols Rounded"').then(f=>{if(f.length)document.documentElement.classList.add('ms-ready')}).catch(()=>{})}
+(function(){/* Muestra los iconos solo cuando su fuente está cargada (evita ver texto como «help» o «settings») */
+  const root=document.documentElement;if(!document.fonts){root.classList.add('ms-ready');return}
+  const check=()=>{if(root.classList.contains('ms-ready'))return true;
+    for(const f of document.fonts){if(/Material Symbols/.test(f.family)&&f.status==='loaded'){root.classList.add('ms-ready');return true}}
+    document.fonts.load('24px "Material Symbols Rounded"').catch(()=>{});return false};
+  document.fonts.addEventListener&&document.fonts.addEventListener('loadingdone',check);
+  let n=0;const t=setInterval(()=>{if(check()||++n>40)clearInterval(t)},250);check();
+})();
 $('#welcomeClose').onclick=()=>{$('#welcome').hidden=true;save('fbp.welcomed',true)};
 if(!load('fbp.welcomed',false)&&!S.groups.length)$('#welcome').hidden=false;
 window.addEventListener('storage',e=>{if(e.key==='fbp.groups'){S.groups=cleanGroups(load('fbp.groups',[]));renderAllGroups()}if(e.key==='fbp.history'){S.history=cleanHistory(load('fbp.history',[]));renderHistory()}if(e.key==='fbp.lock'){S.lock=okTs(load('fbp.lock',null))}});
