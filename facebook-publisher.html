@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data: blob:; media-src blob:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta name="referrer" content="no-referrer">
 <title>Facebook Publisher</title>
 <meta name="description" content="Comparte publicaciones de Facebook en tus grupos de forma rápida, ordenada y segura.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%232d88ff'/%3E%3Cstop offset='1' stop-color='%230b57d0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='48' height='48' rx='12' fill='url(%23g)'/%3E%3Cpath d='M10 36.5L40 24 10 11.5v9.7l21.4 2.8L10 26.8z' fill='%23fff'/%3E%3C/svg%3E">
@@ -59,6 +61,7 @@ code,kbd{font-family:var(--mono);font-size:12.5px;background:var(--surface-2);bo
 kbd{border:1px solid var(--outline-2);border-bottom-width:2px;color:var(--text-2);font-size:11px}
 :focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 .ms{font-family:"Material Symbols Rounded";font-weight:normal;font-style:normal;font-size:24px;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;direction:ltr;-webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;user-select:none;flex:none;overflow:hidden;width:1em}
+.ms.sm{font-size:16px;vertical-align:-3px}
 .ms.fill{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
 [hidden]{display:none!important}
 :root:not(.ms-ready) .ms{color:transparent!important}
@@ -460,6 +463,7 @@ details.adv[open] summary .ms{transform:rotate(180deg)}
   .card{padding:16px}
   #snack{bottom:96px}
   .hide-sm{display:none!important}
+  .page-head .actions{margin-left:0}
 }
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 </style>
@@ -492,9 +496,13 @@ details.adv[open] summary .ms{transform:rotate(180deg)}
         <div>
           <h1 id="h-pub">Publicar en grupos</h1>
           <p>Prepara tu publicación una vez y compártela en todos tus grupos en unos minutos.</p>
-          <div class="head-links"><a class="hlp" href="#ayuda/como-funciona" data-help="como-funciona"><span class="ms" aria-hidden="true">help</span>¿Cómo funciona?</a><a class="hlp" href="#ayuda/primeros-pasos" data-help="primeros-pasos"><span class="ms" aria-hidden="true">help</span>Primeros pasos</a></div>
+          <div class="head-links"><a class="hlp" href="#ayuda/como-funciona" data-help="como-funciona"><span class="ms" aria-hidden="true">help</span>¿Cómo funciona?</a><a class="hlp" href="#ayuda/primeros-pasos" data-help="primeros-pasos"><span class="ms" aria-hidden="true">help</span>Primeros pasos</a><a class="hlp" href="#ayuda/buenas-practicas" data-help="buenas-practicas"><span class="ms" aria-hidden="true">verified_user</span>Protección de tu cuenta</a></div>
         </div>
+        <div class="actions"><button class="btn outlined" id="clearForm" title="Vacía la URL, el texto y los archivos. Tus grupos y la selección se conservan."><span class="ms" aria-hidden="true">note_add</span>Nueva publicación</button></div>
       </div>
+
+      <div class="banner ok-banner" id="resumeBanner" hidden></div>
+      <div class="banner warn" id="lockBanner" hidden></div>
 
       <div class="banner hero" id="welcome" hidden>
         <span class="ms" aria-hidden="true">waving_hand</span>
@@ -738,24 +746,38 @@ details.adv[open] summary .ms{transform:rotate(180deg)}
       <div class="seg" id="themeSeg"><button data-t="light"><span class="ms" aria-hidden="true">light_mode</span>Claro</button><button data-t="dark"><span class="ms" aria-hidden="true">dark_mode</span>Oscuro</button><button data-t="system"><span class="ms" aria-hidden="true">brightness_auto</span>Sistema</button></div></div>
     <div class="set-row"><div class="main"><div class="t">Cómo abrir cada grupo</div><div class="d"><a href="#" data-help="modos-apertura">¿Qué opción elijo?</a></div></div>
       <select class="input" id="setMode" style="width:220px;height:40px"><option value="side">Ventana lateral</option><option value="tab">Pestaña nueva</option><option value="share">Diálogo «Compartir» de Facebook</option></select></div>
-    <div class="set-row"><div class="main"><div class="t">Pausa entre grupos</div><div class="d">Segundos de espera tras publicar en un grupo. <a href="#" data-help="buenas-practicas">Recomendaciones</a></div></div>
-      <input class="input" id="setPause" type="number" min="0" max="900" step="5" style="width:100px;height:40px"></div>
+    <div class="set-row" style="border:0;padding-bottom:0"><div class="main"><div class="t" style="color:var(--primary);display:flex;align-items:center;gap:8px"><span class="ms" aria-hidden="true">verified_user</span>Protección de la cuenta</div><div class="d">Límites que reducen el riesgo de bloqueos. Puedes hacerlos más estrictos, pero no desactivarlos. <a href="#" data-help="buenas-practicas">Más información</a></div></div></div>
+    <div class="set-row"><div class="main"><div class="t">Pausa entre grupos</div><div class="d">Segundos tras cada publicación (mínimo 30, recomendado 60 o más).</div></div>
+      <input class="input" id="setPause" type="number" min="30" max="900" step="5" style="width:100px;height:40px"></div>
+    <div class="set-row"><div class="main"><div class="t">Máximo por hora</div><div class="d">Grupos en los que publicar en una hora (1–15, recomendado 8).</div></div>
+      <input class="input" id="setHour" type="number" min="1" max="15" style="width:100px;height:40px"></div>
+    <div class="set-row"><div class="main"><div class="t">Máximo por día</div><div class="d">Grupos en 24 horas (1–40, recomendado 20). Cada grupo, como mucho una vez cada 24 h.</div></div>
+      <input class="input" id="setDay" type="number" min="1" max="40" style="width:100px;height:40px"></div>
+    <div class="set-row" id="lockRow" hidden><div class="main"><div class="t" style="color:var(--warn)">Bloqueo de seguridad activo</div><div class="d" id="lockTxt"></div></div>
+      <button class="btn text danger" id="unlockBtn">Quitar bloqueo</button></div>
+    <div class="set-row"><div class="main"><div class="t">Al terminar una publicación</div><div class="d">Qué hacer con la URL, el texto y los archivos.</div></div>
+      <select class="input" id="setClear" style="width:220px;height:40px"><option value="ask">Preguntar</option><option value="always">Vaciar el formulario</option><option value="never">Conservarlo</option></select></div>
     <div class="set-row"><div class="main"><div class="t">Añadir la URL al final del texto</div><div class="d">Facebook genera la vista previa de la publicación original al pegar el enlace.</div></div>
       <label class="switch"><input type="checkbox" id="setAppend"><span></span></label></div>
-    <div class="set-row"><div class="main"><div class="t">Avisar de grupos recientes</div><div class="d">Marca los grupos en los que ya compartiste en las últimas 24 horas.</div></div>
-      <label class="switch"><input type="checkbox" id="setRecent"><span></span></label></div>
     <div class="set-row"><div class="main"><div class="t">Sonido al terminar la pausa</div><div class="d">Un aviso discreto cuando puedes pasar al siguiente grupo.</div></div>
       <label class="switch"><input type="checkbox" id="setSound"><span></span></label></div>
-    <div class="set-row" style="flex-wrap:wrap"><div class="main"><div class="t">Copia de seguridad</div><div class="d">Grupos, plantillas, ajustes e historial. <a href="#" data-help="privacidad">Tus datos</a></div></div>
+    <div class="set-row" style="flex-wrap:wrap"><div class="main"><div class="t">Copia de seguridad</div><div class="d">Grupos, selección, plantillas, ajustes, historial y borrador (sin archivos). <a href="#" data-help="privacidad">Tus datos</a></div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn outlined" id="backupOut"><span class="ms" aria-hidden="true">download</span>Exportar</button>
         <button class="btn outlined" id="backupInBtn"><span class="ms" aria-hidden="true">upload</span>Restaurar</button>
         <input type="file" id="backupIn" accept=".json,application/json" hidden>
       </div></div>
-    <div class="set-row"><div class="main"><div class="t" style="color:var(--error)">Borrar todos los datos</div><div class="d">Elimina grupos, plantillas, historial y ajustes de este navegador.</div></div>
+    <div class="set-row"><div class="main"><div class="t" style="color:var(--error)">Borrar todos los datos</div><div class="d">Elimina grupos, selección, plantillas, archivos, historial y ajustes de este navegador.</div></div>
       <button class="btn text danger" id="wipeAll">Borrar</button></div>
   </div>
   <div class="dlg-f"><button class="btn filled" data-close>Listo</button></div>
+</dialog>
+
+<!-- Preflight dialog -->
+<dialog id="checkDlg">
+  <div class="dlg-h"><span class="ms" aria-hidden="true" style="color:var(--primary);font-size:28px">verified_user</span><h2>Comprobación de seguridad</h2><button class="help-link" data-help="buenas-practicas" aria-label="Ayuda"><span class="ms" aria-hidden="true">help</span></button></div>
+  <div class="dlg-b"><p class="muted" style="margin-top:0">Revisamos tu publicación antes de empezar para proteger tu cuenta de Facebook.</p><div id="checkList" class="list"></div></div>
+  <div class="dlg-f"><button class="btn text" data-close>Revisar</button><button class="btn filled" id="checkGo"><span class="ms" aria-hidden="true">play_arrow</span>Empezar</button></div>
 </dialog>
 
 <!-- Confirm dialog -->
@@ -812,13 +834,31 @@ const fmtDate=ts=>new Date(ts).toLocaleString('es',{dateStyle:'medium',timeStyle
 function download(name,data,type='application/json'){const b=new Blob([data],{type});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
 
 /* ---------- Estado ---------- */
-const DEF_SETTINGS={mode:'side',pause:30,appendUrl:true,warnRecent:true,sound:true};
+/* Límites de protección de la cuenta (no se pueden desactivar) */
+const SAFE={MIN_PAUSE:30,MAX_PAUSE:900,MAX_DAY:40,MAX_HOUR:15,RECENT_H:24,LOCK_H:24};
+const DEF_SETTINGS={mode:'side',pause:60,appendUrl:true,sound:true,dayCap:20,hourCap:8,clearAfter:'ask'};
+const clamp=(v,a,b,d)=>{v=parseInt(v);return isNaN(v)?d:Math.max(a,Math.min(b,v))};
+function cleanSettings(o){o=Object.assign({},DEF_SETTINGS,o&&typeof o==='object'?o:{});
+  return {mode:['side','tab','share'].includes(o.mode)?o.mode:'side',pause:clamp(o.pause,SAFE.MIN_PAUSE,SAFE.MAX_PAUSE,60),appendUrl:o.appendUrl!==false,sound:o.sound!==false,
+    dayCap:clamp(o.dayCap,1,SAFE.MAX_DAY,20),hourCap:clamp(o.hourCap,1,SAFE.MAX_HOUR,8),clearAfter:['ask','always','never'].includes(o.clearAfter)?o.clearAfter:'ask'}}
+/* Los datos guardados se validan al leerlos: en github.io el almacenamiento se comparte con otras apps del mismo dominio */
+const str=(v,max)=>typeof v==='string'?v.slice(0,max):'';
+const okId=v=>typeof v==='string'&&/^[\w-]{1,40}$/.test(v)?v:null;
+const okTs=v=>typeof v==='number'&&isFinite(v)&&v>0?v:null;
+function cleanGroups(list){const seen=new Set();return (Array.isArray(list)?list:[]).map(g=>{if(!g||typeof g!=='object')return null;const url=normGroupUrl(str(g.url,300));if(!url)return null;
+  const k=groupKey(url);if(seen.has(k))return null;seen.add(k);
+  return {id:okId(g.id)||uid(),name:str(g.name,140).trim()||url.split('/groups/')[1].replace('/',''),url,tags:(Array.isArray(g.tags)?g.tags:[]).map(t=>str(t,40).trim()).filter(Boolean).slice(0,20),
+    notes:str(g.notes,500),active:g.active!==false,lastShared:okTs(g.lastShared),created:okTs(g.created)||Date.now()}}).filter(Boolean)}
+function cleanHistory(list){return (Array.isArray(list)?list:[]).map(h=>{if(!h||typeof h!=='object')return null;
+  const items=(Array.isArray(h.items)?h.items:[]).map(i=>{const url=i&&normGroupUrl(str(i.url,300));if(!url)return null;
+    return {gid:okId(i.gid)||'',name:str(i.name,140),url,notes:str(i.notes,500),status:['pending','done','skipped'].includes(i.status)?i.status:'pending',at:okTs(i.at)}}).filter(Boolean);
+  if(!items.length)return null;const u=parseFbUrl(str(h.url,2000));
+  return {id:okId(h.id)||uid(),date:okTs(h.date)||Date.now(),url:u.url||'',text:str(h.text,63206),mediaCount:clamp(h.mediaCount,0,999,0),appendUrl:h.appendUrl!==false,items}}).filter(Boolean).slice(0,300)}
+function cleanTemplates(list){return (Array.isArray(list)?list:[]).map(t=>t&&typeof t==='object'&&typeof t.text==='string'?{id:okId(t.id)||uid(),name:str(t.name,80)||'Plantilla',text:str(t.text,63206)}:null).filter(Boolean)}
 const S={
-  groups:load('fbp.groups',[]),
-  settings:Object.assign({},DEF_SETTINGS,load('fbp.settings',{})),
-  history:load('fbp.history',[]),
-  templates:load('fbp.templates',[]),
-  draft:load('fbp.draft',{url:'',text:''}),
+  groups:[],settings:DEF_SETTINGS,history:[],templates:[],
+  draft:(d=>({url:str(d&&d.url,2000),text:str(d&&d.text,63206)}))(load('fbp.draft',null)),
+  lock:okTs(load('fbp.lock',null)),
   theme:load('fbp.theme','system'),
   media:[],
   sel:null,           // Set de ids de grupos seleccionados como destino
@@ -1008,6 +1048,25 @@ $('#tplBtn').onclick=e=>{
     if(ev.target.closest('[data-th]')){closePop();openHelp('plantillas')}
   })};
 
+/* Archivos persistentes en IndexedDB (solo en este navegador) */
+const MediaDB={_db:null,
+  open(){if(!this._db)this._db=new Promise((res,rej)=>{try{const r=indexedDB.open('fbp',1);r.onupgradeneeded=()=>r.result.createObjectStore('media',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}});return this._db},
+  async tx(mode,fn){const db=await this.open();return new Promise((res,rej)=>{const t=db.transaction('media',mode);const q=fn(t.objectStore('media'));t.oncomplete=()=>res(q&&q.result);t.onerror=t.onabort=()=>rej(t.error)})},
+  put(m){return this.tx('readwrite',st=>st.put({id:m.id,name:m.name,type:m.type,blob:m.file,order:m.order||Date.now()})).catch(e=>{snack('No se pudo guardar «'+m.name+'» en el navegador (espacio insuficiente). Se mantiene solo hasta que cierres la página.')})},
+  del(id){return this.tx('readwrite',st=>st.delete(id)).catch(()=>{})},
+  clear(){return this.tx('readwrite',st=>st.clear()).catch(()=>{})},
+  all(){return this.tx('readonly',st=>st.getAll()).catch(()=>[])}};
+function hasForm(){return !!(srcEl.value.trim()||txtEl.value.trim()||S.media.length)}
+function refreshForm(){validateUrl();updateCount();renderMedia();renderPreview();renderSummary();S.draft={url:srcEl.value,text:txtEl.value};save('fbp.draft',S.draft)}
+function clearForm(silent){
+  if(!hasForm()){if(!silent)snack('El formulario ya está vacío');return}
+  const snap={url:srcEl.value,text:txtEl.value,media:S.media.slice()};
+  S.media.forEach(m=>{if(m.cancel)m.cancel()});
+  srcEl.value='';txtEl.value='';S.media=[];MediaDB.clear();refreshForm();
+  snack('Formulario vacío. Tus grupos y la selección se conservan.','Deshacer',()=>{srcEl.value=snap.url;txtEl.value=snap.text;S.media=snap.media;snap.media.forEach(m=>MediaDB.put(m));refreshForm()},8000);
+}
+$('#clearForm').onclick=()=>clearForm();
+
 /* Multimedia */
 const drop=$('#drop'),fileIn=$('#fileIn');
 $('#attachBtn').onclick=()=>fileIn.click();
@@ -1025,11 +1084,11 @@ document.addEventListener('paste',e=>{
 function addFiles(list){
   let n=0;for(const f of list){const type=f.type.split('/')[0];if(!['image','video','audio'].includes(type)){snack(`«${f.name}» no es imagen, vídeo ni audio`);continue}
     if(f.size>1024*1024*1024){snack(`«${f.name}» es demasiado grande (máx. 1 GB)`);continue}
-    S.media.push({id:uid(),file:f,url:URL.createObjectURL(f),type,name:f.name||(type+'.'+(f.type.split('/')[1]||'bin'))});n++}
+    const m={id:uid(),file:f,url:URL.createObjectURL(f),type,name:f.name||(type+'.'+(f.type.split('/')[1]||'bin')),order:Date.now()+n};S.media.push(m);MediaDB.put(m);n++}
   if(n){renderMedia();renderPreview();updateCount();snack(n===1?'Archivo añadido':`${n} archivos añadidos`)}
   if(S.media.some(m=>m.type==='audio')&&n)setTimeout(()=>snack('Facebook no admite audio suelto en grupos. Puedes convertirlo a vídeo.','Cómo',()=>openHelp('multimedia'),7000),1200);
 }
-function removeMedia(id){const m=S.media.find(x=>x.id===id);if(!m)return;if(m.cancel)m.cancel();URL.revokeObjectURL(m.url);S.media=S.media.filter(x=>x.id!==id);renderMedia();renderPreview();updateCount()}
+function removeMedia(id){const m=S.media.find(x=>x.id===id);if(!m)return;if(m.cancel)m.cancel();URL.revokeObjectURL(m.url);S.media=S.media.filter(x=>x.id!==id);MediaDB.del(id);renderMedia();renderPreview();updateCount()}
 function renderMedia(){
   $('#mediaGrid').innerHTML=S.media.map(m=>`<div class="media-item" data-id="${m.id}">
     ${m.type==='image'?`<img src="${m.url}" alt="${esc(m.name)}">`:m.type==='video'?`<video src="${m.url}" muted preload="metadata"></video>`:
@@ -1073,7 +1132,7 @@ async function audioToVideo(id){
     if(cancelled){renderMedia();return}
     const ext=mime.includes('mp4')?'mp4':'webm';const blob=new Blob(chunks,{type:mime.split(';')[0]});
     const name=m.name.replace(/\.[^.]+$/,'')+'.'+ext;const f=new File([blob],name,{type:blob.type});
-    S.media.push({id:uid(),file:f,url:URL.createObjectURL(f),type:'video',name});renderMedia();renderPreview();
+    const nm={id:uid(),file:f,url:URL.createObjectURL(f),type:'video',name,order:Date.now()};S.media.push(nm);MediaDB.put(nm);renderMedia();renderPreview();
     snack('Vídeo creado: '+name,'Descargar',()=>download(name,blob,blob.type),8000)};
   rec.start(1000);
   iv=setInterval(()=>{const p=Math.min(1,audio.currentTime/audio.duration);draw(p);const t=`Convirtiendo… ${Math.round(p*100)} %`;if(m.busy!==t){m.busy=t;const el=$(`.media-item[data-id="${m.id}"] .busy`);if(el)el.textContent=t+' (mantén la pestaña visible)'}},40);
@@ -1096,38 +1155,46 @@ function renderPreview(){
 
 /* Destinos */
 function activeGroups(){return S.groups.filter(g=>g.active)}
-function ensureSel(){const act=activeGroups();if(!S.sel)S.sel=new Set(act.map(g=>g.id));else{const ids=new Set(act.map(g=>g.id));[...S.sel].forEach(id=>{if(!ids.has(id))S.sel.delete(id)})}}
+function ensureSel(){const act=activeGroups();const ids=new Set(act.map(g=>g.id));
+  if(!S.sel){const sv=load('fbp.sel',null);
+    if(sv&&Array.isArray(sv.ids)){S.sel=new Set(sv.ids.filter(i=>ids.has(i)));const known=new Set(Array.isArray(sv.known)?sv.known:[]);act.forEach(g=>{if(!known.has(g.id))S.sel.add(g.id)})}
+    else S.sel=new Set(act.map(g=>g.id))}
+  else [...S.sel].forEach(id=>{if(!ids.has(id))S.sel.delete(id)});
+  act.forEach(g=>{if(isRecent(g))S.sel.delete(g.id)});
+  save('fbp.sel',{ids:[...S.sel],known:act.map(g=>g.id)});
+}
 function selectedGroups(){ensureSel();return activeGroups().filter(g=>S.sel.has(g.id))}
-const isRecent=g=>S.settings.warnRecent&&g.lastShared&&Date.now()-g.lastShared<86400000;
+const isRecent=g=>!!g.lastShared&&Date.now()-g.lastShared<SAFE.RECENT_H*3600e3;
+const availAt=g=>g.lastShared+SAFE.RECENT_H*3600e3;
+const hhmm=ts=>new Date(ts).toLocaleString('es',{weekday:new Date(ts).toDateString()===new Date().toDateString()?undefined:'short',hour:'2-digit',minute:'2-digit'});
 function allTags(list){return [...new Set((list||S.groups).flatMap(g=>g.tags||[]))].sort((a,b)=>a.localeCompare(b,'es'))}
 function renderDest(){
   ensureSel();const act=activeGroups(),box=$('#destBox');
   if(!S.groups.length){box.innerHTML=`<div class="empty compact"><div class="ill">${ic('group')}</div><h3>Aún no has añadido grupos</h3><p>Añádelos uno a uno o captúralos todos desde Facebook con el marcador.</p><button class="btn filled" data-nav="grupos">${ic('add')}Añadir grupos</button> <button class="btn text" data-help="marcador">Cómo capturarlos</button></div>`;return}
   if(!act.length){box.innerHTML=`<div class="empty compact"><div class="ill">${ic('group')}</div><h3>No hay grupos activos</h3><p>Tienes ${S.groups.length} grupo(s), pero todos están desactivados.</p><button class="btn tonal" data-nav="grupos">Gestionar grupos</button></div>`;return}
-  const tags=allTags(act);const nSel=S.sel.size;
+  const tags=allTags(act);const nSel=S.sel.size;const avail=act.filter(g=>!isRecent(g));
   $('#destSub').textContent=`${nSel} de ${act.length} grupos activos seleccionados`;
   box.innerHTML=`${tags.length?`<div class="chips" style="margin-bottom:12px" id="destTags"><span class="muted small" style="align-self:center">Seleccionar por etiqueta:</span>${tags.map(t=>`<button class="chip" data-dtag="${esc(t)}">${ic('tag')}${esc(t)}</button>`).join('')}</div>`:''}
-    <div class="list"><div class="list-head"><input type="checkbox" class="cb" id="destAll" aria-label="Seleccionar todos" ${nSel===act.length?'checked':''}><label for="destAll" style="flex:1;cursor:pointer">Todos los grupos activos</label><span>Último uso</span></div>
-    <div class="scroll-list">${act.map(g=>`<div class="row"><label class="click"><input type="checkbox" class="cb" data-dsel="${g.id}" ${S.sel.has(g.id)?'checked':''}>
+    <div class="list"><div class="list-head"><input type="checkbox" class="cb" id="destAll" aria-label="Seleccionar todos" ${avail.length&&nSel===avail.length?'checked':''} ${avail.length?'':'disabled'}><label for="destAll" style="flex:1;cursor:pointer">Todos los disponibles (${avail.length})</label><span>Último uso</span></div>
+    <div class="scroll-list">${act.map(g=>`<div class="row ${isRecent(g)?'off':''}"><label class="click"><input type="checkbox" class="cb" data-dsel="${g.id}" ${S.sel.has(g.id)?'checked':''} ${isRecent(g)?'disabled':''}>
       <div class="main"><div class="title">${esc(g.name)}</div><div class="meta">${(g.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}${esc(g.url.replace('https://www.',''))}</div></div></label>
-      ${isRecent(g)?`<span class="pill warn" title="Ya compartiste aquí en las últimas 24 h">${ic('timer')}${esc(ago(g.lastShared))}</span>`:`<span class="small muted">${g.lastShared?esc(ago(g.lastShared)):'Nunca'}</span>`}</div>`).join('')}</div></div>
-    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn text" data-nav="grupos">${ic('edit')}Gestionar grupos</button>${act.some(isRecent)?`<button class="btn text" id="skipRecent">${ic('timer')}Excluir los de las últimas 24 h</button>`:''}</div>`;
-  const ind=$('#destAll');if(ind)ind.indeterminate=nSel>0&&nSel<act.length;
+      ${isRecent(g)?`<span class="pill warn" title="Publicaste aquí ${esc(ago(g.lastShared))}. Para proteger tu cuenta, cada grupo se puede usar una vez cada ${SAFE.RECENT_H} h.">${ic('lock_clock')}Desde ${esc(hhmm(availAt(g)))}</span>`:`<span class="small muted">${g.lastShared?esc(ago(g.lastShared)):'Nunca'}</span>`}</div>`).join('')}</div></div>
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="btn text" data-nav="grupos">${ic('edit')}Gestionar grupos</button>${act.length>avail.length?`<span class="small muted">${ic('lock_clock')} ${act.length-avail.length} grupo(s) en espera de ${SAFE.RECENT_H} h · <a href="#ayuda/buenas-practicas" data-help="buenas-practicas">¿Por qué?</a></span>`:''}<span class="small muted ml-auto">${ic('save')} Selección guardada</span></div>`;
+  const ind=$('#destAll');if(ind)ind.indeterminate=nSel>0&&nSel<avail.length;
   $('#st3').classList.toggle('ok',nSel>0);
 }
 $('#destBox').addEventListener('change',e=>{
-  if(e.target.id==='destAll'){ensureSel();if(e.target.checked)activeGroups().forEach(g=>S.sel.add(g.id));else S.sel.clear()}
+  if(e.target.id==='destAll'){ensureSel();if(e.target.checked)activeGroups().filter(g=>!isRecent(g)).forEach(g=>S.sel.add(g.id));else S.sel.clear()}
   const d=e.target.dataset.dsel;if(d){e.target.checked?S.sel.add(d):S.sel.delete(d)}
   renderDest();renderPreview();renderSummary();
 });
 $('#destBox').addEventListener('click',e=>{
-  const t=e.target.closest('[data-dtag]');if(t){S.sel=new Set(activeGroups().filter(g=>(g.tags||[]).includes(t.dataset.dtag)).map(g=>g.id));renderDest();renderPreview();renderSummary();snack(`Seleccionados los grupos con etiqueta «${t.dataset.dtag}»`)}
-  if(e.target.closest('#skipRecent')){activeGroups().filter(isRecent).forEach(g=>S.sel.delete(g.id));renderDest();renderPreview();renderSummary()}
+  const t=e.target.closest('[data-dtag]');if(t){S.sel=new Set(activeGroups().filter(g=>!isRecent(g)&&(g.tags||[]).includes(t.dataset.dtag)).map(g=>g.id));renderDest();renderPreview();renderSummary();snack(`Seleccionados los grupos con etiqueta «${t.dataset.dtag}»`)}
 });
 function renderSummary(){
   const n=selectedGroups().length,r=srcInfo(),hasContent=!!(r.url||txtEl.value.trim()||S.media.length);
-  const est=Math.ceil(n*(25+(+S.settings.pause||0))/60);
-  $('#pubSum').innerHTML=n?`<b>${n} grupo${n>1?'s':''}</b> seleccionado${n>1?'s':''} · tiempo estimado ≈ ${est} min ${!hasContent?'<br><span class="small" style="color:var(--error)">Añade una URL, texto o archivos para empezar</span>':r.error?'<br><span class="small" style="color:var(--error)">Revisa la URL de origen</span>':''}`:'<span class="muted">Selecciona al menos un grupo de destino</span>';
+  const est=Math.ceil(n*(25+(+S.settings.pause||0))/60),used=usage().day.length;
+  $('#pubSum').innerHTML=n?`<b>${n} grupo${n>1?'s':''}</b> seleccionado${n>1?'s':''} · ≈ ${est} min · <span title="Grupos publicados en las últimas 24 h">${ic('verified_user','sm')} hoy ${used}/${S.settings.dayCap}</span> ${!hasContent?'<br><span class="small" style="color:var(--error)">Añade una URL, texto o archivos para empezar</span>':r.error?'<br><span class="small" style="color:var(--error)">Revisa la URL de origen</span>':''}`:'<span class="muted">Selecciona al menos un grupo de destino</span>';
   $('#startBtn').disabled=!n||!hasContent||!!r.error;
 }
 
@@ -1237,7 +1304,7 @@ $('#impText').addEventListener('input',updImp);
 $('#impPaste').onclick=async()=>{try{$('#impText').value=await navigator.clipboard.readText();updImp()}catch(e){$('#impText').focus();snack('Pulsa Ctrl+V dentro del cuadro de texto')}};
 $('#impFileBtn').onclick=()=>$('#impFile').click();
 $('#impFile').onchange=async e=>{const f=e.target.files[0];if(f){$('#impText').value=await f.text();updImp()}e.target.value=''};
-$('#impGo').onclick=()=>{const nw=updImp();nw.forEach(g=>S.groups.push(Object.assign({id:uid(),created:Date.now(),lastShared:null},g)));if(S.sel)nw.forEach(g=>{const x=S.groups.find(y=>y.url===g.url);if(x&&x.active)S.sel.add(x.id)});persist.groups();$('#importDlg').close();snack(`${nw.length} grupo(s) importados`)};
+$('#impGo').onclick=()=>{const nw=cleanGroups(updImp().map(g=>Object.assign({id:uid(),created:Date.now(),lastShared:null},g)));nw.forEach(g=>S.groups.push(g));if(S.sel)nw.forEach(g=>{const x=S.groups.find(y=>y.url===g.url);if(x&&x.active)S.sel.add(x.id)});persist.groups();$('#importDlg').close();snack(`${nw.length} grupo(s) importados`)};
 $('#exportBtn').onclick=()=>{if(!S.groups.length){snack('No hay grupos para exportar');return}download(`facebook-publisher-grupos-${new Date().toISOString().slice(0,10)}.json`,JSON.stringify({app:'Facebook Publisher',type:'groups',groups:S.groups.map(({name,url,tags,notes,active})=>({name,url,tags,notes,active}))},null,2));snack('Grupos exportados')};
 
 /* Marcador (bookmarklet) — solo LEE la página de Facebook y copia la lista al portapapeles */
@@ -1271,7 +1338,7 @@ function fbpCapture(){
   box.innerHTML='<div style="font-weight:500;font-size:16px;margin-bottom:6px;color:#0b57d0">Facebook Publisher</div><div id="fbpMsg">Buscando grupos…</div><div style="height:4px;background:#d3e3fd;border-radius:2px;margin:12px 0;overflow:hidden"><div id="fbpBar" style="height:100%;width:30%;background:#0b57d0;border-radius:2px;transition:width .3s"></div></div><div id="fbpHint" style="font-size:12px;color:#444746;margin-bottom:12px">Desplazándose automáticamente para cargar todos tus grupos. No cierres esta pestaña.</div><div style="display:flex;gap:8px;justify-content:flex-end"><button id="fbpX" style="height:36px;padding:0 14px;border-radius:18px;border:1px solid #747775;background:none;color:#0b57d0;font-weight:500;font-size:14px;font-family:inherit;cursor:pointer">Cancelar</button><button id="fbpGo" style="height:36px;padding:0 16px;border-radius:18px;border:0;background:#0b57d0;color:#fff;font-weight:500;font-size:14px;font-family:inherit;cursor:pointer">Terminar ya</button></div>';
   document.body.appendChild(box);
   var $=function(id){return box.querySelector('#'+id)};
-  var done=false,last=-1,stable=0,iter=0,MAXI=300;
+  var done=false,last=-1,stable=0,iter=0,MAXI=150;
   function scrollers(){var r=[];document.querySelectorAll('div,ul,[role=navigation]').forEach(function(el){if(el.scrollHeight>el.clientHeight+40&&el.clientHeight>120){var oy=getComputedStyle(el).overflowY;if((oy==='auto'||oy==='scroll')&&el.querySelector('a[href*="/groups/"]'))r.push(el)}});return r}
   function close(){box.remove();window.__fbpCap=null;done=true}
   function finish(){
@@ -1298,7 +1365,7 @@ function fbpCapture(){
     if(onGroupPage||stable>=6||iter>=MAXI){finish();return}
     window.scrollTo(0,document.documentElement.scrollHeight);
     scrollers().forEach(function(el){el.scrollTop=el.scrollHeight});
-    setTimeout(step,1000);
+    setTimeout(step,1200);
   }
   step();
 }
@@ -1309,33 +1376,87 @@ $('#bookmarklet').addEventListener('click',e=>{e.preventDefault();snack('Arrastr
    PUBLICACIÓN ASISTIDA
    ============================================================ */
 let fbWin=null,runTick=null;
+/* ---------- Protección de la cuenta: ritmo y límites persistentes ---------- */
+function doneTimes(){return S.history.flatMap(h=>h.items.filter(i=>i.status==='done'&&i.at).map(i=>i.at)).sort((a,b)=>a-b)}
+function usage(){const now=Date.now(),t=doneTimes();return {day:t.filter(x=>x>now-864e5),hour:t.filter(x=>x>now-36e5),last:t[t.length-1]||0}}
+function gate(){
+  const now=Date.now(),st=S.settings,u=usage();
+  if(S.lock&&S.lock>now)return {ok:false,reason:'lock',until:S.lock};
+  if(u.day.length>=st.dayCap)return {ok:false,reason:'day',until:u.day[u.day.length-st.dayCap]+864e5};
+  if(u.hour.length>=st.hourCap)return {ok:false,reason:'hour',until:u.hour[u.hour.length-st.hourCap]+36e5};
+  if(u.last&&now<u.last+st.pause*1000)return {ok:false,reason:'pause',until:u.last+st.pause*1000,total:st.pause};
+  return {ok:true};
+}
+function setLock(ts){S.lock=ts;save('fbp.lock',ts)}
+function saveRunState(){if(S.run)save('fbp.run',{id:S.run.entry.id});else{try{localStorage.removeItem('fbp.run')}catch(e){}}}
 function startRun(fromHist){
   let entry;
   if(fromHist){entry=fromHist}else{
     const r=validateUrl();if(r.error){snack('La URL de origen no es válida');srcEl.focus();return}
-    const groups=selectedGroups();if(!groups.length){snack('Selecciona al menos un grupo');return}
+    const groups=selectedGroups().filter(g=>!isRecent(g));if(!groups.length){snack('Selecciona al menos un grupo disponible');return}
     if(!r.url&&!txtEl.value.trim()&&!S.media.length){snack('Añade una URL, texto o archivos');return}
     entry={id:uid(),date:Date.now(),url:r.url||'',text:txtEl.value,mediaCount:S.media.length,appendUrl:S.settings.appendUrl,
       items:groups.map(g=>({gid:g.id,name:g.name,url:g.url,notes:g.notes||'',status:'pending',at:null}))};
     S.history.unshift(entry);persist.history();
   }
   const idx=entry.items.findIndex(i=>i.status==='pending');
-  S.run={entry,idx:idx<0?entry.items.length:idx,opened:false,coolUntil:0,coolTotal:0};
+  S.run={entry,idx:idx<0?entry.items.length:idx,opened:false};saveRunState();renderResume();
   $('#runDlg').showModal();renderRun();
 }
-$('#startBtn').onclick=()=>startRun();
+$('#startBtn').onclick=()=>openPreflight();
+function openPreflight(){
+  const r=validateUrl();if(r.error){snack('La URL de origen no es válida');srcEl.focus();return}
+  if(!hasForm()){snack('Añade una URL, texto o archivos');return}
+  const sel=selectedGroups().filter(g=>!isRecent(g));if(!sel.length){snack('Selecciona al menos un grupo disponible');return}
+  const st=S.settings,u=usage(),now=Date.now(),left=Math.max(0,st.dayCap-u.day.length);
+  const text=txtEl.value,checks=[];const add=(lvl,icon,t,d)=>checks.push({lvl,icon,t,d});
+  const locked=S.lock&&S.lock>now;
+  if(locked)add('err','block','Bloqueo de seguridad activo',`Indicaste que Facebook mostró un aviso. Podrás publicar a partir de ${esc(hhmm(S.lock))}.`);
+  if(left===0)add('warn','event_busy','Límite diario alcanzado',`Ya has publicado en ${u.day.length} grupos en 24 h. Puedes preparar la cola: el asistente esperará hasta ${esc(hhmm(gate().until||now))}.`);
+  else if(sel.length>left)add('warn','event_busy',`Hoy solo quedan ${left} de ${st.dayCap} publicaciones`,`Has seleccionado ${sel.length} grupos. El resto quedará pendiente y podrás reanudarlo desde el Historial.`);
+  else add('ok','event_available','Dentro del límite diario',`${u.day.length+sel.length} de ${st.dayCap} grupos en 24 h.`);
+  add('ok','timer','Ritmo seguro',`Pausa de ${st.pause} s entre grupos y como máximo ${st.hourCap} por hora. Tiempo estimado ≈ ${Math.ceil(sel.length*(st.pause+25)/60)} min${sel.length>st.hourCap?' más las esperas por hora':''}.`);
+  const recentSel=activeGroups().filter(isRecent).length;
+  if(recentSel)add('info','lock_clock',`${recentSel} grupo(s) excluidos`,`Ya publicaste en ellos en las últimas ${SAFE.RECENT_H} h.`);
+  if(sel.length>3&&!/\{grupo\}/i.test(text))add('warn','content_copy','Mismo texto en todos los grupos','Facebook detecta mejor el texto repetido. Añade {grupo} o un saludo propio para personalizarlo.');
+  const urls=(text.match(/https?:\/\/\S+/g)||[]).length,tags=(text.match(/(^|\s)#[\p{L}\p{N}_]+/gu)||[]).length;
+  if(urls>2)add('warn','link','Muchos enlaces en el texto',`Hay ${urls} enlaces. Más de 1–2 enlaces por publicación es una señal habitual de spam.`);
+  if(tags>5)add('warn','tag','Muchos hashtags',`Hay ${tags} hashtags. Usa 1–3 relevantes.`);
+  if(r.kind==='Publicación de grupo')add('info','visibility','Publicación de origen dentro de un grupo','Si el grupo de origen es privado, quienes no sean miembros no podrán verla.');
+  const ruled=sel.filter(g=>g.notes).length;if(ruled)add('info','gavel',`${ruled} grupo(s) con normas anotadas`,'Se mostrarán en cada paso: respétalas para evitar denuncias.');
+  if(!checks.some(c=>c.lvl!=='ok'&&c.lvl!=='info'))add('ok','check_circle','Todo listo','Tu publicación cumple las recomendaciones de seguridad.');
+  const col={ok:'var(--success)',warn:'var(--warn)',err:'var(--error)',info:'var(--primary)'};
+  $('#checkList').innerHTML=checks.map(c=>`<div class="row" style="align-items:flex-start"><span class="ms" aria-hidden="true" style="color:${col[c.lvl]};margin-top:2px">${c.icon}</span><div class="main"><div class="title" style="white-space:normal">${c.t}</div><div class="meta" style="white-space:normal">${c.d}</div></div></div>`).join('');
+  const go=$('#checkGo');go.disabled=!!locked;go.innerHTML=`${ic('play_arrow')}Empezar (${sel.length} grupo${sel.length>1?'s':''})`;
+  go.onclick=()=>{$('#checkDlg').close();startRun()};
+  $('#checkDlg').showModal();
+}
+function renderResume(){
+  const b=$('#resumeBanner');const sv=load('fbp.run',null);const h=sv&&!S.run&&S.history.find(x=>x.id===sv.id);
+  const pend=h?h.items.filter(i=>i.status==='pending').length:0;
+  if(!h||!pend){b.hidden=true;return}
+  const done=h.items.length-pend;
+  b.hidden=false;b.innerHTML=`${ic('pending_actions')}<div style="flex:1"><b>Tienes una publicación asistida a medias</b><div class="small muted">${done} de ${h.items.length} grupos completados · ${esc(((h.text||'').trim().split('\n')[0]||h.url||'').slice(0,80))}</div></div>
+    <button class="btn filled sm" id="resumeGo">${ic('play_arrow')}Reanudar</button><button class="btn text sm" id="resumeNo">Más tarde</button>`;
+  $('#resumeGo').onclick=()=>startRun(h);$('#resumeNo').onclick=()=>{try{localStorage.removeItem('fbp.run')}catch(e){}b.hidden=true;snack('Podrás reanudarla desde el Historial')};
+}
+function renderLock(){const b=$('#lockBanner');const on=S.lock&&S.lock>Date.now();b.hidden=!on;
+  if(on)b.innerHTML=`${ic('shield')}<div style="flex:1"><b>Publicación en pausa para proteger tu cuenta</b><div class="small">Indicaste que Facebook mostró un aviso. Podrás volver a publicar a partir de ${esc(hhmm(S.lock))}. <a href="#ayuda/aviso-facebook" data-help="aviso-facebook">Qué hacer mientras tanto</a></div></div>`}
 function runText(item){const e=S.run.entry;const prev=S.settings.appendUrl;S.settings.appendUrl=e.appendUrl!==false;const t=finalText(item,e.text,e.url);S.settings.appendUrl=prev;return t}
 function openTarget(item){
   const e=S.run.entry;const mode=S.settings.mode;
   const url=mode==='share'&&e.url?`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(e.url)}`:item.url;
-  if(mode==='side'){const w=Math.min(900,Math.round(screen.availWidth*0.55)),h=screen.availHeight-40,l=screen.availWidth-w;
-    fbWin=window.open(url,'fbp_target',`popup=yes,width=${w},height=${h},left=${l},top=0`)}
-  else fbWin=window.open(url,'fbp_target');
+  if(!/^https:\/\/www\.facebook\.com\//.test(url)){snack('Destino no válido');return false}
+  const feat=mode==='side'?(()=>{const w=Math.min(900,Math.round(screen.availWidth*0.55)),h=screen.availHeight-40,l=screen.availWidth-w;return `popup=yes,width=${w},height=${h},left=${l},top=0`})():'';
+  fbWin=window.open('','fbp_target',feat);
+  if(fbWin){try{fbWin.opener=null}catch(_){}try{fbWin.location.href=url}catch(_){fbWin=window.open(url,'fbp_target',feat)}}
   if(!fbWin){snack('El navegador bloqueó la ventana. Permite las ventanas emergentes para este archivo.','Ayuda',()=>openHelp('problemas'),8000);return false}
   try{fbWin.focus()}catch(_){}return true;
 }
 async function stepOpen(){
   const it=S.run.entry.items[S.run.idx];if(!it)return;
+  if(!gate().ok){renderRun();return}
+  if(isRecentId(it.gid)&&!it.ack){snack('Ya publicaste en este grupo hace menos de 24 h. Se ha omitido para proteger tu cuenta.');mark('skipped');return}
   const ok=await copyText(runText(it));
   const opened=openTarget(it);S.run.opened=opened||S.run.opened;renderRun();
   snack(ok?(opened?'Texto copiado y grupo abierto. Pega con Ctrl+V en Facebook.':'Texto copiado'):'No se pudo copiar automáticamente: usa «Copiar texto».');
@@ -1347,9 +1468,12 @@ function mark(status){
   persist.history();
   const next=R.entry.items.findIndex((x,i)=>i>R.idx&&x.status==='pending');const anyNext=next>=0?next:R.entry.items.findIndex(x=>x.status==='pending');
   R.idx=anyNext<0?R.entry.items.length:anyNext;R.opened=false;
-  const pause=+S.settings.pause||0;
-  if(status==='done'&&pause>0&&anyNext>=0){R.coolUntil=Date.now()+pause*1000;R.coolTotal=pause}else R.coolUntil=0;
   renderRun();
+}
+const isRecentId=gid=>{const g=S.groups.find(x=>x.id===gid);return !!g&&isRecent(g)};
+async function panicStop(){
+  if(!await confirmBox('¿Facebook te ha mostrado un aviso?','Detendremos la publicación y bloquearemos nuevas publicaciones durante 24 horas para que tu cuenta se recupere. Tu progreso queda guardado en el Historial.','Detener y proteger',true))return;
+  setLock(Date.now()+SAFE.LOCK_H*3600e3);await closeRun(true);renderLock();openHelp('aviso-facebook');
 }
 function beep(){if(!S.settings.sound)return;try{const a=new (window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.frequency.value=880;g.gain.setValueAtTime(.08,a.currentTime);g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+.35);o.connect(g).connect(a.destination);o.start();o.stop(a.currentTime+.36);setTimeout(()=>a.close(),600)}catch(e){}}
 function renderRun(){
@@ -1363,18 +1487,34 @@ function renderRun(){
       <h2 style="font-size:24px;line-height:32px;margin:0 0 8px">¡Listo! Has terminado esta publicación</h2><p class="muted">Todo queda registrado en el Historial.</p>
       <div class="stats"><div class="stat"><div class="k">${ic('check_circle')}Publicados</div><div class="v" style="color:var(--success)">${d}</div></div><div class="stat"><div class="k">${ic('skip_next')}Omitidos</div><div class="v">${s}</div></div></div>
       <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn outlined" id="rHist">${ic('history')}Ver historial</button><button class="btn filled" id="rEnd">Cerrar</button></div></div>`;
-    $('#rHist').onclick=()=>{closeRun(true);location.hash='historial'};$('#rEnd').onclick=()=>closeRun(true);document.title='Facebook Publisher';return;
+    $('#rHist').onclick=()=>{closeRun(true);location.hash='historial'};$('#rEnd').onclick=()=>closeRun(true);document.title='Facebook Publisher';
+    const same=hasForm()&&(parseFbUrl(srcEl.value).url||'')===R.entry.url&&txtEl.value===R.entry.text;
+    if(same&&S.settings.clearAfter==='always'&&!R.cleared){R.cleared=true;clearForm(true)}
+    else if(same&&S.settings.clearAfter==='ask'){const box=document.createElement('div');box.className='banner';box.style.cssText='max-width:520px;margin:20px auto 0;text-align:left';
+      box.innerHTML=`${ic('note_add')}<div style="flex:1">¿Vaciar el formulario para empezar una nueva publicación? Tus grupos y la selección se conservan.<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn tonal sm" id="rClear">Vaciar formulario</button><button class="btn text sm" id="rKeep">Conservar</button></div></div>`;
+      $('.summary',main).appendChild(box);$('#rClear').onclick=()=>{clearForm(true);box.remove();snack('Formulario vacío')};$('#rKeep').onclick=()=>box.remove()}
+    return;
   }
   const it=items[R.idx];
-  if(R.coolUntil>Date.now()){
-    const C=2*Math.PI*62;
-    const upd=()=>{const left=Math.max(0,Math.ceil((R.coolUntil-Date.now())/1000));const b=$('#coolN');if(!b)return;b.textContent=left;
-      $('#coolFg').style.strokeDashoffset=C*(1-left/R.coolTotal);document.title=`(${left}s) Facebook Publisher`;
-      if(left<=0){R.coolUntil=0;beep();renderRun()}};
+  const G=gate();
+  if(!G.ok){
+    const MSG={pause:['Pausa de seguridad','Espaciar las publicaciones evita que Facebook las considere spam. La pausa no se puede saltar.'],
+      hour:[`Límite por hora alcanzado (${S.settings.hourCap})`,'Has publicado el máximo recomendado en la última hora. El asistente continuará automáticamente.'],
+      day:[`Límite diario alcanzado (${S.settings.dayCap})`,'Has llegado al máximo de grupos en 24 horas. Puedes cerrar: tu progreso queda guardado y podrás reanudar desde el Historial.'],
+      lock:['Publicación bloqueada por seguridad','Indicaste que Facebook mostró un aviso. Deja descansar la cuenta antes de continuar.']}[G.reason];
+    const C=2*Math.PI*62,total=G.total||Math.max(1,(G.until-Date.now())/1000);
+    const fmtLeft=sec=>sec>=3600?`${Math.floor(sec/3600)} h ${Math.ceil(sec%3600/60)} min`:sec>=60?`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`:String(sec);
+    const upd=()=>{const left=Math.max(0,Math.ceil((G.until-Date.now())/1000));const b=$('#coolN');if(!b)return;b.textContent=fmtLeft(left);b.style.fontSize=left>=60?'28px':'';
+      $('#coolFg').style.strokeDashoffset=C*(1-left/total);document.title=`(${fmtLeft(left)}) Facebook Publisher`;
+      if(left<=0){beep();renderRun()}};
     main.innerHTML=`<div class="cool"><div class="ring"><svg viewBox="0 0 140 140"><circle class="bg" cx="70" cy="70" r="62"/><circle class="fg" id="coolFg" cx="70" cy="70" r="62" stroke-dasharray="${C}" stroke-dashoffset="0"/></svg><b id="coolN"></b></div>
-      <h3 style="font-size:22px;line-height:28px;margin:0">Pausa antes del siguiente grupo</h3><p class="muted" style="margin:0;max-width:420px">Espaciar las publicaciones reduce el riesgo de que Facebook las marque como spam. <a href="#" data-help="buenas-practicas">¿Por qué?</a></p>
-      <p style="margin:0">Siguiente: <b>${esc(it.name)}</b></p><button class="btn text" id="coolSkip">${ic('skip')}Saltar espera</button></div>`;
-    $('#coolSkip').onclick=()=>{R.coolUntil=0;renderRun()};upd();runTick=setInterval(upd,1000);return;
+      <h3 style="font-size:22px;line-height:28px;margin:0">${MSG[0]}</h3><p class="muted" style="margin:0;max-width:440px">${MSG[1]} <a href="#ayuda/buenas-practicas" data-help="buenas-practicas">Más información</a></p>
+      ${G.reason!=='pause'?`<p style="margin:0">Podrás continuar: <b>${esc(hhmm(G.until))}</b></p>`:''}
+      <p style="margin:0">Siguiente: <b>${esc(it.name)}</b></p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">${G.reason==='pause'?'':`<button class="btn outlined" id="coolLater">${ic('schedule')}Continuar más tarde</button>`}
+      <button class="btn text danger" id="rPanic2">${ic('report')}Facebook me mostró un aviso</button></div></div>`;
+    const cl=$('#coolLater');if(cl)cl.onclick=()=>closeRun(true);$('#rPanic2').onclick=panicStop;
+    upd();runTick=setInterval(upd,1000);return;
   }
   document.title=`▶ ${it.name} · Facebook Publisher`;
   const mode=S.settings.mode;const imgs=S.media.filter(m=>m.type==='image'),vids=S.media.filter(m=>m.type==='video');
@@ -1395,28 +1535,30 @@ function renderRun(){
     </div></div>
     <div class="rstep"><span class="step">3</span><div class="main"><h4>Confirmar</h4><p>Marca el resultado para pasar al siguiente grupo.</p>
       <div class="acts"><button class="btn success" id="rDone">${ic('check')}Publicado <kbd>P</kbd></button><button class="btn outlined" id="rSkip">${ic('skip')}Omitir <kbd>S</kbd></button>
-      <a class="hlp" href="#ayuda/asistente" data-help="asistente">${ic('help')}Ayuda</a></div></div></div></div>
+      <a class="hlp" href="#ayuda/asistente" data-help="asistente">${ic('help')}Ayuda</a></div>
+      <p class="small muted" style="margin:12px 0 0">¿Facebook te muestra «Has publicado demasiado rápido», un control de seguridad o una restricción? <button class="hlp" id="rPanic" style="color:var(--error)">${ic('report')}Detener y proteger mi cuenta</button></p></div></div></div>
     ${R.entry.mediaCount>0&&!S.media.length?`<div class="note">${ic('info')}<div>Esta publicación tenía ${R.entry.mediaCount} archivo(s) que ya no están cargados (los archivos no se guardan entre sesiones). Vuelve a añadirlos en «Publicar» si los necesitas.</div></div>`:''}`;
   $('#rOpen').onclick=stepOpen;$('#rCopy').onclick=async()=>{snack(await copyText(txt)?'Texto copiado':'No se pudo copiar')};
-  $('#rDone').onclick=()=>mark('done');$('#rSkip').onclick=()=>mark('skipped');
+  $('#rDone').onclick=()=>mark('done');$('#rSkip').onclick=()=>mark('skipped');$('#rPanic').onclick=panicStop;
   $$('[data-rimg]',main).forEach(b=>b.onclick=()=>copyImage(S.media.find(m=>m.id===b.dataset.rimg)));
   $$('[data-rvid]',main).forEach(b=>b.onclick=()=>{const m=S.media.find(x=>x.id===b.dataset.rvid);download(m.name,m.file,m.file.type)});
   $('#rOpen').focus();
 }
 $('#runQueue').addEventListener('click',e=>{const q=e.target.closest('[data-q]');if(!q)return;const R=S.run;const i=+q.dataset.q;const it=R.entry.items[i];
-  if(it.status!=='pending'){it.status='pending';it.at=null;persist.history()}R.idx=i;R.opened=false;R.coolUntil=0;renderRun()});
+  if(it.status==='done'){snack('Este grupo ya está marcado como publicado');return}
+  if(it.status!=='pending'){it.status='pending';it.at=null;persist.history()}R.idx=i;R.opened=false;renderRun()});
 async function closeRun(force){
   const R=S.run;if(!R){$('#runDlg').close();return}
   const pending=R.entry.items.filter(i=>i.status==='pending').length;
   if(!force&&pending&&!await confirmBox('¿Salir de la publicación asistida?',`Quedan ${pending} grupo(s) pendientes. Podrás reanudar desde el Historial.`,'Salir'))return;
-  clearInterval(runTick);S.run=null;$('#runDlg').close();document.title='Facebook Publisher';renderAllGroups();renderHistory();
+  clearInterval(runTick);S.run=null;saveRunState();$('#runDlg').close();document.title='Facebook Publisher';renderAllGroups();renderHistory();renderResume();
 }
 $('#runClose').onclick=()=>closeRun();
 $('#runDlg').addEventListener('cancel',e=>{e.preventDefault();closeRun()});
 $('#runDlg').addEventListener('keydown',e=>{
   if(!S.run||e.ctrlKey||e.metaKey||e.altKey||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)||$('#confirmDlg').open)return;
   const R=S.run;if(R.idx>=R.entry.items.length)return;
-  if(R.coolUntil>Date.now()){if(e.key==='Enter'){e.preventDefault();R.coolUntil=0;renderRun()}return}
+  if(!gate().ok)return;
   const k=e.key.toLowerCase();
   if(k==='enter'&&!e.target.closest('button:not(#rOpen)')){e.preventDefault();stepOpen()}
   else if(k==='p'){e.preventDefault();mark('done')}else if(k==='s'){e.preventDefault();mark('skipped')}
@@ -1450,22 +1592,28 @@ $('#clearHist').onclick=async()=>{if(!S.history.length)return;if(await confirmBo
 /* ============================================================
    AJUSTES
    ============================================================ */
-function openSettings(){const s=S.settings;$('#setMode').value=s.mode;$('#setPause').value=s.pause;$('#setAppend').checked=s.appendUrl;$('#setRecent').checked=s.warnRecent;$('#setSound').checked=s.sound;applyTheme();$('#settingsDlg').showModal()}
+function openSettings(){const s=S.settings;$('#setMode').value=s.mode;$('#setPause').value=s.pause;$('#setHour').value=s.hourCap;$('#setDay').value=s.dayCap;$('#setClear').value=s.clearAfter;$('#setAppend').checked=s.appendUrl;$('#setSound').checked=s.sound;
+  const locked=S.lock&&S.lock>Date.now();$('#lockRow').hidden=!locked;if(locked)$('#lockTxt').textContent=`Nuevas publicaciones bloqueadas hasta ${hhmm(S.lock)}.`;applyTheme();$('#settingsDlg').showModal()}
+function numSetting(id,key,min,max){$(id).onchange=e=>{S.settings[key]=clamp(e.target.value,min,max,DEF_SETTINGS[key]);e.target.value=S.settings[key];persist.settings();renderSummary();
+  if(+e.target.value!==+e.target.dataset.prev)snack('Ajuste guardado')}}
+numSetting('#setHour','hourCap',1,SAFE.MAX_HOUR);numSetting('#setDay','dayCap',1,SAFE.MAX_DAY);
+$('#setClear').onchange=e=>{S.settings.clearAfter=e.target.value;persist.settings()};
+$('#unlockBtn').onclick=async()=>{if(!await confirmBox('¿Quitar el bloqueo de seguridad?','Si Facebook te mostró un aviso, publicar de nuevo antes de 24 horas aumenta el riesgo de restricciones en tu cuenta. Hazlo solo si estás seguro de que todo está bien.','Quitar bloqueo',true))return;setLock(null);openSettings();renderLock();snack('Bloqueo quitado')};
 $('#settingsBtn').onclick=openSettings;
 $('#setMode').onchange=e=>{S.settings.mode=e.target.value;persist.settings()};
-$('#setPause').onchange=e=>{S.settings.pause=Math.max(0,Math.min(900,parseInt(e.target.value)||0));e.target.value=S.settings.pause;persist.settings();renderSummary()};
+$('#setPause').onchange=e=>{const v=parseInt(e.target.value);S.settings.pause=clamp(v,SAFE.MIN_PAUSE,SAFE.MAX_PAUSE,60);e.target.value=S.settings.pause;persist.settings();renderSummary();if(v<SAFE.MIN_PAUSE)snack(`La pausa mínima es de ${SAFE.MIN_PAUSE} segundos para proteger tu cuenta`)};
 $('#setAppend').onchange=e=>{S.settings.appendUrl=e.target.checked;persist.settings();renderPreview()};
-$('#setRecent').onchange=e=>{S.settings.warnRecent=e.target.checked;persist.settings();renderDest()};
 $('#setSound').onchange=e=>{S.settings.sound=e.target.checked;persist.settings()};
-$('#backupOut').onclick=()=>download(`facebook-publisher-copia-${new Date().toISOString().slice(0,10)}.json`,JSON.stringify({app:'Facebook Publisher',type:'backup',version:1,date:new Date().toISOString(),groups:S.groups,templates:S.templates,settings:S.settings,history:S.history,draft:S.draft},null,2));
+$('#backupOut').onclick=()=>download(`facebook-publisher-copia-${new Date().toISOString().slice(0,10)}.json`,JSON.stringify({app:'Facebook Publisher',type:'backup',version:1,date:new Date().toISOString(),groups:S.groups,templates:S.templates,settings:S.settings,history:S.history,draft:S.draft,selection:[...(S.sel||[])]},null,2));
 $('#backupInBtn').onclick=()=>$('#backupIn').click();
 $('#backupIn').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
   try{const d=JSON.parse(await f.text());if(d.type!=='backup')throw 0;
     if(!await confirmBox('¿Restaurar copia de seguridad?','Se reemplazarán tus grupos, plantillas, ajustes e historial actuales.','Restaurar'))return;
-    S.groups=d.groups||[];S.templates=d.templates||[];S.settings=Object.assign({},DEF_SETTINGS,d.settings||{});S.history=d.history||[];S.sel=null;
+    S.groups=cleanGroups(d.groups);S.templates=cleanTemplates(d.templates);S.settings=cleanSettings(d.settings);S.history=cleanHistory(d.history);
+    S.sel=Array.isArray(d.selection)?new Set(d.selection.filter(x=>typeof x==='string')):null;
     ['groups','templates','settings','history'].forEach(k=>persist[k]());openSettings();snack('Copia restaurada')}catch(_){snack('El archivo no es una copia de seguridad válida')}};
 $('#wipeAll').onclick=async()=>{if(!await confirmBox('¿Borrar todos los datos?','Se eliminarán grupos, plantillas, historial, ajustes y borrador de este navegador. No se puede deshacer.','Borrar todo',true))return;
-  Object.keys(localStorage).filter(k=>k.startsWith('fbp.')).forEach(k=>localStorage.removeItem(k));location.reload()};
+  Object.keys(localStorage).filter(k=>k.startsWith('fbp.')).forEach(k=>localStorage.removeItem(k));await MediaDB.clear();location.reload()};
 
 /* ============================================================
    CENTRO DE AYUDA
@@ -1509,7 +1657,7 @@ H('editor','Publicar','Redactar el contenido','texto editor negrita cursiva emoj
 <li><a data-help="variables">Variables</a> como <code>{grupo}</code> para personalizar cada publicación.</li>
 <li><a data-help="plantillas">Plantillas</a> para reutilizar textos.</li></ul>
 <div class="callout">Usa la negrita Unicode con moderación: los lectores de pantalla la leen mal y algunos buscadores no la indexan.</div>
-<p>El texto y la URL se guardan automáticamente como borrador en este navegador.</p>`),
+<p>La URL, el texto y los archivos se guardan automáticamente en este navegador. Pulsa <b>Nueva publicación</b> para vaciarlos (con opción de deshacer); tus grupos y la selección de destinos se conservan.</p>`),
 H('variables','Publicar','Variables de personalización','variables grupo fecha enlace personalizar',`
 <p>Las variables se sustituyen automáticamente en cada grupo:</p>
 <table><tr><th>Variable</th><th>Se convierte en</th></tr><tr><td><code>{grupo}</code></td><td>Nombre del grupo de destino</td></tr><tr><td><code>{fecha}</code></td><td>Fecha de hoy, p. ej. «15 de noviembre»</td></tr><tr><td><code>{enlace}</code></td><td>URL de la publicación de origen</td></tr></table>
@@ -1519,27 +1667,27 @@ H('plantillas','Publicar','Plantillas de texto','plantillas guardar reutilizar',
 <p>Guarda textos que usas a menudo (anuncios, promociones, presentaciones) y aplícalos con un clic.</p>
 <ol><li>Escribe el texto en el editor.</li><li>Pulsa <b>Plantillas → Guardar texto actual como plantilla</b> y ponle un nombre.</li><li>Para usarla, ábrela desde el mismo menú. Si ya había texto, puedes deshacerlo desde el aviso.</li></ol>
 <p>Las plantillas se incluyen en la <a data-help="privacidad">copia de seguridad</a>.</p>`),
-H('multimedia','Publicar','Imágenes, vídeo y audio','imagen foto video audio adjuntar archivo convertir mp3',`
-<p>Arrastra archivos a la zona punteada, haz clic en ella o pega una imagen con <kbd>Ctrl</kbd>+<kbd>V</kbd>.</p>
+H('multimedia','Publicar','Imágenes, vídeo y audio','imagen foto video audio adjuntar archivo convertir mp3 guardar',`
+<p>Arrastra archivos a la zona punteada, haz clic en ella o pega una imagen con <kbd>Ctrl</kbd>+<kbd>V</kbd>. <b>Los archivos se guardan en este navegador</b> (IndexedDB), así que siguen ahí aunque cierres o recargues la página.</p>
 <h3>Cómo llegan a Facebook</h3><p>Por seguridad, ninguna web puede subir archivos a otra pestaña. En la <a data-help="asistente">publicación asistida</a> tendrás botones para:</p>
 <ul><li><b>Copiar imagen N</b>: la copia al portapapeles; pégala con <kbd>Ctrl</kbd>+<kbd>V</kbd> en el cuadro de publicación de Facebook.</li><li><b>Vídeos</b>: adjúntalos con el botón «Foto/vídeo» de Facebook; también puedes volver a descargarlos desde la app.</li></ul>
-<h3>Audio</h3><p>Los grupos de Facebook no aceptan archivos de audio sueltos. Pulsa <b>Convertir a vídeo</b> en el audio: la app crea un vídeo con la primera imagen como portada (o un fondo con el título) y la barra de progreso. La conversión tarda lo mismo que el audio; mantén la pestaña visible.</p>
-<div class="callout warn">Los archivos no se guardan entre sesiones (solo el texto y la URL). Si recargas la página, vuelve a añadirlos.</div>
-<p>Si adjuntas imágenes o vídeos, Facebook suele mostrarlos en lugar de la vista previa del enlace.</p>`),
-H('destinos','Publicar','Elegir grupos de destino','destinos seleccionar grupos etiquetas 24 horas',`
-<p>En <b>Destinos</b> aparecen solo los grupos <b>activos</b>. Marca o desmarca los que quieras para esta publicación; esta selección no cambia el estado de los grupos.</p>
-<ul><li><b>Seleccionar por etiqueta:</b> pulsa una etiqueta para seleccionar solo los grupos que la tienen.</li><li><b>Avisos de 24 h:</b> los grupos donde ya publicaste hace poco aparecen marcados. Usa «Excluir los de las últimas 24 h» para no repetir.</li></ul>
+<h3>Audio</h3><p>Los grupos de Facebook no aceptan archivos de audio sueltos. Pulsa <b>Convertir a vídeo</b> en el audio: la app crea un vídeo con la primera imagen como portada (o un fondo con el título). La conversión tarda lo mismo que el audio; mantén la pestaña visible.</p>
+<div class="callout">Si el navegador se queda sin espacio, el archivo se mantiene solo mientras la página esté abierta y verás un aviso. Pulsa <b>Nueva publicación</b> para liberar espacio.</div>`),
+H('destinos','Publicar','Elegir grupos de destino','destinos seleccionar grupos etiquetas 24 horas guardar seleccion',`
+<p>En <b>Destinos</b> aparecen solo los grupos <b>activos</b>. Marca o desmarca los que quieras para esta publicación. <b>La selección se guarda automáticamente</b> y la encontrarás igual al volver.</p>
+<ul><li><b>Seleccionar por etiqueta:</b> pulsa una etiqueta para seleccionar solo los grupos que la tienen.</li><li><b>Grupos en espera:</b> los grupos donde publicaste en las últimas 24 h aparecen bloqueados con la hora a la que vuelven a estar disponibles. <a data-help="buenas-practicas">¿Por qué?</a></li><li>Los grupos que actives o añadas después se seleccionan solos.</li></ul>
 <p>Para activar, desactivar o etiquetar grupos, ve a <a data-help="grupos">Gestionar grupos</a>.</p>`),
 H('vista-previa','Publicar','Vista previa','vista previa preview',`
 <p>Muestra una aproximación de cómo se verá la publicación en el <b>primer grupo seleccionado</b>, con las <a data-help="variables">variables</a> ya sustituidas.</p><p>Si no adjuntas archivos y hay URL, se muestra una tarjeta de enlace. Facebook generará la tarjeta real al pegar el enlace, con la imagen y el texto de la publicación original.</p>`),
-H('asistente','Publicar','Publicación asistida paso a paso','asistente publicar cola atajos enter pausa reanudar',`
-<p>Es el corazón de la app: te guía grupo a grupo.</p>
+H('asistente','Publicar','Publicación asistida paso a paso','asistente publicar cola atajos enter pausa reanudar comprobacion seguridad',`
+<p>Te guía grupo a grupo. Antes de empezar verás la <b>Comprobación de seguridad</b>, con los límites, posibles señales de spam y las normas de los grupos.</p>
 <ol><li><b>Copiar y abrir</b> (<kbd>Enter</kbd>): copia el texto personalizado para ese grupo y lo abre en Facebook (en ventana lateral, pestaña o diálogo Compartir, según tus <a data-help="modos-apertura">ajustes</a>).</li>
 <li><b>Pegar y publicar:</b> en Facebook, haz clic en «Escribe algo…», pega con <kbd>Ctrl</kbd>+<kbd>V</kbd>, añade las imágenes si las hay y pulsa «Publicar».</li>
 <li><b>Confirmar:</b> vuelve a la app y pulsa <b>Publicado</b> (<kbd>P</kbd>) u <b>Omitir</b> (<kbd>S</kbd>).</li></ol>
-<p>Tras cada publicación hay una <a data-help="buenas-practicas">pausa configurable</a> con cuenta atrás y aviso sonoro. Puedes saltarla.</p>
-<h3>Otros controles</h3><ul><li>Haz clic en un grupo de la cola (izquierda) para ir a él, incluso si ya estaba marcado.</li><li><kbd>C</kbd> vuelve a copiar el texto.</li><li>Si cierras el asistente, el progreso queda en el <a data-help="historial">Historial</a> y puedes <b>Reanudar</b>.</li></ul>
-<div class="callout">Ventana lateral: coloca la app a la izquierda de la pantalla y Facebook se abrirá a la derecha; así no tienes que cambiar de pestaña.</div>`),
+<p>Tras cada publicación hay una <a data-help="buenas-practicas">pausa de seguridad</a> que no se puede saltar. Si llegas al límite por hora o por día, el asistente espera o te propone continuar más tarde.</p>
+<h3>Continuar otro día</h3><ul><li>El progreso se guarda al momento. Si cierras el asistente o el navegador, en <b>Publicar</b> verás el aviso <b>Reanudar</b>; también puedes reanudar desde el <a data-help="historial">Historial</a>.</li><li>Haz clic en un grupo pendiente u omitido de la cola para ir a él. <kbd>C</kbd> vuelve a copiar el texto.</li></ul>
+<h3>Al terminar</h3><p>Puedes <b>vaciar el formulario</b> (URL, texto y archivos) para empezar otra publicación. Tus grupos y la selección se conservan. Elige en Ajustes si quieres que se pregunte, se vacíe siempre o se conserve.</p>
+<div class="callout warn">Si Facebook muestra cualquier aviso, pulsa <b>Detener y proteger mi cuenta</b>. <a data-help="aviso-facebook">Qué hacer</a></div>`),
 H('modos-apertura','Publicar','Modos de apertura: ventana lateral, pestaña o «Compartir»','ventana lateral pestaña compartir sharer dialogo',`
 <table><tr><th>Modo</th><th>Cuándo usarlo</th></tr>
 <tr><td><b>Ventana lateral</b> (recomendado)</td><td>Abre el grupo en una ventana a la derecha y la reutiliza en cada grupo. Es lo más rápido.</td></tr>
@@ -1567,16 +1715,35 @@ H('importar','Grupos','Importar y exportar grupos','importar exportar json csv l
 H('historial','Historial','Historial y reanudación','historial reanudar reutilizar',`
 <p>Cada sesión de publicación asistida se guarda con la fecha, el texto, la URL y el estado de cada grupo (publicado, omitido o pendiente).</p>
 <ul><li><b>Reanudar:</b> continúa por los grupos pendientes.</li><li><b>Reutilizar contenido:</b> carga el texto y la URL en Publicar para una nueva campaña.</li><li>Los grupos marcados como publicados actualizan su «Último uso», que sirve para los avisos de 24 h.</li></ul>`),
-H('buenas-practicas','Buenas prácticas','Evitar bloqueos y spam','spam bloqueo pausa limites buenas practicas restriccion',`
-<p>Facebook limita la frecuencia con la que una cuenta puede publicar el mismo contenido. Para que tus publicaciones lleguen:</p>
-<ul><li><b>Respeta una pausa</b> entre grupos (30–60 s por defecto; más si son muchos grupos).</li><li><b>Personaliza</b> el texto con <a data-help="variables">{grupo}</a> y un saludo propio de cada comunidad.</li><li><b>Respeta las normas</b> de cada grupo: anótalas en sus notas.</li><li><b>No publiques en el mismo grupo varias veces al día</b>: usa los avisos de 24 h.</li><li><b>Reparte</b> campañas grandes en varias sesiones a lo largo del día.</li></ul>
-<div class="callout warn">Si Facebook muestra «Has publicado demasiado rápido» o un control de seguridad, detente y continúa más tarde con <b>Reanudar</b> desde el Historial.</div>`),
-H('ajustes','Ajustes','Ajustes','ajustes configuracion tema oscuro claro pausa url sonido',`
-<ul><li><b>Tema:</b> claro, oscuro o según el sistema (también con el botón de la barra superior).</li><li><b>Cómo abrir cada grupo:</b> ver <a data-help="modos-apertura">modos de apertura</a>.</li><li><b>Pausa entre grupos:</b> en segundos; 0 la desactiva.</li><li><b>Añadir la URL al final:</b> si el texto no incluye ya el enlace, se añade al final para que Facebook genere la vista previa.</li><li><b>Avisar de grupos recientes</b> y <b>sonido</b> al terminar la pausa.</li><li><b>Copia de seguridad</b> y <b>borrar datos</b>: ver <a data-help="privacidad">Tus datos</a>.</li></ul>`),
-H('privacidad','Ajustes','Tus datos y privacidad','privacidad datos local almacenamiento copia seguridad backup',`
-<p>Facebook Publisher funciona en un solo archivo HTML, <b>sin servidor</b>:</p>
-<ul><li>Grupos, plantillas, historial, ajustes y borrador se guardan en el <code>localStorage</code> de este navegador.</li><li>Nunca se piden ni se guardan tus credenciales de Facebook.</li><li>Los archivos multimedia solo están en memoria mientras la página está abierta.</li><li>No hay analítica ni envío de datos a terceros. Solo se carga la fuente tipográfica de Google Fonts, y la app funciona sin ella.</li></ul>
-<p>Si borras los datos del navegador perderás tu información: haz una <b>copia de seguridad</b> en Ajustes y restáurala en otro equipo o navegador.</p>`),
+H('buenas-practicas','Protección de la cuenta','Protección de tu cuenta de Facebook','spam bloqueo pausa limites buenas practicas restriccion seguridad cuenta riesgo hora dia',`
+<p>Facebook vigila los patrones típicos del spam: publicar muy rápido, en muchos grupos, el mismo texto o en el mismo grupo repetidas veces. Facebook Publisher está diseñado para que <b>tu cuenta se comporte como la de una persona</b>:</p>
+<table><tr><th>Protección</th><th>Cómo funciona</th></tr>
+<tr><td><b>Tú publicas</b></td><td>La app nunca pulsa «Publicar» ni actúa dentro de Facebook. Solo copia el texto y abre el grupo.</td></tr>
+<tr><td><b>Pausa entre grupos</b></td><td>Mínimo 30 s (60 s por defecto). No se puede saltar, ni siquiera recargando la página: se calcula a partir del Historial.</td></tr>
+<tr><td><b>Máximo por hora</b></td><td>8 grupos por defecto (hasta 15). Al llegar al límite, el asistente espera.</td></tr>
+<tr><td><b>Máximo por día</b></td><td>20 grupos en 24 h por defecto (hasta 40). El resto queda pendiente para reanudar otro día.</td></tr>
+<tr><td><b>Un grupo, una vez al día</b></td><td>Los grupos donde publicaste en las últimas 24 h no se pueden seleccionar; verás a qué hora vuelven a estar disponibles.</td></tr>
+<tr><td><b>Comprobación previa</b></td><td>Antes de empezar se revisan los límites, el texto repetido, el exceso de enlaces o hashtags y las normas de los grupos.</td></tr>
+<tr><td><b>Freno de emergencia</b></td><td>Si Facebook te avisa, pulsa <b>Facebook me mostró un aviso</b>: la app se detiene y bloquea nuevas publicaciones 24 h. <a data-help="aviso-facebook">Más información</a></td></tr></table>
+<p>Puedes hacer estos límites más estrictos en <b>Ajustes</b>, pero no desactivarlos.</p>
+<h3>Buenas prácticas</h3>
+<ul><li><b>Personaliza</b> el texto con <a data-help="variables">{grupo}</a> y un saludo propio de cada comunidad.</li><li><b>Respeta las normas</b> de cada grupo y anótalas en sus notas. Las denuncias de los administradores pesan más que cualquier límite.</li><li>Publica solo en grupos <b>relacionados con tu contenido</b>.</li><li>Usa <b>1–2 enlaces</b> y <b>1–3 hashtags</b> como máximo.</li><li>Las cuentas nuevas o con poca actividad deberían empezar con <b>límites más bajos</b> (por ejemplo, 5 por día).</li></ul>
+<div class="callout warn">Ninguna herramienta puede garantizar que Facebook no restrinja una cuenta: sus criterios no son públicos y cambian. Estos límites reducen mucho el riesgo, pero la decisión final depende del contenido y de las reglas de cada grupo.</div>`),
+H('aviso-facebook','Protección de la cuenta','Qué hacer si Facebook muestra un aviso','aviso bloqueo restriccion demasiado rapido control seguridad checkpoint spam freno emergencia',`
+<p>Mensajes como <i>«Has publicado demasiado rápido»</i>, <i>«Tu publicación va en contra de nuestras normas»</i>, un control de seguridad o una restricción temporal indican que Facebook ha detectado un patrón sospechoso.</p>
+<ol><li>En el asistente, pulsa <b>Facebook me mostró un aviso</b>. La app se detiene y bloquea nuevas publicaciones durante <b>24 horas</b>.</li><li><b>No intentes publicar desde otra herramienta</b> ni manualmente en otros grupos durante ese tiempo.</li><li>Completa en Facebook las verificaciones que te pida y revisa el <i>Estado de la cuenta</i> en la configuración de Facebook.</li><li>Cuando vuelvas, <b>baja los límites</b> (por ejemplo, 3–5 grupos al día con 2–3 minutos de pausa) y personaliza más el texto.</li></ol>
+<p>Tu progreso queda en el <a data-help="historial">Historial</a> y podrás reanudar cuando pase el bloqueo. Puedes quitar el bloqueo antes desde <b>Ajustes</b>, aunque no es recomendable.</p>`),
+H('ajustes','Ajustes','Ajustes','ajustes configuracion tema oscuro claro pausa url sonido limite hora dia vaciar',`
+<ul><li><b>Tema:</b> claro, oscuro o según el sistema (también con el botón de la barra superior).</li><li><b>Cómo abrir cada grupo:</b> ver <a data-help="modos-apertura">modos de apertura</a>.</li>
+<li><b>Protección de la cuenta:</b> pausa entre grupos (mínimo 30 s), máximo por hora (hasta 15) y por día (hasta 40). Se pueden endurecer, no desactivar. <a data-help="buenas-practicas">Más información</a></li>
+<li><b>Bloqueo de seguridad:</b> si está activo, aparece aquí con la opción de quitarlo.</li>
+<li><b>Al terminar una publicación:</b> preguntar, vaciar el formulario o conservarlo.</li>
+<li><b>Añadir la URL al final:</b> si el texto no incluye ya el enlace, se añade al final para que Facebook genere la vista previa.</li><li><b>Sonido</b> al terminar la pausa.</li><li><b>Copia de seguridad</b> y <b>borrar datos</b>: ver <a data-help="privacidad">Tus datos</a>.</li></ul>`),
+H('privacidad','Ajustes','Tus datos, privacidad y seguridad','privacidad datos local almacenamiento copia seguridad backup indexeddb persistente csp',`
+<p>Facebook Publisher funciona en un solo archivo HTML, <b>sin servidor</b>. Todo se guarda en este navegador para que puedas seguir trabajando donde lo dejaste:</p>
+<table><tr><th>Dato</th><th>Dónde se guarda</th></tr><tr><td>Grupos, selección de destinos, plantillas, ajustes, historial, borrador y progreso del asistente</td><td><code>localStorage</code></td></tr><tr><td>Imágenes, vídeos y audios</td><td><code>IndexedDB</code></td></tr></table>
+<h3>Seguridad</h3><ul><li>Nunca se piden ni se guardan tus credenciales de Facebook, y la app no lee ni envía nada de tu sesión.</li><li>No hay analítica ni envío de datos a terceros. Una política de seguridad (CSP) bloquea cualquier conexión de red; solo se cargan las fuentes de Google Fonts.</li><li>Los grupos, copias de seguridad e historial <b>se validan al cargarlos</b>: solo se aceptan enlaces de <code>facebook.com</code>, y así un archivo manipulado no puede inyectar código.</li><li>Las ventanas de Facebook se abren sin acceso a esta página (<code>noopener</code>) y sin enviar la dirección de origen (<code>no-referrer</code>).</li></ul>
+<div class="callout warn">Si borras los datos del navegador perderás tu información: haz una <b>copia de seguridad</b> en Ajustes (no incluye los archivos multimedia). Si usas un ordenador compartido, borra los datos al terminar.</div>`),
 H('atajos','Ajustes','Atajos de teclado','atajos teclado shortcuts',`
 <table><tr><th>Atajo</th><th>Acción</th></tr>
 <tr><td><kbd>Alt</kbd>+<kbd>1</kbd> / <kbd>2</kbd> / <kbd>3</kbd> / <kbd>4</kbd></td><td>Publicar / Grupos / Historial / Ayuda</td></tr>
@@ -1592,8 +1759,8 @@ H('problemas','Ajustes','Solución de problemas','problemas error ventana bloque
 <h3>No aparece la vista previa del enlace en Facebook</h3><p>La publicación original no es pública, o Facebook tarda unos segundos. Espera antes de publicar.</p>
 <h3>El marcador no hace nada</h3><p>Asegúrate de usarlo en una pestaña de facebook.com. En Firefox, comprueba que los marcadores <code>javascript:</code> están permitidos.</p>`),
 ];
-const HELP_CATS=['Empezar','Publicar','Grupos','Historial','Buenas prácticas','Ajustes'];
-const HELP_ICON={'primeros-pasos':'rocket_launch','como-funciona':'lightbulb','url-origen':'link','editor':'edit_note','variables':'data_object','plantillas':'description','multimedia':'perm_media','destinos':'checklist','vista-previa':'preview','asistente':'touch_app','modos-apertura':'open_in_new','grupos':'groups','marcador':'bookmark_add','importar':'swap_vert','historial':'history','buenas-practicas':'verified_user','ajustes':'settings','privacidad':'shield','atajos':'keyboard','problemas':'build'};
+const HELP_CATS=['Empezar','Protección de la cuenta','Publicar','Grupos','Historial','Ajustes'];
+const HELP_ICON={'primeros-pasos':'rocket_launch','como-funciona':'lightbulb','url-origen':'link','editor':'edit_note','variables':'data_object','plantillas':'description','multimedia':'perm_media','destinos':'checklist','vista-previa':'preview','asistente':'touch_app','modos-apertura':'open_in_new','grupos':'groups','marcador':'bookmark_add','importar':'swap_vert','historial':'history','buenas-practicas':'verified_user','aviso-facebook':'report','ajustes':'settings','privacidad':'shield','atajos':'keyboard','problemas':'build'};
 const normTxt=t=>t.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
 let helpQuery=null;
 function renderHelp(q){
@@ -1645,11 +1812,15 @@ document.addEventListener('keydown',e=>{
 });
 
 /* ---------- Inicio ---------- */
+S.groups=cleanGroups(load('fbp.groups',[]));S.settings=cleanSettings(load('fbp.settings',{}));S.history=cleanHistory(load('fbp.history',[]));S.templates=cleanTemplates(load('fbp.templates',[]));
 if(document.fonts&&document.fonts.load){document.fonts.load('24px "Material Symbols Rounded"').then(f=>{if(f.length)document.documentElement.classList.add('ms-ready')}).catch(()=>{})}
 $('#welcomeClose').onclick=()=>{$('#welcome').hidden=true;save('fbp.welcomed',true)};
 if(!load('fbp.welcomed',false)&&!S.groups.length)$('#welcome').hidden=false;
-window.addEventListener('storage',e=>{if(e.key==='fbp.groups'){S.groups=load('fbp.groups',[]);renderAllGroups()}});
-hydrateIcons();applyTheme();route();validateUrl();updateCount();renderMedia();renderAllGroups();renderHistory();
+window.addEventListener('storage',e=>{if(e.key==='fbp.groups'){S.groups=cleanGroups(load('fbp.groups',[]));renderAllGroups()}if(e.key==='fbp.history'){S.history=cleanHistory(load('fbp.history',[]));renderHistory()}if(e.key==='fbp.lock'){S.lock=okTs(load('fbp.lock',null))}});
+hydrateIcons();applyTheme();route();validateUrl();updateCount();renderMedia();renderAllGroups();renderHistory();renderResume();renderLock();
+MediaDB.all().then(rows=>{(rows||[]).sort((a,b)=>(a.order||0)-(b.order||0)).forEach(r=>{if(r&&r.blob&&['image','video','audio'].includes(r.type)&&!S.media.some(m=>m.id===r.id))S.media.push({id:r.id,file:r.blob,url:URL.createObjectURL(r.blob),type:r.type,name:str(r.name,200)||'archivo',order:r.order})});
+  if(S.media.length){renderMedia();renderPreview();updateCount();renderSummary()}});
+setInterval(()=>{renderLock();if($('#view-publicar').classList.contains('active')&&!S.run)renderDest()},60000);
 </script>
 </body>
 </html>
