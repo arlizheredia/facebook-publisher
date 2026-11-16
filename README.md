@@ -18,3 +18,13 @@ Meta retiró en abril de 2024 la API de publicación en grupos, y automatizar pu
 ## Privacidad
 
 Sin servidor: los datos se guardan en el `localStorage` del navegador y nunca se piden credenciales de Facebook.
+
+## Tests
+
+```bash
+node tests/publicacion.test.mjs [URL_PUBLICACION] [URL_GRUPO]
+```
+
+Prueba de extremo a extremo con Chrome sin interfaz (solo necesita Node 18+ y Chrome; `CHROME=/ruta` si no está en el `PATH`). Recorre todo el flujo: reconoce la publicación y el grupo, pasa la comprobación de seguridad, copia el texto y abre el grupo correcto, lo registra en el historial con la pausa y el bloqueo de 24 h, y verifica con el marcador que la publicación aparece en el grupo, incluidos los casos negativos.
+
+**No accede a Facebook ni usa ninguna cuenta:** las peticiones a `www.facebook.com` se interceptan y se responden con un grupo simulado. Para comprobar una publicación real, usa **Historial → Verificar** en la app con tu sesión de Facebook (ver «Verificar que una publicación aparece en el grupo» en el Centro de Ayuda).

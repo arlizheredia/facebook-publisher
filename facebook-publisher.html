@@ -64,6 +64,7 @@ kbd{border:1px solid var(--outline-2);border-bottom-width:2px;color:var(--text-2
 .ms.sm{font-size:16px;vertical-align:-3px}
 .inl{display:inline-flex;align-items:center;gap:6px;font-size:12px;line-height:16px;color:var(--text-2)}
 .inl>.ms{font-size:18px}
+.vf-steps{margin:0 0 8px;padding-left:20px}.vf-steps li{margin:6px 0;line-height:22px}
 .dest-foot{margin-top:12px;display:flex;gap:4px 16px;flex-wrap:wrap;align-items:center}
 .dest-foot .btn.text{margin-left:-12px}
 .ms.fill{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
@@ -778,6 +779,22 @@ details.adv[open] summary .ms{transform:rotate(180deg)}
   <div class="dlg-f"><button class="btn filled" data-close>Listo</button></div>
 </dialog>
 
+<!-- Verify dialog -->
+<dialog id="verifyDlg">
+  <div class="dlg-h"><span class="ms" aria-hidden="true" style="color:var(--primary);font-size:28px">fact_check</span><h2>Verificar en Facebook</h2><button class="help-link" data-help="verificar" aria-label="Ayuda"><span class="ms" aria-hidden="true">help</span></button></div>
+  <div class="dlg-b">
+    <p class="muted" style="margin-top:0" id="vfIntro"></p>
+    <ol class="vf-steps">
+      <li><b>Abre el grupo</b> con tu sesión de Facebook. <button class="btn text sm" id="vfOpen"><span class="ms" aria-hidden="true">open_in_new</span>Abrir grupo</button></li>
+      <li>En esa pestaña, pulsa el marcador <b>FB Publisher</b>. Leerá las publicaciones visibles (unos segundos) y pulsa <b>Copiar verificación</b>.</li>
+      <li>Vuelve aquí y pulsa <b>Pegar verificación</b>.</li>
+    </ol>
+    <details class="adv"><summary>Pegar a mano<span class="ms" aria-hidden="true">expand_more</span></summary><textarea class="input textarea" id="vfText" style="min-height:80px;margin-top:8px;font-family:var(--mono);font-size:12px" placeholder="FBP_CHECK:{…}"></textarea></details>
+    <div id="vfResult" style="margin-top:12px"></div>
+  </div>
+  <div class="dlg-f"><button class="btn text" data-close>Cerrar</button><button class="btn filled" id="vfPaste"><span class="ms" aria-hidden="true">content_paste</span>Pegar verificación</button></div>
+</dialog>
+
 <!-- Preflight dialog -->
 <dialog id="checkDlg">
   <div class="dlg-h"><span class="ms" aria-hidden="true" style="color:var(--primary);font-size:28px">verified_user</span><h2>Comprobación de seguridad</h2><button class="help-link" data-help="buenas-practicas" aria-label="Ayuda"><span class="ms" aria-hidden="true">help</span></button></div>
@@ -856,7 +873,7 @@ function cleanGroups(list){const seen=new Set();return (Array.isArray(list)?list
     notes:str(g.notes,500),active:g.active!==false,approval:g.approval===true,lastShared:okTs(g.lastShared),created:okTs(g.created)||Date.now()}}).filter(Boolean)}
 function cleanHistory(list){return (Array.isArray(list)?list:[]).map(h=>{if(!h||typeof h!=='object')return null;
   const items=(Array.isArray(h.items)?h.items:[]).map(i=>{const url=i&&normGroupUrl(str(i.url,300));if(!url)return null;
-    return {gid:okId(i.gid)||'',name:str(i.name,140),url,notes:str(i.notes,500),status:['pending','done','skipped'].includes(i.status)?i.status:'pending',at:okTs(i.at),review:i.status==='done'&&['awaiting','approved','rejected'].includes(i.review)?i.review:undefined,rat:okTs(i.rat)}}).filter(Boolean);
+    return {gid:okId(i.gid)||'',name:str(i.name,140),url,notes:str(i.notes,500),status:['pending','done','skipped'].includes(i.status)?i.status:'pending',at:okTs(i.at),review:i.status==='done'&&['awaiting','approved','rejected'].includes(i.review)?i.review:undefined,rat:okTs(i.rat),verify:i.verify&&typeof i.verify==='object'&&okTs(i.verify.at)?{at:i.verify.at,found:i.verify.found===true}:undefined}}).filter(Boolean);
   if(!items.length)return null;const u=parseFbUrl(str(h.url,2000));
   return {id:okId(h.id)||uid(),date:okTs(h.date)||Date.now(),url:u.url||'',text:str(h.text,63206),mediaCount:clamp(h.mediaCount,0,999,0),appendUrl:h.appendUrl!==false,items}}).filter(Boolean).slice(0,300)}
 function cleanTemplates(list){return (Array.isArray(list)?list:[]).map(t=>t&&typeof t==='object'&&typeof t.text==='string'?{id:okId(t.id)||uid(),name:str(t.name,80)||'Plantilla',text:str(t.text,63206)}:null).filter(Boolean)}
@@ -1300,7 +1317,8 @@ function parseImport(txt){
   const seen=new Set();return out.filter(g=>{const k=groupKey(g.url);if(seen.has(k))return false;seen.add(k);return true});
 }
 function openImport(){$('#impText').value='';updImp();$('#importDlg').showModal()}
-function updImp(){const list=parseImport($('#impText').value);const existing=new Set(S.groups.map(g=>groupKey(g.url)));const nw=list.filter(g=>!existing.has(groupKey(g.url)));
+function updImp(){if(/FBP_CHECK:/.test($('#impText').value)){const h=$('#impHint');h.className='hint err';h.innerHTML='Esto es una <b>verificación</b>, no una lista de grupos. Pégala en Historial → Verificar.';$('#impGo').disabled=true;return []}
+  const list=parseImport($('#impText').value);const existing=new Set(S.groups.map(g=>groupKey(g.url)));const nw=list.filter(g=>!existing.has(groupKey(g.url)));
   const h=$('#impHint');if(!$('#impText').value.trim()){h.className='hint';h.innerHTML='&nbsp;'}else if(!list.length){h.className='hint err';h.textContent='No se ha detectado ningún grupo válido.'}
   else{h.className='hint ok';h.textContent=`${list.length} grupo(s) detectados · ${nw.length} nuevos${list.length-nw.length?` · ${list.length-nw.length} ya existen (se omitirán)`:''}`}
   $('#impGo').disabled=!nw.length;$('#impGo').textContent=nw.length?`Importar ${nw.length}`:'Importar';return nw}
@@ -1346,6 +1364,10 @@ function fbpCapture(){
   var done=false,last=-1,stable=0,iter=0,MAXI=150;
   function scrollers(){var r=[];document.querySelectorAll('div,ul,[role=navigation]').forEach(function(el){if(el.scrollHeight>el.clientHeight+40&&el.clientHeight>120){var oy=getComputedStyle(el).overflowY;if((oy==='auto'||oy==='scroll')&&el.querySelector('a[href*="/groups/"]'))r.push(el)}});return r}
   function close(){box.remove();window.__fbpCap=null;done=true}
+  function copyTxt(txt,btn,okHtml,okHint){
+    function ok(){$('fbpMsg').innerHTML=okHtml;$('fbpHint').innerHTML=okHint;btn.textContent='Copiar de nuevo'}
+    function fb(){var ta=document.createElement('textarea');ta.value=txt;box.appendChild(ta);ta.select();var r=false;try{r=document.execCommand('copy')}catch(e){}ta.remove();if(r)ok();else prompt('Copia este texto (Ctrl+C) y pégalo en Facebook Publisher:',txt)}
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(ok,fb);else fb()}
   function finish(){
     if(done&&!$('fbpCopy'))return;done=true;collect();
     var out=order.map(function(s){return {name:map[s]||s,url:'https://www.facebook.com/groups/'+s+'/'}});
@@ -1355,23 +1377,51 @@ function fbpCapture(){
     $('fbpHint').innerHTML=out.length<5&&!/\/groups\/joins/.test(location.pathname)?'¿Faltan grupos? Abre <a href="https://www.facebook.com/groups/joins/" style="color:#0b57d0">Tus grupos</a> y pulsa de nuevo el marcador.':'Pulsa «Copiar» y vuelve a Facebook Publisher → Grupos → Importar → Pegar.';
     $('fbpX').textContent='Cerrar';
     var go=$('fbpGo');go.id='fbpCopy';go.textContent='Copiar '+out.length+' grupo(s)';go.disabled=!out.length;
-    go.onclick=function(){var txt='FBP_GROUPS:'+JSON.stringify(out);
-      function ok(){$('fbpMsg').innerHTML='<b>✓ '+out.length+' grupo(s) copiados.</b>';$('fbpHint').textContent='Vuelve a Facebook Publisher → Grupos → Importar → Pegar del portapapeles.';go.textContent='Copiar de nuevo'}
-      function fb(){var ta=document.createElement('textarea');ta.value=txt;box.appendChild(ta);ta.select();var r=false;try{r=document.execCommand('copy')}catch(e){}ta.remove();if(r)ok();else prompt('Copia este texto (Ctrl+C) y pégalo en Facebook Publisher:',txt)}
-      if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(ok,fb);else fb()};
+    go.onclick=function(){copyTxt('FBP_GROUPS:'+JSON.stringify(out),go,'<b>✓ '+out.length+' grupo(s) copiados.</b>','Vuelve a Facebook Publisher → Grupos → Importar → Pegar del portapapeles.')};
   }
-  $('fbpX').onclick=close;$('fbpGo').onclick=finish;
-  var onGroupPage=/^\/groups\/[^\/]+/.test(location.pathname)&&!/^\/groups\/(joins|feed|discover)/.test(location.pathname);
+  /* Verificación: dentro de un grupo, lee los enlaces de las publicaciones visibles (solo lectura) */
+  var CRX=[/\/reel\/(\d+)/,/\/videos\/(?:[^\/?#]+\/)?(\d+)/,/[?&]v=(\d+)/,/\/posts\/(pfbid\w+|\d+)/,/\/permalink\/(\d+)/,/[?&]story_fbid=(pfbid\w+|\d+)/,/[?&]fbid=(\d+)/,/\/photos\/[^\/?#]+\/(\d+)/,/\/share\/[prv]\/(\w+)/];
+  var cids={},gnum={};
+  function scanIds(){
+    document.querySelectorAll('a[href]').forEach(function(a){if(box.contains(a))return;var h=a.getAttribute('href')||'';
+      for(var k=0;k<CRX.length;k++){var m=h.match(CRX[k]);if(m){cids[m[1]]=1;break}}
+      var g=h.match(/\/groups\/(\d+)\//);if(g)gnum[g[1]]=(gnum[g[1]]||0)+1});
+    var main=document.querySelector('[role=main]')||document.body;var t=main.innerText||'',re=/facebook\.com\/(?:reel\/|watch\/?\?v=|[^\s\/]+\/videos\/)(\d+)/g,mm;while((mm=re.exec(t)))cids[mm[1]]=1;
+  }
+  function finishCheck(){
+    if(done)return;done=true;collect();scanIds();
+    var slug=location.pathname.match(/^\/groups\/([^\/?#]+)/)[1];var slugs=[slug.toLowerCase()];
+    var top=Object.keys(gnum).sort(function(x,y){return gnum[y]-gnum[x]})[0];if(top&&slugs.indexOf(top)<0)slugs.push(top);
+    var ids=Object.keys(cids);var name=map[slug]||slug;
+    var chk={v:1,group:{name:name,slugs:slugs},ids:ids,at:Date.now(),path:location.pathname};
+    $('fbpBar').style.width='100%';
+    $('fbpMsg').innerHTML='<b>'+ids.length+'</b> publicación(es) leídas en «'+name.replace(/</g,'&lt;')+'».';
+    $('fbpHint').innerHTML='Pulsa «Copiar verificación» y vuelve a Facebook Publisher → Historial → Verificar → Pegar.';
+    $('fbpX').textContent='Cerrar';
+    var go=$('fbpGo');go.id='fbpCopy';go.textContent='Copiar verificación';
+    go.onclick=function(){copyTxt('FBP_CHECK:'+JSON.stringify(chk),go,'<b>✓ Verificación copiada</b> ('+ids.length+' publicaciones).','Vuelve a Facebook Publisher → Historial → Verificar → Pegar verificación.')};
+    var g2=document.createElement('button');g2.textContent='Copiar este grupo';g2.style.cssText=$('fbpX').style.cssText;
+    g2.onclick=function(){copyTxt('FBP_GROUPS:'+JSON.stringify([{name:name,url:'https://www.facebook.com/groups/'+slug+'/'}]),g2,'<b>✓ Grupo copiado.</b>','Vuelve a Facebook Publisher → Grupos → Importar → Pegar.')};
+    go.parentNode.insertBefore(g2,go);
+  }
+  $('fbpX').onclick=close;
+  var onGroupPage=/^\/groups\/[^\/]+/.test(location.pathname)&&!/^\/groups\/(joins|feed|discover)\b/.test(location.pathname);
+  $('fbpGo').onclick=onGroupPage?finishCheck:finish;
   function step(){
     if(done)return;collect();iter++;
+    if(onGroupPage){scanIds();var c=Object.keys(cids).length;$('fbpMsg').innerHTML='Leyendo publicaciones del grupo… <b>'+c+'</b>';
+      $('fbpBar').style.width=Math.min(95,20+iter*9)+'%';if(c===last)stable++;else{stable=0;last=c}
+      if(stable>=3||iter>=10){finishCheck();return}
+      window.scrollBy(0,Math.round(innerHeight*0.9));setTimeout(step,1500);return}
     var n=order.length;$('fbpMsg').innerHTML='Buscando grupos… <b>'+n+'</b> encontrados';
     $('fbpBar').style.width=Math.min(95,30+iter*2)+'%';
     if(n===last)stable++;else{stable=0;last=n}
-    if(onGroupPage||stable>=6||iter>=MAXI){finish();return}
+    if(stable>=6||iter>=MAXI){finish();return}
     window.scrollTo(0,document.documentElement.scrollHeight);
     scrollers().forEach(function(el){el.scrollTop=el.scrollHeight});
     setTimeout(step,1200);
   }
+  if(onGroupPage)$('fbpHint').textContent='Leyendo las publicaciones visibles del grupo para verificar (solo lectura).';
   step();
 }
 $('#bookmarklet').href='javascript:'+encodeURIComponent('('+fbpCapture.toString()+')()');
@@ -1574,6 +1624,45 @@ $('#runDlg').addEventListener('keydown',e=>{
 /* ============================================================
    HISTORIAL
    ============================================================ */
+/* ---------- Verificación en Facebook (con la sesión del usuario, mediante el marcador) ---------- */
+const CID_RX=[/\/reel\/(\d+)/,/\/videos\/(?:[^\/?#]+\/)?(\d+)/,/[?&]v=(\d+)/,/\/posts\/(pfbid\w+|\d+)/,/\/permalink\/(\d+)/,/[?&]story_fbid=(pfbid\w+|\d+)/,/[?&]fbid=(\d+)/,/\/photos\/[^\/?#]+\/(\d+)/,/\/share\/[prv]\/(\w+)/];
+function contentIds(url){const out=new Set();if(!url)return out;for(const r of CID_RX){const m=url.match(r);if(m){out.add(m[1]);break}}return out}
+const groupSlug=u=>((u||'').split('/groups/')[1]||'').replace(/\/.*/,'').toLowerCase();
+function parseCheck(txt){const m=String(txt||'').match(/FBP_CHECK:(\{[\s\S]*\})/);if(!m)return null;
+  try{const d=JSON.parse(m[1]);const slugs=(d&&d.group&&Array.isArray(d.group.slugs)?d.group.slugs:[]).map(x=>str(String(x),100).toLowerCase()).filter(x=>/^[\w.\-]+$/.test(x));
+    if(!slugs.length)return null;
+    return {slugs,name:str(d.group.name,140),ids:new Set((Array.isArray(d.ids)?d.ids:[]).slice(0,5000).map(x=>str(String(x),80))),at:okTs(d.at)||Date.now()}}catch(e){return null}}
+function applyCheck(chk,only){
+  const res=[];
+  S.history.forEach(h=>{const ids=contentIds(h.url);h.items.forEach(i=>{
+    if(i.status!=='done'||!chk.slugs.includes(groupSlug(i.url)))return;if(only&&i!==only)return;
+    if(!ids.size){res.push({h,i,found:null});return}
+    const found=[...ids].some(x=>chk.ids.has(x));i.verify={at:chk.at,found};
+    if(found&&i.review==='awaiting'){i.review='approved';i.rat=Date.now()}
+    res.push({h,i,found})})});
+  persist.history();return res}
+let vfItem=null;
+function openVerify(hid,idx){
+  const h=S.history.find(x=>x.id===hid);vfItem=h&&h.items[idx]?{h,i:h.items[idx]}:null;if(!vfItem)return;
+  const ids=contentIds(h.url);
+  $('#vfIntro').innerHTML=ids.size?`Comprobaremos si la publicación <b>${esc(parseFbUrl(h.url).kind)}</b> (ID ${esc([...ids][0])}) aparece en <b>${esc(vfItem.i.name)}</b>. Todo ocurre en tu navegador, con tu sesión: la app no accede a Facebook.`
+    :`Esta publicación no tiene URL de origen, así que no se puede verificar automáticamente. Revísala a mano en <b>${esc(vfItem.i.name)}</b> → «Tu contenido».`;
+  $('#vfText').value='';$('#vfResult').innerHTML='';$('#vfPaste').disabled=!ids.size;$('#verifyDlg').showModal();
+}
+$('#vfOpen').onclick=()=>{if(!vfItem)return;const w=window.open('','fbp_target');if(w){try{w.opener=null}catch(_){}try{w.location.href=vfItem.i.url}catch(_){}}else snack('El navegador bloqueó la ventana')};
+async function doVerify(txt){
+  const chk=parseCheck(txt);const out=$('#vfResult');
+  if(!chk){out.innerHTML=`<div class="banner warn">${ic('warning')}<div>No se encontró una verificación válida. Pulsa el marcador <b>dentro del grupo</b> y luego «Copiar verificación».</div></div>`;return}
+  if(vfItem&&!chk.slugs.includes(groupSlug(vfItem.i.url))){out.innerHTML=`<div class="banner warn">${ic('warning')}<div>La verificación es del grupo <b>${esc(chk.name||chk.slugs[0])}</b>, no de <b>${esc(vfItem.i.name)}</b>. Abre el grupo correcto y repite el paso 2.</div></div>`;return}
+  const res=applyCheck(chk,vfItem&&vfItem.i);renderHistory();
+  const r=res[0];
+  if(!r){out.innerHTML=`<div class="banner">${ic('info')}<div>No hay publicaciones registradas para este grupo.</div></div>`;return}
+  out.innerHTML=r.found?`<div class="banner" style="background:var(--success-container);color:var(--success)">${ic('verified')}<div><b>Verificada:</b> la publicación aparece en «${esc(r.i.name)}» (${chk.ids.size} publicaciones leídas).</div></div>`
+    :`<div class="banner warn">${ic('search_off')}<div><b>No encontrada</b> entre las ${chk.ids.size} publicaciones leídas de «${esc(r.i.name)}». Puede estar pendiente de aprobación, marcada como spam o más abajo en el grupo. <a href="#ayuda/no-aparece" data-help="no-aparece">Qué revisar</a></div></div>`;
+}
+$('#vfPaste').onclick=async()=>{let t=$('#vfText').value;if(!t.trim()){try{t=await navigator.clipboard.readText()}catch(e){$('#vfText').closest('details').open=true;$('#vfText').focus();snack('Pega la verificación en el cuadro con Ctrl+V');return}}doVerify(t)};
+$('#vfText').addEventListener('input',e=>{if(/FBP_CHECK:/.test(e.target.value))doVerify(e.target.value)});
+function verifyPill(i){if(!i.verify)return '';return i.verify.found?`<span class="pill ok" title="Verificada ${esc(fmtDate(i.verify.at))}">${ic('verified')}Verificada</span>`:`<span class="pill warn" title="Verificación ${esc(fmtDate(i.verify.at))}">${ic('search_off')}No encontrada</span>`}
 const grpApproval=gid=>{const g=S.groups.find(x=>x.id===gid);return !!(g&&g.approval)};
 function awaitingItems(){return S.history.flatMap(h=>h.items.filter(i=>i.status==='done'&&i.review==='awaiting').map(i=>({h,i})))}
 function setReview(hid,idx,val){const h=S.history.find(x=>x.id===hid);const i=h&&h.items[idx];if(!i)return;const prev=i.review;i.review=val;i.rat=Date.now();persist.history();
@@ -1586,18 +1675,19 @@ function renderHistory(){
   const aw=awaitingItems();
   const panel=aw.length?`<div class="card filled"><div class="card-head" style="margin-bottom:8px">${ic('pending')}<div><h2>Pendientes de aprobación (${aw.length})</h2><div class="sub">Comprueba en cada grupo (menú «Tu contenido») si los administradores las aprobaron.</div></div><a class="hlp ml-auto" href="#ayuda/no-aparece" data-help="no-aparece">${ic('help')}¿Por qué no aparece?</a></div>
     <div class="list">${aw.map(({h,i})=>`<div class="row" style="flex-wrap:wrap"><span class="avatar" aria-hidden="true">${esc(initials(i.name))}</span><div class="main" style="min-width:160px"><div class="title">${esc(i.name)}</div><div class="meta">Enviada ${esc(ago(i.at))} · ${esc(((h.text||'').trim().split('\n')[0]||h.url||'').slice(0,60))}</div></div>
-      <a class="btn text sm" href="${esc(i.url)}" target="_blank" rel="noopener">${ic('open')}Abrir grupo</a>${reviewBtns(h.id,h.items.indexOf(i))}</div>`).join('')}</div></div>`:'';
+      <button class="btn text sm" data-vf="${h.id}" data-i="${h.items.indexOf(i)}">${ic('fact_check')}Verificar</button>${reviewBtns(h.id,h.items.indexOf(i))}</div>`).join('')}</div></div>`:'';
   box.innerHTML=panel+S.history.map(h=>{const a=h.items.filter(i=>i.review==='awaiting').length,d=h.items.filter(i=>i.status==='done').length,s=h.items.filter(i=>i.status==='skipped').length,p=h.items.length-d-s;
     const title=(h.text||'').trim().split('\n')[0]||h.url||'Publicación sin texto';
     return `<details class="hist"><summary><div class="main"><div class="title">${esc(title.slice(0,90))}</div><div class="small muted">${esc(fmtDate(h.date))} · ${h.items.length} grupo(s)${h.url?' · '+esc(parseFbUrl(h.url).kind||''):''}</div></div>
       <span class="pill ok">${d-a} publicados</span>${a?`<span class="pill info">${a} en aprobación</span>`:''}${s?`<span class="pill">${s} omitidos</span>`:''}${p?`<span class="pill warn">${p} pendientes</span>`:''}
       <div class="prog hide-sm" aria-hidden="true"><i style="width:${(d+s)/h.items.length*100}%"></i></div>${ic('chevron','exp')}</summary>
       <div class="det">${h.url?`<p class="inl" style="margin:0 0 10px;word-break:break-all">${ic('link')}<a href="${esc(h.url)}" target="_blank" rel="noopener">${esc(h.url)}</a></p>`:''}${h.text?`<pre>${esc(h.text)}</pre>`:''}
-        <div class="list" style="margin-bottom:12px">${h.items.map((i,ix)=>`<div class="row" style="min-height:44px;flex-wrap:wrap"><span class="dot ${i.status}">${i.status==='done'?ic(i.review==='awaiting'?'pending':i.review==='rejected'?'block':'check'):i.status==='skipped'?ic('close'):''}</span><div class="main" style="min-width:140px"><div class="title">${esc(i.name)}</div></div>${reviewPill(i)}${i.review==='awaiting'?reviewBtns(h.id,ix):''}<span class="small muted">${i.at?esc(ago(i.at)):'Pendiente'}</span><a class="icon-btn sm" href="${esc(i.url)}" target="_blank" rel="noopener" aria-label="Abrir grupo">${ic('open')}</a></div>`).join('')}</div>
+        <div class="list" style="margin-bottom:12px">${h.items.map((i,ix)=>`<div class="row" style="min-height:44px;flex-wrap:wrap"><span class="dot ${i.status}">${i.status==='done'?ic(i.review==='awaiting'?'pending':i.review==='rejected'?'block':'check'):i.status==='skipped'?ic('close'):''}</span><div class="main" style="min-width:140px"><div class="title">${esc(i.name)}</div></div>${reviewPill(i)}${verifyPill(i)}${i.review==='awaiting'?reviewBtns(h.id,ix):''}${i.status==='done'?`<button class="btn text sm" data-vf="${h.id}" data-i="${ix}">${ic('fact_check')}Verificar</button>`:''}<span class="small muted">${i.at?esc(ago(i.at)):'Pendiente'}</span><a class="icon-btn sm" href="${esc(i.url)}" target="_blank" rel="noopener" aria-label="Abrir grupo">${ic('open')}</a></div>`).join('')}</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">${p?`<button class="btn filled" data-hres="${h.id}">${ic('play')}Reanudar (${p})</button>`:''}
           <button class="btn outlined" data-hreuse="${h.id}">${ic('refresh')}Reutilizar contenido</button><button class="btn text danger" data-hdel="${h.id}">${ic('delete')}Eliminar</button></div></div></details>`}).join('');
 }
 $('#histBox').addEventListener('click',e=>{
+  const vf=e.target.closest('[data-vf]');if(vf){e.preventDefault();openVerify(vf.dataset.vf,+vf.dataset.i);return}
   const rv=e.target.closest('[data-rv]');if(rv){e.preventDefault();setReview(rv.dataset.h,+rv.dataset.i,rv.dataset.rv);return}
   const r=e.target.closest('[data-hres]'),u=e.target.closest('[data-hreuse]'),d=e.target.closest('[data-hdel]');
   if(r)startRun(S.history.find(h=>h.id===r.dataset.hres));
@@ -1734,6 +1824,12 @@ H('historial','Historial','Historial, reanudación y aprobaciones','historial re
 <table><tr><th>Estado</th><th>Significado</th></tr><tr><td><b>Publicado</b></td><td>La publicación ya es visible en el grupo.</td></tr><tr><td><b>En aprobación</b></td><td>Facebook indicó que está pendiente de que la aprueben los administradores.</td></tr><tr><td><b>Aprobada / Rechazada</b></td><td>Lo que marcaste al revisarla más tarde.</td></tr><tr><td><b>Omitido</b></td><td>No publicaste en ese grupo.</td></tr><tr><td><b>Por hacer</b></td><td>Aún no has llegado a ese grupo; usa <b>Reanudar</b>.</td></tr></table>
 <h3>Revisar las publicaciones en aprobación</h3><p>En la parte superior del Historial aparece el panel <b>Pendientes de aprobación</b>, y el número en el icono de Historial te avisa de cuántas quedan. Para cada una, pulsa <b>Abrir grupo</b>, entra en <b>Tu contenido</b> y marca <b>Aprobada</b> o <b>Rechazada</b>. <a data-help="no-aparece">Más información</a></p>
 <ul><li><b>Reanudar:</b> continúa por los grupos que faltan.</li><li><b>Reutilizar contenido:</b> carga el texto y la URL en Publicar.</li><li>Los grupos usados cuentan para los <a data-help="buenas-practicas">límites de seguridad</a> aunque estén en aprobación.</li></ul>`),
+H('verificar','Historial','Verificar que una publicación aparece en el grupo','verificar comprobar test validar aparece reel grupo marcador',`
+<p>Facebook no permite que otras webs consulten los grupos, y la app nunca usa tu cuenta. Por eso la verificación se hace <b>en tu navegador, con tu sesión</b>, usando el <a data-help="marcador">marcador</a>, que solo lee lo que ves en pantalla.</p>
+<ol><li>En <a href="#historial" data-nav="historial">Historial</a>, junto al grupo, pulsa <b>Verificar</b>.</li><li>Pulsa <b>Abrir grupo</b> y, en esa pestaña, el marcador <b>FB Publisher</b>. Recorrerá unas pocas pantallas del grupo y leerá los enlaces de las publicaciones.</li><li>Pulsa <b>Copiar verificación</b>, vuelve a la app y pulsa <b>Pegar verificación</b>.</li></ol>
+<p>El resultado queda en el Historial: <b>Verificada</b> si la publicación (reel, vídeo, foto o post) aparece en el grupo, o <b>No encontrada</b> si no. Si estaba «En aprobación» y aparece, pasa a «Aprobada».</p>
+<div class="callout">Las publicaciones pendientes de aprobación no se ven en el grupo. Puedes pulsar el marcador en <b>Tu contenido → Pendientes</b> del grupo para verificarlas allí.</div>
+<div class="callout warn">Los enlaces cortos <code>/share/…</code> no siempre coinciden con el enlace que muestra el grupo. Para verificar con fiabilidad, usa la URL completa de la publicación (por ejemplo <code>facebook.com/reel/…</code>). Si ya tenías el marcador, bórralo y vuelve a arrastrarlo desde Grupos para tener esta función.</div>`),
 H('no-aparece','Historial','Mi publicación no aparece en el grupo','no aparece no sale pendiente aprobacion administradores tu contenido oculta rechazada',`
 <p>Es normal. Casi siempre se debe a una de estas causas:</p>
 <ol><li><b>El grupo revisa las publicaciones.</b> Muchos grupos (sobre todo de compraventa) tienen activada la aprobación de publicaciones. La tuya queda en espera hasta que un administrador la aprueba, lo que puede tardar minutos u horas, o no llegar a aprobarse. Mientras tanto solo la ves tú.</li>
@@ -1794,7 +1890,7 @@ H('problemas','Ajustes','Solución de problemas','problemas error ventana bloque
 <h3>El marcador no hace nada</h3><p>Asegúrate de usarlo en una pestaña de facebook.com. En Firefox, comprueba que los marcadores <code>javascript:</code> están permitidos.</p>`),
 ];
 const HELP_CATS=['Empezar','Protección de la cuenta','Publicar','Grupos','Historial','Ajustes'];
-const HELP_ICON={'primeros-pasos':'rocket_launch','como-funciona':'lightbulb','url-origen':'link','editor':'edit_note','variables':'data_object','plantillas':'description','multimedia':'perm_media','destinos':'checklist','vista-previa':'preview','asistente':'touch_app','modos-apertura':'open_in_new','grupos':'groups','marcador':'bookmark_add','importar':'swap_vert','historial':'history','no-aparece':'visibility_off','buenas-practicas':'verified_user','aviso-facebook':'report','ajustes':'settings','privacidad':'shield','atajos':'keyboard','problemas':'build'};
+const HELP_ICON={'primeros-pasos':'rocket_launch','como-funciona':'lightbulb','url-origen':'link','editor':'edit_note','variables':'data_object','plantillas':'description','multimedia':'perm_media','destinos':'checklist','vista-previa':'preview','asistente':'touch_app','modos-apertura':'open_in_new','grupos':'groups','marcador':'bookmark_add','importar':'swap_vert','historial':'history','no-aparece':'visibility_off','verificar':'fact_check','buenas-practicas':'verified_user','aviso-facebook':'report','ajustes':'settings','privacidad':'shield','atajos':'keyboard','problemas':'build'};
 const normTxt=t=>t.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
 let helpQuery=null;
 function renderHelp(q){
