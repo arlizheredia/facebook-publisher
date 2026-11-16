@@ -10,14 +10,28 @@ const APP_URL = [
 const GROUP_URL = /^https:\/\/www\.facebook\.com\/groups\/[\w.\-]+\/$/;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-let fbTabId = null, fbWinId = null, appTabId = null, busy = false;
+let fbTabId = null, fbWinId = null, appTabId = null, busy = false, wins = [];
+/* El service worker se apaga tras unos segundos sin actividad (p. ej. durante la pausa entre grupos).
+   Las ventanas abiertas se guardan en storage.session para reutilizarlas y cerrarlas tras un reinicio. */
+const ST = chrome.storage.session;
+const ready = ST.get(['fbWinId', 'fbTabId', 'appTabId', 'wins']).then(v => {
+  fbWinId = v.fbWinId ?? null; fbTabId = v.fbTabId ?? null; appTabId = v.appTabId ?? null; wins = Array.isArray(v.wins) ? v.wins : [];
+}).catch(() => {});
+const saveState = () => ST.set({fbWinId, fbTabId, appTabId, wins}).catch(() => {});
+chrome.windows.onRemoved.addListener(id => { ready.then(() => { if (!wins.includes(id) && id !== fbWinId) return; wins = wins.filter(w => w !== id); if (id === fbWinId) { fbWinId = null; fbTabId = null; } saveState(); }); });
+async function closeAll() {
+  await ready;
+  const ids = [...new Set([...wins, fbWinId].filter(x => x != null))];
+  await Promise.all(ids.map(id => chrome.windows.remove(id).catch(() => {})));
+  wins = []; fbWinId = null; fbTabId = null; saveState();
+}
 
 chrome.runtime.onMessage.addListener((msg, sender, send) => {
   if (sender.id !== chrome.runtime.id || !msg) return;
   if (msg.from === 'fb' && msg.type === 'progress') { progress(msg.step); return; }
   if (msg.from !== 'bridge') return;
   if (!APP_URL.some(r => r.test(sender.url || ''))) { send({ok: false, step: 'ext', error: 'Origen no permitido'}); return; }
-  appTabId = sender.tab && sender.tab.id;
+  if (sender.tab && sender.tab.id !== appTabId) { appTabId = sender.tab.id; ready.then(saveState); }
   if (msg.cmd === 'post') {
     if (busy) { send({ok: false, step: 'ext', error: 'Ya hay una publicación en curso'}); return; }
     busy = true;
@@ -31,10 +45,7 @@ chrome.runtime.onMessage.addListener((msg, sender, send) => {
     send({ok: true}); return;
   }
   if (msg.cmd === 'preview') { preview(msg.job && msg.job.url).then(send, () => send({ok: false})); return true; }
-  if (msg.cmd === 'closeFb') {
-    if (fbWinId != null) chrome.windows.remove(fbWinId).catch(() => {});
-    fbWinId = null; fbTabId = null; send({ok: true}); return;
-  }
+  if (msg.cmd === 'closeFb') { closeAll().then(() => send({ok: true})); return true; }
   if (msg.cmd === 'status') { checkStatus(!!(msg.job && msg.job.details)).then(send); return true; }
   if (msg.cmd === 'focusApp') { if (appTabId != null) chrome.tabs.update(appTabId, {active: true}).catch(() => {}); send({ok: true}); return; }
   send({ok: false, step: 'ext', error: 'Orden desconocida'});
@@ -135,13 +146,14 @@ function notifyResult(job, r) {
   const text = (r.blocked ? r.error : msgs[0]) || '';
   chrome.notifications.create('', {type: 'basic', iconUrl: 'icon128.png', title, message: String(text).slice(0, 250) + (r.blocked ? '\nSe ha detenido la publicación para proteger tu cuenta.' : ''), priority: 2, requireInteraction: !!r.blocked}, () => void chrome.runtime.lastError);
 }
-if (chrome.notifications) chrome.notifications.onClicked.addListener(id => {
+if (chrome.notifications) chrome.notifications.onClicked.addListener(async id => {
+  await ready;
   if (appTabId != null) chrome.tabs.get(appTabId).then(t => { chrome.windows.update(t.windowId, {focused: true}); chrome.tabs.update(appTabId, {active: true}); }).catch(() => {});
   chrome.notifications.clear(id);
 });
 
 function progress(step) {
-  if (appTabId != null) chrome.tabs.sendMessage(appTabId, {to: 'bridge', type: 'progress', step}).catch(() => {});
+  ready.then(() => { if (appTabId != null) chrome.tabs.sendMessage(appTabId, {to: 'bridge', type: 'progress', step}).catch(() => {}); });
 }
 
 function validJob(j) {
@@ -151,6 +163,7 @@ function validJob(j) {
 }
 
 async function openGroup(url) {
+  await ready;
   let tabId = null;
   if (fbTabId != null) { try { await chrome.tabs.get(fbTabId); tabId = fbTabId; } catch { fbTabId = null; } }
   const loaded = new Promise(res => {
@@ -163,7 +176,7 @@ async function openGroup(url) {
     if (fbWinId != null) chrome.windows.update(fbWinId, {focused: true}).catch(() => {});
   } else {
     const w = await chrome.windows.create({url, type: 'normal', focused: true, width: 1100, height: 900});
-    fbWinId = w.id; fbTabId = tabId = w.tabs[0].id;
+    fbWinId = w.id; fbTabId = tabId = w.tabs[0].id; wins = [...new Set([...wins, w.id])]; saveState();
   }
   const ok = await loaded;
   return ok ? tabId : null;

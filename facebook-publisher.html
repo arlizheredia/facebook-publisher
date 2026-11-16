@@ -1019,10 +1019,10 @@ function download(name,data,type='application/json'){const b=data instanceof Blo
 /* ---------- Estado ---------- */
 /* Límites de protección de la cuenta (no se pueden desactivar) */
 const SAFE={MIN_PAUSE:30,MAX_PAUSE:900,MAX_DAY:40,MAX_HOUR:15,RECENT_H:24,LOCK_H:24};
-const DEF_SETTINGS={mode:'side',pause:60,appendUrl:true,sound:true,dayCap:20,hourCap:8,clearAfter:'ask',autoMode:false,autoTest:true,autoClose:true};
+const DEF_SETTINGS={mode:'side',pause:30,appendUrl:true,sound:true,dayCap:20,hourCap:8,clearAfter:'ask',autoMode:false,autoTest:true,autoClose:true};
 const clamp=(v,a,b,d)=>{v=parseInt(v);return isNaN(v)?d:Math.max(a,Math.min(b,v))};
 function cleanSettings(o){o=Object.assign({},DEF_SETTINGS,o&&typeof o==='object'?o:{});
-  return {mode:['side','tab','share'].includes(o.mode)?o.mode:'side',pause:clamp(o.pause,SAFE.MIN_PAUSE,SAFE.MAX_PAUSE,60),appendUrl:o.appendUrl!==false,sound:o.sound!==false,
+  return {mode:['side','tab','share'].includes(o.mode)?o.mode:'side',pause:clamp(o.pause,SAFE.MIN_PAUSE,SAFE.MAX_PAUSE,30),appendUrl:o.appendUrl!==false,sound:o.sound!==false,
     dayCap:clamp(o.dayCap,1,SAFE.MAX_DAY,20),hourCap:clamp(o.hourCap,1,SAFE.MAX_HOUR,8),clearAfter:['ask','always','never'].includes(o.clearAfter)?o.clearAfter:'ask',autoMode:o.autoMode===true,autoTest:o.autoTest!==false,autoClose:o.autoClose!==false}}
 /* Los datos guardados se validan al leerlos: en github.io el almacenamiento se comparte con otras apps del mismo dominio */
 const str=(v,max)=>typeof v==='string'?v.slice(0,max):'';
@@ -1749,7 +1749,7 @@ async function runAuto(){
     if(!test){it.inflight=Date.now();persist.history()}
     const res=await Ext.call('post',{url:it.url,text:runText(it),files,test,groupName:it.name});
     delete it.inflight;
-    const fbm=Array.isArray(res.messages)?res.messages.map(m=>str(m,400)).filter(Boolean).slice(0,5):[];
+    const fbm=Array.isArray(res.messages)?res.messages.map(m=>str(m,400)).filter(m=>m&&!/^(publicando|posting|publicado|posted|compartiendo|sharing|subiendo|uploading|cargando|loading|enviando|sending|procesando|processing)\b[\s.…]*(\d+\s*%)?[\s.…]*$/i.test(m.trim())).slice(0,5):[];
     if(fbm.length&&!test){it.fbMsg=fbm.join(' · ');R.msgs=R.msgs||[];fbm.forEach(m=>R.msgs.unshift({g:it.name,t:m,lv:res.blocked?'err':RX_PEND.test(m)?'info':'notice',at:Date.now()}));beep();
       if(!res.blocked)snack(`Facebook en «${it.name}»: ${fbm[0].slice(0,120)}${fbm[0].length>120?'…':''}`,null,null,9000)}
     persist.history();
@@ -2163,6 +2163,8 @@ function postLabel(h){
   if(t.length>80)t=t.slice(0,80).replace(/\s+\S*$/,'')+'…';
   return t?`${h.url?k:'Publicación'} «${t}»`:(h.url?`${k} ${(contentIds(h.url).values().next().value)||''}`.trim():'Publicación sin texto');
 }
+function sharedText(h){return String(h.text||'').replace(/\{grupo\}/gi,'(nombre del grupo)').replace(/\{fecha\}/gi,'(fecha)').replace(/\{enlace\}/gi,'(enlace)').replace(/https?:\/\/\S+/g,'').replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu,'').replace(/\s+/g,' ').trim()}
+const clip=(t,n)=>t.length>n?t.slice(0,n).replace(/\s+\S*$/,'')+'…':t;
 function reasonOf(e){e=String(e||'');
   if(/miembro/i.test(e))return 'no somos miembros del grupo';
   if(/no permite publicar|Escribe algo|no puedes publicar|solo los administradores|can'?t post|only admins|desactivadas/i.test(e))return 'el grupo no permite publicar';
@@ -2200,18 +2202,17 @@ function buildReport(date,ids,meta){
   if(pe.length)P.push(`${pe.length===1?'Queda':'Quedan'} ${pl(pe.length,'grupo','grupos')} por completar.`);
   L.push(P.join(' '),'','Detalle por publicación');
   E.forEach(({h,its},k)=>{
-    const c=f=>its.filter(f).length,p1=c(i=>i.status==='done'&&i.review!=='awaiting'&&i.review!=='rejected'),a1=c(i=>i.review==='awaiting'),r1=c(i=>i.review==='rejected'),s1=c(i=>i.status==='skipped'),e1=c(i=>i.status==='pending');
-    const parts=[p1&&`${p1} ${p1===1?'publicada':'publicadas'}`,a1&&`${a1} en aprobación`,r1&&`${r1} ${r1===1?'rechazada':'rechazadas'}`,s1&&`${s1} sin publicar`,e1&&`${e1} ${e1===1?'pendiente':'pendientes'}`].filter(Boolean);
-    L.push(`${k+1}. ${postLabel(h)}`);if(h.url)L.push(`Enlace: ${h.url}`);
-    L.push(`Grupos: ${its.length}${parts.length?` (${parts.join(', ')})`:''}`);
-    its.forEach(i=>L.push(`- ${i.name}: ${itemState(i)}${i.at&&i.status!=='pending'?`, ${hm(i.at)}`:''}`));
+    const n=its.filter(i=>i.status==='done').length,txt=sharedText(h);
+    L.push(`${k+1}. ${h.url||'Publicación sin enlace'}`);
+    if(txt)L.push(`Texto: «${clip(txt,300)}»`);
+    L.push(`Grupos en los que se compartió: ${n}`);
     L.push('')});
   const O=[];
-  const apr=S.groups.filter(g=>g.approval&&all.some(i=>i.gid===g.id||groupKey(i.url)===groupKey(g.url))).map(g=>g.name);
-  if(apr.length)O.push(`${apr.length===1?'El grupo':'Los grupos'} ${listNames(apr)} ${apr.length===1?'revisa':'revisan'} las publicaciones antes de mostrarlas, así que su visibilidad depende de la aprobación de los administradores.`);
-  all.filter(i=>i.fbMsg).forEach(i=>O.push(`En ${listNames([i.name])}, Facebook mostró el mensaje: «${i.fbMsg.split(' · ')[0].replace(/[«»]/g,'"').slice(0,220)}».`));
-  if(rej.length)O.push(`Conviene revisar las normas de ${listNames(rej.map(i=>i.name))} antes de volver a publicar allí.`);
-  if(shared>1){const ps=S.settings.pause,pt=ps<60?`${ps} segundos`:ps%60?`${Math.floor(ps/60)} min ${ps%60} s`:`${ps/60} ${ps===60?'minuto':'minutos'}`;O.push(`La difusión se hizo de forma escalonada, con pausas de ${pt} entre grupos y sin repetir ningún grupo en 24 horas, para cuidar la reputación de la cuenta.`)}
+  const TRANS=/^(publicando|posting|publicado|posted|compartiendo|sharing|subiendo|uploading|cargando|loading|enviando|sending|procesando|processing)\b/i;
+  const fbOf=i=>{const m=String(i.fbMsg||'').split(' · ').find(x=>x&&!TRANS.test(x.trim()));return m?` Facebook indicó: «${clip(m.replace(/[«»]/g,'"'),200)}».`:''};
+  all.filter(i=>i.status==='skipped'&&i.error&&!NOT_FAIL.test(i.error)).forEach(i=>O.push(`No se pudo compartir en ${listNames([i.name])}: ${reasonOf(i.error)}.${/^(incidencia|el grupo no permite)/.test(reasonOf(i.error))?fbOf(i):''}`));
+  all.filter(i=>i.status==='pending'&&i.error).forEach(i=>O.push(`No se pudo compartir en ${listNames([i.name])}: Facebook mostró un aviso de seguridad («${clip(cleanErr(i.error).replace(/[«»]/g,'"'),200)}») y se detuvo la difusión para proteger la cuenta.`));
+  rej.forEach(i=>O.push(`La publicación fue rechazada por los administradores de ${listNames([i.name])}.`));
   if(O.length){L.push('Observaciones');O.forEach(o=>L.push('- '+o));L.push('')}
   const N=[];
   if(aw.length)N.push(aw.length===1?`Comprobar si se aprobó la publicación en ${listNames(aw.map(i=>i.name))}.`:`Comprobar si se aprobaron las publicaciones en ${listNames(aw.map(i=>i.name))}.`);
@@ -2229,7 +2230,7 @@ function reportBlocks(t){
     if(H2.test(x))B.push({t:'h2',x:x.replace(/:$/,'')});
     else if(/^\d+\.\s+/.test(x))B.push({t:'h3',x});
     else if(/^[-•·]\s+/.test(x))B.push({t:'li',x:x.replace(/^[-•·]\s+/,'')});
-    else if(/^(Fecha|Elaborado por|Cliente \/ marca|Enlace|Grupos)\s*:/.test(x)){const k=x.slice(0,x.indexOf(':'));B.push({t:'kv',k,x:x.slice(x.indexOf(':')+1).trim()})}
+    else if(/^(Fecha|Elaborado por|Cliente \/ marca|Enlace|Texto|Grupos en los que se compartió|Grupos)\s*:/.test(x)){const k=x.slice(0,x.indexOf(':'));B.push({t:'kv',k,x:x.slice(x.indexOf(':')+1).trim()})}
     else B.push({t:'p',x})});
   return B}
 /* ---- PDF (Helvetica estándar, WinAnsiEncoding) ---- */
@@ -2308,7 +2309,7 @@ function renderReportBtn(){const n=S.hsel.size;$('#reportBtnTxt').textContent=n?
 function renderRpList(){
   const date=$('#rpDate').value,E=rpEntries(date);
   if(!S.rpSel){const pre=E.filter(h=>S.hsel.has(h.id));S.rpSel=new Set((pre.length?pre:E).map(h=>h.id))}
-  $('#rpList').innerHTML=E.length?E.map(h=>{const n=h.items.filter(i=>itemDay(h,i)===date).length;return `<label class="row" style="cursor:pointer"><input type="checkbox" class="cb" data-rp="${h.id}" ${S.rpSel.has(h.id)?'checked':''}><div class="main"><div class="title">${esc(postLabel(h))}</div><div class="meta">${pl(n,'grupo','grupos')} · ${esc(hm(h.date))}${h.url?' · '+esc(h.url.replace('https://www.','')):''}</div></div></label>`}).join('')
+  $('#rpList').innerHTML=E.length?E.map(h=>{const n=h.items.filter(i=>itemDay(h,i)===date).length;const txt=sharedText(h);return `<label class="row" style="cursor:pointer"><input type="checkbox" class="cb" data-rp="${h.id}" ${S.rpSel.has(h.id)?'checked':''}><div class="main"><div class="title">${esc(h.url?h.url.replace('https://www.',''):'Publicación sin enlace')}</div><div class="meta">${txt?`«${esc(clip(txt,120))}» · `:''}${pl(n,'grupo','grupos')} · ${esc(hm(h.date))}</div></div></label>`}).join('')
     :`<div class="row"><div class="main muted">No hay publicaciones compartidas el ${esc(longDate(date))}.</div></div>`;
   ['#rpCopy','#rpDocx','#rpPdf'].forEach(b=>$(b).disabled=!E.length);
 }

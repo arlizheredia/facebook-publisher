@@ -44,10 +44,13 @@
     }
     return null;
   }
+  /* Avisos transitorios de Facebook mientras envía (no son mensajes relevantes) */
+  const TRANSIENT = /^(publicando|posting|publicado|posted|compartiendo|sharing|subiendo|uploading|cargando|loading|enviando|sending|procesando|processing)\b[\s.…]*(\d+\s*%)?[\s.…]*$/i;
   const BTN_LINE = /^(cerrar|close|aceptar|ok|entendido|got it|cancelar|cancel|ver m[aá]s|see more|más información|learn more|continuar|continue|listo|done|x)$/i;
   function msgText(n) {
     const lines = (n.innerText || '').split('\n').map(l => l.replace(/\s+/g, ' ').trim()).filter(l => l && !BTN_LINE.test(l));
     const t = lines.join(' ').trim();
+    if (TRANSIENT.test(t)) return '';
     return t.length >= 8 ? t.slice(0, 400) : '';
   }
   function b64ToFile(f) {

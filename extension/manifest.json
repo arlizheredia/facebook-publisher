@@ -2,13 +2,14 @@
   "manifest_version": 3,
   "name": "Facebook Publisher · Publicación automática",
   "short_name": "FB Publisher",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Publica en tus grupos de Facebook lo que preparas en Facebook Publisher, usando tu propia sesión y respetando los límites de seguridad.",
   "minimum_chrome_version": "116",
   "permissions": [
     "tabs",
     "cookies",
-    "notifications"
+    "notifications",
+    "storage"
   ],
   "host_permissions": [
     "https://www.facebook.com/*",

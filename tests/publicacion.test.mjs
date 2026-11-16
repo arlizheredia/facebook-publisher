@@ -216,9 +216,24 @@ await t('redacta el resumen con cifras correctas', async () => {
   if (miss.length) throw new Error('falta: ' + miss.join(' | ') + '\n' + report);
   return report.split('\n').find(l => l.startsWith('Hoy'));
 });
-await t('detalla cada publicación con sus grupos, estado y hora', async () => /1\. Reel «Llegaron los paneles solares de 550 W»/.test(report) && /2\. Publicación «Oferta de fin de semana en baterías de litio»/.test(report) && /- Ventas Santiago: en espera de aprobación, \d\d:\d\d/.test(report) && /- Paneles solares Cuba: publicada y comprobada/.test(report) && /Grupos: 3 \(1 publicada, 1 en aprobación, 1 sin publicar\)/.test(report));
-await t('añade observaciones y próximos pasos útiles', async () => /Próximos pasos\n- Comprobar si se aprobó la publicación en «Ventas Santiago»\.\n- Solicitar acceso a «MIPYMES Oriente»\./.test(report) && /revisa las publicaciones antes de mostrarlas/.test(report));
-await t('no usa emojis ni muletillas típicas de IA', async () => !/[\p{Extended_Pictographic}]/u.test(report) && !/(en resumen|en conclusión|cabe destacar|es importante destacar|¡|como modelo)/i.test(report));
+await t('detalla cada publicación: enlace arriba, texto debajo y solo la cantidad de grupos', async () => {
+  const ok = /1\. https:\/\/www\.facebook\.com\/reel\/1452025332928122\nTexto: «¡Hola, comunidad de \(nombre del grupo\)! Llegaron los paneles solares de 550 W»\nGrupos en los que se compartió: 2\n/.test(report)
+    && /2\. https:\/\/www\.facebook\.com\/page\/posts\/777\nTexto: «Oferta de fin de semana en baterías de litio»\nGrupos en los que se compartió: 1/.test(report)
+    && !/^- (Ventas Santiago|Paneles solares Cuba):/m.test(report);
+  return ok || (() => { throw new Error(report); })();
+});
+await t('la lista de publicaciones muestra el enlace arriba y el texto debajo', async () => {
+  const r = await ev(`JSON.stringify([...document.querySelectorAll('#rpList .row')].map(x=>[x.querySelector('.title').textContent,x.querySelector('.meta').textContent]))`);
+  return /^\[\["facebook\.com\/reel\/1452025332928122","«¡Hola, comunidad de/.test(r) ? 'enlace / texto' : (() => { throw new Error(r); })();
+});
+await t('observaciones solo con lo que impidió compartir', async () => {
+  const obs = (report.split('Observaciones\n')[1] || '').split('\n\n')[0];
+  return obs.trim() === '- No se pudo compartir en «MIPYMES Oriente»: no somos miembros del grupo.' && /Próximos pasos\n- Comprobar si se aprobó la publicación en «Ventas Santiago»\.\n- Solicitar acceso a «MIPYMES Oriente»\./.test(report) ? obs.trim() : (() => { throw new Error(report); })();
+});
+await t('sin observaciones si no hubo problemas graves', async () => {
+  const r = await ev(`buildReport(ymd(Date.now()),['e2'],{})`); return !/Observaciones/.test(r);
+});
+await t('no usa emojis ni muletillas típicas de IA (sin contar el texto citado)', async () => { const own = report.split('\n').filter(l => !/^Texto: /.test(l)).join('\n'); return !/[\p{Extended_Pictographic}]/u.test(report) && !/(en resumen|en conclusión|cabe destacar|es importante destacar|¡|como modelo)/i.test(own); });
 await t('se puede filtrar desde el Historial: solo las marcadas', async () => {
   await ev(`document.getElementById('reportDlg').close();renderHistory()`);
   await ev(`document.querySelector('[data-hsel="e2"]').click()`); await sleep(200);
