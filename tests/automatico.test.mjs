@@ -310,13 +310,24 @@ await t('captura el texto exacto del mensaje que muestra Facebook', async () => 
   const m = await ev(`S.history[0].items[0].fbMsg||''`);
   return /puede tardar unos minutos en aparecer/.test(m) && (await ev(`S.history[0].items[0].status`)) === 'done' ? `«${m}»` : (() => { throw new Error(m); })();
 });
-await t('lo muestra en «Mensajes de Facebook» durante la publicación', async () => /Mensajes de Facebook \(1\)/.test(await ev(`document.getElementById('runMain').textContent`)));
+await t('lo muestra en «Mensajes de Facebook» durante la publicación', async () => /Mensajes de Facebook \(2\)/.test(await ev(`document.getElementById('runMain').textContent`)));
 await t('envía una notificación del sistema con el grupo y el mensaje', async () => {
   if (!swSession) throw new Error('sin acceso al service worker');
   const n = await swEval(`chrome.notifications.getAll().then(o=>JSON.stringify(Object.keys(o).length))`);
   return +n >= 1 ? `${n} notificación(es) creadas` : (() => { throw new Error('notificaciones: ' + n); })();
 });
-await ev(`closeRun(true)`);
+await t('no se detiene por un fallo sin riesgo: termina y resume «con incidencias»', async () => {
+  const r = await ev(`JSON.stringify({t:document.querySelector('#runMain h2')?.textContent,txt:document.getElementById('runMain').textContent,retry:!!document.getElementById('rRetry')})`); const o = JSON.parse(r);
+  return /terminada con incidencias/.test(o.t) && /Grupo solo administradores/.test(o.txt) && /El grupo no permite publicar/.test(o.txt) && o.retry ? 'lista el grupo fallido con su motivo y ofrece reintentar' : (() => { throw new Error(r); })();
+});
+await t('al terminar con fallos envía una notificación con el resumen', async () => +(await swEval(`chrome.notifications.getAll().then(o=>JSON.stringify(Object.keys(o).length))`)) >= 3);
+await ev(`closeRun(true)`); await sleep(300);
+await t('tras cerrar, Publicar mantiene el aviso de incidencias con «Reintentar»', async () => {
+  const r = await ev(`JSON.stringify({vis:!document.getElementById('resumeBanner').hidden,txt:document.getElementById('resumeBanner').textContent})`); const o = JSON.parse(r);
+  if (!o.vis || !/terminada con incidencias/.test(o.txt) || !/Grupo solo administradores \(el grupo no permite publicar\)/.test(o.txt)) throw new Error(r);
+  await ev(`document.getElementById('incOk').click()`); await sleep(200);
+  return (await ev(`document.getElementById('resumeBanner').hidden`)) ? 'visible hasta pulsar «Cerrar aviso»' : (() => { throw new Error('no se cerró'); })();
+});
 await t('una restricción del grupo («solo administradores») omite ese grupo sin bloquear la cuenta', async () => {
   const r = await ev(`JSON.stringify({s:S.history[0].items[1].status,e:S.history[0].items[1].error,lock:!!(S.lock&&S.lock>Date.now())})`); const o = JSON.parse(r);
   return o.s === 'skipped' && /Solo los administradores/.test(o.e) && !o.lock ? o.e : (() => { throw new Error(r); })();

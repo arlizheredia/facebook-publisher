@@ -24,6 +24,12 @@ chrome.runtime.onMessage.addListener((msg, sender, send) => {
     handlePost(msg.job).then(r => { notifyResult(msg.job, r); return r; }).then(send, e => send({ok: false, step: 'ext', error: String((e && e.message) || e)})).finally(() => { busy = false; });
     return true;
   }
+  if (msg.cmd === 'notify') {
+    const j = msg.job || {};
+    if (chrome.notifications && typeof j.title === 'string' && typeof j.message === 'string')
+      chrome.notifications.create('', {type: 'basic', iconUrl: 'icon128.png', title: j.title.slice(0, 120), message: j.message.slice(0, 300), priority: 2}, () => void chrome.runtime.lastError);
+    send({ok: true}); return;
+  }
   if (msg.cmd === 'preview') { preview(msg.job && msg.job.url).then(send, () => send({ok: false})); return true; }
   if (msg.cmd === 'closeFb') {
     if (fbWinId != null) chrome.windows.remove(fbWinId).catch(() => {});
