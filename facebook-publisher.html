@@ -292,6 +292,16 @@ input[type=checkbox].cb{accent-color:var(--primary);width:18px;height:18px;margi
 .empty p{max-width:440px;margin:0 auto 24px}
 .pill-btn{cursor:pointer;font-family:inherit}
 .pill-btn:hover{filter:brightness(1.08);box-shadow:var(--shadow)}
+.wiz{list-style:none;margin:0;padding:0}
+.wiz>li{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--outline-2)}
+.wiz>li:last-child{border-bottom:0}
+.wz-n{width:28px;height:28px;border-radius:50%;background:var(--primary-container);color:var(--on-primary-container);display:grid;place-items:center;font-weight:500;font-size:13px;flex:none}
+.wiz>li.done .wz-n{background:var(--success);color:var(--surface)}
+.wiz>li.off{opacity:.5}
+.wz-status{margin-top:10px;font-size:13px;display:flex;align-items:center;gap:8px}
+.wz-ack{display:flex;gap:10px;align-items:flex-start;margin:8px 0;cursor:pointer;font-size:13px;line-height:19px}
+.wz-ack .cb{margin-top:1px}
+#autoChip .ms{margin-left:-4px}
 .empty-actions{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap}
 .empty.compact{padding:24px 16px}
 .empty.compact .ill{width:88px;height:88px;margin-bottom:16px}
@@ -608,6 +618,7 @@ details.adv[open] summary .ms{transform:rotate(180deg)}
 
           <div class="publish-bar">
             <div class="sum" id="pubSum"></div>
+            <button class="btn text" id="autoChip"></button>
             <button class="btn filled lg" id="startBtn"><span class="ms" aria-hidden="true">play_arrow</span>Iniciar publicación asistida</button>
           </div>
         </div>
@@ -789,6 +800,26 @@ details.adv[open] summary .ms{transform:rotate(180deg)}
       <button class="btn text danger" id="wipeAll">Borrar</button></div>
   </div>
   <div class="dlg-f"><button class="btn filled" data-close>Listo</button></div>
+</dialog>
+
+<!-- Auto setup wizard -->
+<dialog id="autoDlg">
+  <div class="dlg-h"><span class="ms" aria-hidden="true" style="color:var(--primary);font-size:28px">smart_toy</span><h2>Publicar automáticamente</h2><button class="help-link" data-help="automatico" aria-label="Ayuda"><span class="ms" aria-hidden="true">help</span></button></div>
+  <div class="dlg-b">
+    <p class="muted" style="margin-top:0">Con un clic se publicará en todos tus grupos. Solo hay que instalar una vez una pequeña extensión de Chrome; usa tu sesión de Facebook y nunca tus contraseñas.</p>
+    <ol class="wiz">
+      <li id="wz1"><span class="wz-n">1</span><div><b>Descarga la extensión</b><div class="small muted">Se guarda un archivo .zip. Descomprímelo (clic derecho → «Extraer aquí») en una carpeta que no vayas a borrar.</div>
+        <a class="btn tonal sm" id="wzDl" href="facebook-publisher-extension.zip" download style="margin-top:8px"><span class="ms" aria-hidden="true">download</span>Descargar extensión</a></div></li>
+      <li id="wz2"><span class="wz-n">2</span><div><b>Instálala en Chrome</b>
+        <ol class="small muted" style="margin:4px 0 0;padding-left:18px"><li>Abre una pestaña nueva y escribe <code>chrome://extensions</code> <button class="btn text sm" id="wzCopy" style="height:24px;padding:0 8px"><span class="ms" aria-hidden="true">content_copy</span>Copiar</button></li>
+        <li>Activa <b>Modo de desarrollador</b> (arriba a la derecha).</li><li>Pulsa <b>Cargar descomprimida</b> y elige la carpeta que descomprimiste.</li><li>Vuelve aquí y pulsa <b>Ya la instalé</b>.</li></ol>
+        <div class="wz-status" id="wzStatus"></div></div></li>
+      <li id="wz3"><span class="wz-n">3</span><div><b>Actívala</b>
+        <label class="wz-ack"><input type="checkbox" class="cb" id="wzAck"> Entiendo que Facebook no permite publicar de forma automatizada y que puede haber bloqueos temporales de la cuenta. Los límites de seguridad seguirán activos.</label>
+        <div class="small muted">La primera vez se hará una <b>prueba</b>: se preparará la publicación en un grupo sin publicarla, para que compruebes que todo está bien.</div></div></li>
+    </ol>
+  </div>
+  <div class="dlg-f"><button class="btn text" data-close>Ahora no</button><button class="btn outlined" id="wzReload"><span class="ms" aria-hidden="true">refresh</span>Ya la instalé</button><button class="btn filled" id="wzOn" disabled><span class="ms" aria-hidden="true">bolt</span>Activar</button></div>
 </dialog>
 
 <!-- Verify dialog -->
@@ -1231,6 +1262,7 @@ function renderSummary(){
   const est=Math.ceil(n*(25+(+S.settings.pause||0))/60),used=usage().day.length;
   $('#pubSum').innerHTML=n?`<b>${n} grupo${n>1?'s':''}</b> seleccionado${n>1?'s':''} · ≈ ${est} min · <span title="Grupos publicados en las últimas 24 h">${ic('verified_user','sm')} hoy ${used}/${S.settings.dayCap}</span> ${!hasContent?'<br><span class="small" style="color:var(--error)">Añade una URL, texto o archivos para empezar</span>':r.error?'<br><span class="small" style="color:var(--error)">Revisa la URL de origen</span>':''}`:'<span class="muted">Selecciona al menos un grupo de destino</span>';
   $('#startBtn').disabled=!n||!hasContent||!!r.error;
+  renderAutoChip();
   $('#startBtn').innerHTML=autoActive()?`${ic('smart_toy')}${S.settings.autoTest?'Probar publicación automática':'Comenzar publicación automática'}`:`${ic('play_arrow')}Iniciar publicación asistida`;
 }
 
@@ -1450,10 +1482,30 @@ const Ext={ready:false,version:null,_id:0,_p:{},onStep:null,
     const id=++this._id;return new Promise(res=>{const t=setTimeout(()=>{delete this._p[id];res({ok:false,step:'timeout',error:'La extensión no respondió a tiempo'})},timeout);
       this._p[id]=r=>{clearTimeout(t);res(r&&typeof r==='object'?r:{ok:false,step:'ext',error:'Respuesta no válida'})};window.postMessage({src:'fbp-app',id,cmd,job},'*')})}};
 window.addEventListener('message',e=>{if(e.source!==window)return;const d=e.data;if(!d||d.src!=='fbp-ext')return;
-  if(d.type==='hello'){const was=Ext.ready;Ext.ready=true;Ext.version=str(d.version,20);if(!was){renderExt();renderSummary()}}
+  if(d.type==='hello'){const was=Ext.ready;Ext.ready=true;Ext.version=str(d.version,20);if(!was){renderExt();renderSummary();if($('#autoDlg').open)renderWizard()}}
   else if(d.reply&&Ext._p[d.reply]){Ext._p[d.reply](d.res);delete Ext._p[d.reply]}
   else if(d.type==='progress'&&Ext.onStep)Ext.onStep(str(d.step,200))});
 const autoActive=()=>S.settings.autoMode&&Ext.ready;
+function renderAutoChip(){const b=$('#autoChip');if(!b)return;const st=S.settings;
+  if(st.autoMode&&Ext.ready){b.innerHTML=`${ic('smart_toy')}Automático${st.autoTest?' · prueba':''}`;b.title='Publicación automática activada. Pulsa para cambiarla.'}
+  else if(st.autoMode){b.innerHTML=`${ic('extension_off')}Instalar extensión`;b.title='La publicación automática está activada pero la extensión no se detecta'}
+  else{b.innerHTML=`${ic('bolt')}Publicar automáticamente`;b.title='Configura la publicación automática en 3 pasos'}}
+function openAutoWizard(){try{sessionStorage.setItem('fbp.wizard','1')}catch(e){}renderWizard();$('#autoDlg').showModal();
+  if(!Ext.ready)window.postMessage({src:'fbp-app',cmd:'hello'},'*')}
+function renderWizard(){const dl=(()=>{try{return sessionStorage.getItem('fbp.wzdl')==='1'}catch(e){return false}})();
+  $('#wz1').classList.toggle('done',dl||Ext.ready);$('#wz2').classList.toggle('done',Ext.ready);$('#wz3').classList.toggle('off',!Ext.ready);
+  $('#wzStatus').innerHTML=Ext.ready?`<span style="color:var(--success)">${ic('check_circle','sm')} Extensión detectada (v${esc(Ext.version)})</span>`:`<span class="muted">${ic('hourglass_empty','sm')} Aún no se detecta la extensión.</span>`;
+  $('#wzReload').hidden=Ext.ready;$('#wzAck').disabled=!Ext.ready;$('#wzOn').disabled=!(Ext.ready&&$('#wzAck').checked);
+  if(S.settings.autoMode&&Ext.ready){$('#wzOn').innerHTML=`${ic('toggle_off')}Desactivar`;$('#wzOn').disabled=false;$('#wzAck').checked=true}else $('#wzOn').innerHTML=`${ic('bolt')}Activar`}
+$('#autoChip').onclick=()=>openAutoWizard();
+$('#wzDl').addEventListener('click',()=>{try{sessionStorage.setItem('fbp.wzdl','1')}catch(e){}setTimeout(renderWizard,300)});
+$('#wzCopy').onclick=async()=>{snack(await copyText('chrome://extensions')?'Copiado: pégalo en una pestaña nueva':'Escribe chrome://extensions en una pestaña nueva')};
+$('#wzAck').onchange=renderWizard;
+$('#wzReload').onclick=()=>{try{sessionStorage.setItem('fbp.wizard','1')}catch(e){}location.reload()};
+$('#wzOn').onclick=()=>{if(S.settings.autoMode&&Ext.ready&&$('#wzOn').textContent.includes('Desactivar')){S.settings.autoMode=false;persist.settings();renderSummary();$('#autoDlg').close();snack('Publicación automática desactivada');return}
+  S.settings.autoMode=true;S.settings.autoTest=true;persist.settings();renderSummary();$('#autoDlg').close();try{sessionStorage.removeItem('fbp.wizard')}catch(e){}
+  snack('¡Activada! Pulsa «Probar publicación automática» para hacer la prueba',null,null,7000)};
+$('#autoDlg').addEventListener('close',()=>{try{sessionStorage.removeItem('fbp.wizard')}catch(e){}});
 function renderExt(){const el=$('#extStatus');if(!el)return;
   el.innerHTML=Ext.ready?`<span style="color:var(--success)">${ic('check_circle','sm')} Extensión instalada (v${esc(Ext.version)})</span>`
     :`${ic('extension_off','sm')} Extensión no detectada. <a href="facebook-publisher-extension.zip" download>Descargar extensión</a> · <a href="#" data-help="automatico">Cómo instalarla</a>`}
@@ -1477,7 +1529,7 @@ async function runAuto(){
     R.phase='posting';R.step='Preparando…';R.log=[];renderRun();
     const res=await Ext.call('post',{url:it.url,text:runText(it),files,test});
     if(S.run!==R)break;
-    if(res.ok&&res.test){R.stop=true;R.testDone=true;R.stopMsg='Modo prueba completado: revisa la ventana de Facebook. El texto y los archivos deberían estar listos en el cuadro de publicación, sin publicar. Si todo está bien, desactiva el modo prueba en Ajustes y vuelve a empezar (cierra ese cuadro sin publicar).';break}
+    if(res.ok&&res.test){R.stop=true;R.testDone=true;R.stopMsg='Mira la ventana de Facebook: el texto, las imágenes y el enlace deberían estar listos en el cuadro de publicación, sin publicar. Ciérralo sin publicar y, si todo estaba bien, pulsa «Todo bien: publicar de verdad».';break}
     if(res.ok){it.error=undefined;mark('done',res.review||undefined)}
     else if(res.blocked){setLock(Date.now()+SAFE.LOCK_H*3600e3);renderLock();R.stop=true;R.stopMsg='Facebook mostró un aviso: «'+str(res.error,200)+'». Se ha detenido todo y bloqueado 24 h para proteger tu cuenta.';it.error=str(res.error,200);persist.history();break}
     else{it.status='skipped';it.at=Date.now();it.error=str(res.error,200)+(res.step?` [${res.step}]`:'');persist.history();
@@ -1495,8 +1547,9 @@ function renderAuto(main,it){
       <h3 style="font-size:22px;line-height:28px;margin:0">${R.testDone?'Modo prueba completado':'Publicación automática detenida'}</h3>
       <p class="muted" style="margin:0;max-width:520px">${esc(R.stopMsg||'La has detenido. Tu progreso está guardado.')}</p>
       ${errs?`<details class="adv" style="max-width:520px;text-align:left"><summary>Ver incidencias${ic('chevron')}</summary><ul class="small" style="margin:8px 0">${errs}</ul></details>`:''}
-      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">${R.testDone?`<button class="btn tonal" id="aSettings">${ic('settings')}Abrir ajustes</button>`:gate().reason==='lock'||gate().reason==='day'?'':`<button class="btn filled" id="aGo">${ic('play_arrow')}Continuar</button>`}<button class="btn outlined" id="aClose">Cerrar</button></div></div>`;
-    const g=$('#aGo');if(g)g.onclick=()=>{R.stop=false;R.testDone=false;runAuto()};$('#aClose').onclick=()=>closeRun(true);const st=$('#aSettings');if(st)st.onclick=()=>{closeRun(true);openSettings()};return;
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">${R.testDone?`<button class="btn filled" id="aReal">${ic('bolt')}Todo bien: publicar de verdad</button><button class="btn text" id="aBad">${ic('help')}Algo salió mal</button>`:gate().reason==='lock'||gate().reason==='day'?'':`<button class="btn filled" id="aGo">${ic('play_arrow')}Continuar</button>`}<button class="btn outlined" id="aClose">Cerrar</button></div></div>`;
+    const g=$('#aGo');if(g)g.onclick=()=>{R.stop=false;R.testDone=false;runAuto()};$('#aClose').onclick=()=>closeRun(true);const rl=$('#aReal');if(rl)rl.onclick=async()=>{S.settings.autoTest=false;persist.settings();await closeRun(true);renderSummary();snack('Modo prueba desactivado. Cierra el cuadro de prueba en Facebook y pulsa «Comenzar publicación automática».',null,null,9000)};
+    const bd=$('#aBad');if(bd)bd.onclick=()=>{closeRun(true);openHelp('automatico')};return;
   }
   main.innerHTML=`<div class="run-group"><div class="gav">${esc(initials(it.name))}</div><div style="min-width:0"><div class="muted small">Grupo ${R.idx+1} de ${items.length} · ${S.settings.autoTest?'<b>modo prueba</b>':'publicación automática'}</div><h3>${esc(it.name)}</h3><a class="small" href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.url.replace('https://www.',''))}</a></div></div>
     <div class="auto-box"><span class="spin" aria-hidden="true"></span><div style="min-width:0"><h4 id="autoStep" aria-live="polite">${esc(R.step||'Preparando…')}</h4>
@@ -2067,6 +2120,7 @@ hydrateIcons();applyTheme();route();validateUrl();updateCount();renderMedia();re
 MediaDB.all().then(rows=>{(rows||[]).sort((a,b)=>(a.order||0)-(b.order||0)).forEach(r=>{if(r&&r.blob&&['image','video','audio'].includes(r.type)&&!S.media.some(m=>m.id===r.id))S.media.push({id:r.id,file:r.blob,url:URL.createObjectURL(r.blob),type:r.type,name:str(r.name,200)||'archivo',order:r.order})});
   if(S.media.length){renderMedia();renderPreview();updateCount();renderSummary()}});
 [300,1500,4000].forEach(t=>setTimeout(()=>{if(!Ext.ready)window.postMessage({src:'fbp-app',cmd:'hello'},'*')},t));
+try{if(sessionStorage.getItem('fbp.wizard')==='1')setTimeout(openAutoWizard,600)}catch(e){}
 setInterval(()=>{renderLock();if($('#view-publicar').classList.contains('active')&&!S.run)renderDest()},60000);
 </script>
 </body>

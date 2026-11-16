@@ -140,21 +140,30 @@ async function waitAuto(maxMs = 120000) {
 console.log('1. Extensión');
 await t('la app detecta la extensión', async () => (await ev(`Ext.ready`)) ? `v${await ev('Ext.version')}` : false);
 await ev(`(()=>{localStorage.setItem('fbp.welcomed','true');S.groups=cleanGroups(${JSON.stringify(GROUPS.map(g => ({id: g.id, name: g.name, url: `https://www.facebook.com/groups/${g.slug}/`, active: true})))});persist.groups();
-  S.settings.autoMode=true;S.settings.autoTest=true;persist.settings();
   srcEl.value=${JSON.stringify(POST_URL)};srcEl.dispatchEvent(new Event('input'));txtEl.value='¡Hola, comunidad de {grupo}!';txtEl.dispatchEvent(new Event('input'))})()`);
 await ev(`(async()=>{const c=document.createElement('canvas');c.width=60;c.height=60;const x=c.getContext('2d');x.fillStyle='#1877f2';x.fillRect(0,0,60,60);
   const b=await new Promise(r=>c.toBlob(r,'image/png'));addFiles([new File([b],'oferta.png',{type:'image/png'})])})()`);
 await sleep(500);
+await t('el asistente detecta la extensión y activa la publicación automática', async () => {
+  await ev(`document.getElementById('autoChip').click()`); await sleep(300);
+  if (!(await ev(`document.getElementById('autoDlg').open&&document.getElementById('wzStatus').textContent.includes('detectada')`))) throw new Error('extensión no detectada en el asistente');
+  if (!(await ev(`document.getElementById('wzOn').disabled`))) throw new Error('se podía activar sin aceptar el aviso');
+  await ev(`document.getElementById('wzAck').click();document.getElementById('wzOn').click()`); await sleep(200);
+  return (await ev(`S.settings.autoMode&&S.settings.autoTest&&!document.getElementById('autoDlg').open`)) ? 'activada en modo prueba' : false;
+});
 await t('el botón cambia a «Probar publicación automática»', async () => /Probar publicación automática/.test(await ev(`document.getElementById('startBtn').textContent`)));
 
 console.log('2. Modo prueba');
 await ev(`S.sel=new Set(['g1']);openPreflight();document.getElementById('checkGo').click()`);
 await waitAuto();
 await t('prepara la publicación en el grupo sin pulsar «Publicar»', async () => posted.length === 0 && (await ev(`S.run.testDone===true&&S.history[0].items[0].status==='pending'`)));
-await ev(`closeRun(true)`);
+await t('«Todo bien: publicar de verdad» desactiva el modo prueba con un clic', async () => {
+  await ev(`document.getElementById('aReal').click()`); await sleep(400);
+  return (await ev(`S.settings.autoTest===false&&!S.run`)) === true;
+});
 
 console.log('3. Publicación automática real (Facebook simulado)');
-await ev(`S.settings.autoTest=false;persist.settings();S.sel=new Set(['g1','g2','g3','g4']);renderDest();renderSummary()`);
+await ev(`S.sel=new Set(['g1','g2','g3','g4']);renderDest();renderSummary()`);
 await t('el botón cambia a «Comenzar publicación automática»', async () => /Comenzar publicación automática/.test(await ev(`document.getElementById('startBtn').textContent`)));
 await ev(`openPreflight();document.getElementById('checkGo').click()`);
 await waitAuto(240000);
