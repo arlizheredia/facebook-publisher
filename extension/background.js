@@ -158,7 +158,7 @@ function progress(step) {
 
 function validJob(j) {
   return j && typeof j === 'object' && typeof j.url === 'string' && GROUP_URL.test(j.url) &&
-    typeof j.text === 'string' && j.text.length <= 63206 && Array.isArray(j.files) && j.files.length <= 20 &&
+    typeof j.text === 'string' && j.text.length <= 63206 && (!j.link || (typeof j.link === 'string' && /^https:\/\/(www\.facebook\.com|fb\.watch)\//.test(j.link))) && Array.isArray(j.files) && j.files.length <= 20 &&
     j.files.every(f => f && typeof f.name === 'string' && /^(image|video)\//.test(f.type) && typeof f.data === 'string');
 }
 

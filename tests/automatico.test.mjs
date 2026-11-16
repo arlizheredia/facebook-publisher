@@ -32,7 +32,8 @@ const GROUPS = [
   {id: 'g7', slug: '2000000007', name: 'Grupo con mensaje', mode: 'notice'},
   {id: 'g8', slug: '2000000008', name: 'Grupo solo administradores', mode: 'adminsonly'},
   {id: 'g9', slug: '2000000009', name: 'Grupo nueve', mode: 'ok'},
-  {id: 'g10', slug: '2000000010', name: 'Grupo diez', mode: 'ok'}
+  {id: 'g10', slug: '2000000010', name: 'Grupo diez', mode: 'ok'},
+  {id: 'g11', slug: '2000000011', name: 'Grupo once', mode: 'ok'}
 ];
 
 /* ---------- Chrome por tubería (necesario para cargar extensiones) ---------- */
@@ -79,14 +80,16 @@ if(c)c.addEventListener('click',()=>{
   document.body.appendChild(d);
   const tb=d.querySelector('#tb'),att=d.querySelector('#att'),pb=d.querySelector('#pb'),fi=d.querySelector('#fi');let files=[];
   const upd=()=>pb.setAttribute('aria-disabled',tb.innerText.trim()||files.length?'false':'true');
-  const addF=fs=>{[...fs].forEach(f=>{files.push(f);const i=document.createElement('img');i.src=URL.createObjectURL(f);att.appendChild(i)});upd()};
-  tb.addEventListener('paste',e=>{e.preventDefault();const t=e.clipboardData.getData('text/plain');if(t)tb.innerText+=t;if(e.clipboardData.files.length)addF(e.clipboardData.files);upd()});
+  const addF=fs=>{[...fs].forEach(f=>{files.push(f);const i=document.createElement('img');i.src=URL.createObjectURL(f);att.appendChild(i)});const lp=d.querySelector('#lp');if(lp)lp.remove();upd()};
+  const linkPreview=()=>{const x=tb.innerText,i=x.indexOf('https://www.facebook.com/');if(i<0||d.querySelector('#lp')||files.length)return;const url=x.slice(i).split(' ')[0].split(String.fromCharCode(10))[0];setTimeout(()=>{if(d.querySelector('#lp'))return;const lp=document.createElement('div');lp.id='lp';lp.innerHTML='<a href="'+url+'">Vista previa de la publicación</a><div role="button" aria-label="Quitar vista previa del enlace">x</div>';d.insertBefore(lp,pb)},800)};
+  tb.addEventListener('paste',e=>{e.preventDefault();const t=e.clipboardData.getData('text/plain');const sel=getSelection();if(t){if(sel.rangeCount&&!sel.isCollapsed&&tb.contains(sel.anchorNode))tb.innerText=t;else tb.innerText+=t}if(e.clipboardData.files.length)addF(e.clipboardData.files);linkPreview();upd()});
+  tb.addEventListener('input',linkPreview);
   fi.addEventListener('change',()=>addF(fi.files));
   pb.addEventListener('click',async()=>{
     if(pb.getAttribute('aria-disabled')==='true')return;
     const toast=document.createElement('div');toast.setAttribute('role','status');toast.textContent='Publicando';document.body.appendChild(toast);setTimeout(()=>toast.remove(),1500);
     if(MODE==='block'){msg('Estás publicando demasiado rápido. Se ha bloqueado temporalmente esta función.');return}
-    await fetch('https://www.facebook.com/__fbp_test_posted',{method:'POST',body:JSON.stringify({group:${JSON.stringify(g.slug)},text:tb.innerText,files:files.map(f=>({name:f.name,type:f.type,size:f.size}))})});
+    await fetch('https://www.facebook.com/__fbp_test_posted',{method:'POST',body:JSON.stringify({group:${JSON.stringify(g.slug)},text:tb.innerText,preview:(d.querySelector('#lp a')||{}).href||null,files:files.map(f=>({name:f.name,type:f.type,size:f.size}))})});
     d.remove();
     if(MODE==='notice')msg('Tu publicación se compartió, pero puede tardar unos minutos en aparecer para los miembros del grupo.');
     if(MODE==='pending')msg('Tu publicación está pendiente. Los administradores la revisarán antes de que aparezca en el grupo.');
@@ -328,6 +331,20 @@ await t('al terminar cierra todas las ventanas de Facebook, aunque la extensión
 await t('el aviso transitorio «Publicando» no se trata como mensaje de Facebook', async () => (await ev(`S.history[0].items.every(i=>!i.fbMsg)&&!(S.run&&S.run.msgs&&S.run.msgs.length)`)) === true);
 await ev(`closeRun(true)`);
 
+console.log('5c. Enlace sin mostrarse en el texto');
+await fastForward();
+await ev(`S.media.slice().forEach(m=>removeMedia(m.id));S.settings.appendUrl=false;persist.settings();S.sel=new Set(['g11']);renderDest();renderSummary();openPreflight()`);
+for (let i = 0; i < 30 && !(await ev(`document.getElementById('checkDlg').open`)); i++) await sleep(300);
+await ev(`document.getElementById('checkGo').click()`);
+await waitAuto(240000);
+const p11 = posted.find(p => p.group === '2000000011');
+await t('publica la tarjeta de la publicación sin la URL en el texto', async () => {
+  if (!p11) throw new Error('no se publicó');
+  return p11.text.trim() === '¡Hola, comunidad de Grupo once!' && p11.preview && p11.preview.startsWith(POST_URL) ? `texto «${p11.text.trim()}» + tarjeta de ${p11.preview}` : (() => { throw new Error(JSON.stringify(p11)); })();
+});
+await t('con imágenes adjuntas, el enlace se mantiene en el texto para no perderlo', async () => { const p1 = posted.find(p => p.group === MAIN); return p1.text.includes(POST_URL) && p1.files.length === 1; });
+await ev(`closeRun(true)`);
+
 console.log('6. Mensajes de Facebook');
 await fastForward();
 await ev(`S.sel=new Set(['g7','g8']);renderDest();renderSummary();openPreflight()`);
@@ -395,7 +412,7 @@ await t('«Publicar de todas maneras» pide confirmación, quita el bloqueo y pe
   return !o.lock && !o.go && o.ov ? 'bloqueo quitado; «Empezar» habilitado' : (() => { throw new Error(r); })();
 });
 await t('respeta la pausa entre grupos (no publica dos seguidos sin esperar)', async () => (await ev(`(()=>{const t=S.history.flatMap(h=>h.items).filter(i=>i.status==='done').map(i=>i.at).sort((a,b)=>a-b);for(let i=1;i<t.length;i++)if(t[i]-t[i-1]<S.settings.pause*1000)return false;return true})()`)) === true);
-await t('solo se publicó en los grupos correctos', async () => posted.length === 7 && posted.map(p => p.group).join() === `${MAIN},2000000005,2000000006,2000000009,2000000010,2000000007,2000000002` ? posted.map(p => p.group).join(', ') : false);
+await t('solo se publicó en los grupos correctos', async () => posted.length === 8 && posted.map(p => p.group).join() === `${MAIN},2000000005,2000000006,2000000009,2000000010,2000000011,2000000007,2000000002` ? posted.map(p => p.group).join(', ') : false);
 await t('sin errores de JavaScript en la app', async () => errors.length === 0 || (() => { throw new Error(errors.slice(0, 3).join(' | ')); })());
 
 console.log(`\n${passed} correctas, ${failed} fallidas\n`);

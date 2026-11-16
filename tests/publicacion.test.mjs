@@ -107,6 +107,11 @@ await t('rechaza URLs que no son de Facebook', async () => (await ev(`normGroupU
 await t('el grupo queda seleccionado como destino', async () => (await ev(`selectedGroups().map(g=>g.name).join()`)) === GROUP_NAME);
 await ev(`txtEl.value='¡Hola, comunidad de {grupo}!';txtEl.dispatchEvent(new Event('input'))`);
 
+await t('limpia «Foto de perfil del grupo …» del nombre (app y marcador)', async () => {
+  const n = await ev(`JSON.stringify(cleanGroups([{url:'https://www.facebook.com/groups/91/',name:'Foto de perfil del grupo Ventas Santiago'},{url:'https://www.facebook.com/groups/92/',name:'Profile picture of Paneles Cuba'},{url:'https://www.facebook.com/groups/93/',name:'Foto de portada del grupo MIPYMES'}]).map(g=>g.name))`);
+  const bm = /foto de \(perfil\|portada\) del grupo/.test(bookmarklet);
+  return n === '["Ventas Santiago","Paneles Cuba","MIPYMES"]' && bm ? n : (() => { throw new Error(n + ' bookmarklet:' + bm); })();
+});
 console.log('2. Comprobación de seguridad');
 await t('se muestra antes de empezar y permite continuar', async () => {
   await ev(`document.getElementById('startBtn').click()`); await sleep(200);

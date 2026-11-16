@@ -53,6 +53,13 @@
     if (TRANSIENT.test(t)) return '';
     return t.length >= 8 ? t.slice(0, 400) : '';
   }
+  /* Tarjeta de vista previa del enlace dentro del cuadro de publicación */
+  function previewEl(d, tb) {
+    const rm = [...d.querySelectorAll('[aria-label]')].find(e => vis(e) && /(quitar|eliminar|remove).{0,30}(vista previa|preview)/i.test(e.getAttribute('aria-label')));
+    if (rm) return rm;
+    return [...d.querySelectorAll('a[href]')].find(a => vis(a) && !tb.contains(a) && /facebook\.com|fb\.watch/.test(a.href)) || null;
+  }
+  function selectAllIn(el) { el.focus(); const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
   function b64ToFile(f) {
     const bin = atob(f.data.replace(/^data:[^,]*,/, ''));
     const u8 = new Uint8Array(bin.length);
@@ -92,14 +99,35 @@
     const tb = textboxIn(d);
     await sleep(500);
 
-    if (job.text) {
-      progress('Escribiendo el texto…');
-      const dt = new DataTransfer(); dt.setData('text/plain', job.text);
-      pasteInto(tb, dt);
-      await sleep(700);
-      if (!tb.innerText.trim()) { tb.focus(); document.execCommand('insertText', false, job.text); await sleep(500); }
-      if (!tb.innerText.trim()) return {ok: false, step: 'text', error: 'No se pudo escribir el texto'};
+    /* Enlace de la publicación: se pega para que Facebook genere la tarjeta de vista previa y,
+       si se pide sin enlace en el texto, se borra después (la tarjeta se mantiene). */
+    const link = typeof job.link === 'string' && /^https:\/\/(www\.facebook\.com|fb\.watch)\//.test(job.link) ? job.link : '';
+    let previewOk = false;
+    const writeText = async t => {
+      const dt = new DataTransfer(); dt.setData('text/plain', t);
+      pasteInto(tb, dt); await sleep(700);
+      if (!tb.innerText.includes(t.trim().slice(0, 12))) { tb.focus(); document.execCommand('insertText', false, t); await sleep(500); }
+      return tb.innerText.trim().length > 0;
+    };
+    if (link) {
+      progress('Generando la vista previa de la publicación…');
+      const before = previewEl(d, tb);
+      await writeText(link + ' ');
+      previewOk = !!(await waitFor(() => { const p = previewEl(d, tb); return p && p !== before ? p : null; }, 12000, 400));
+      if (previewOk) {
+        selectAllIn(tb); document.execCommand('delete'); await sleep(400);
+        if (tb.innerText.includes(link.replace(/^https:\/\//, '').slice(0, 20))) { selectAllIn(tb); document.execCommand('insertText', false, ''); await sleep(400); }
+        await sleep(400);
+        if (!previewEl(d, tb)) { previewOk = false; await writeText(link); }   // Facebook quitó la tarjeta: se deja el enlace
+      } else { selectAllIn(tb); document.execCommand('delete'); await sleep(300); }
     }
+    const finalTxt = link && !previewOk ? (job.text ? job.text.trimEnd() + '\n\n' : '') + link : job.text;
+    if (finalTxt) {
+      progress('Escribiendo el texto…');
+      if (!tb.innerText.trim() || (link && !previewOk)) { if (link && !previewOk) { selectAllIn(tb); document.execCommand('delete'); } }
+      if (!(await writeText(finalTxt))) return {ok: false, step: 'text', error: 'No se pudo escribir el texto'};
+    }
+    if (link && !previewOk) progress('Facebook no generó la vista previa: el enlace se deja en el texto.');
 
     if (job.files.length) {
       progress(`Adjuntando ${job.files.length} archivo(s)…`);
@@ -124,7 +152,7 @@
         }
       }
       if (attachedCount(d) < before + files.length) return {ok: false, step: 'files', error: 'No se pudieron adjuntar los archivos'};
-    } else if (/https?:\/\//.test(job.text)) {
+    } else if (/https?:\/\//.test(job.text) && !link) {
       progress('Esperando la vista previa del enlace…');
       await sleep(4000);
     }
