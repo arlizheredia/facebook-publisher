@@ -290,6 +290,8 @@ input[type=checkbox].cb{accent-color:var(--primary);width:18px;height:18px;margi
 .empty .ill .ms{font-size:56px}
 .empty h3{color:var(--text);font-size:22px;line-height:28px;margin:0 0 8px}
 .empty p{max-width:440px;margin:0 auto 24px}
+.pill-btn{cursor:pointer;font-family:inherit}
+.pill-btn:hover{filter:brightness(1.08);box-shadow:var(--shadow)}
 .empty-actions{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap}
 .empty.compact{padding:24px 16px}
 .empty.compact .ill{width:88px;height:88px;margin-bottom:16px}
@@ -1210,7 +1212,7 @@ function renderDest(){
     <div class="list"><div class="list-head"><input type="checkbox" class="cb" id="destAll" aria-label="Seleccionar todos" ${avail.length&&nSel===avail.length?'checked':''} ${avail.length?'':'disabled'}><label for="destAll" style="flex:1;cursor:pointer">Todos los disponibles (${avail.length})</label><span>Último uso</span></div>
     <div class="scroll-list">${act.map(g=>`<div class="row ${isRecent(g)?'off':''}"><label class="click"><input type="checkbox" class="cb" data-dsel="${g.id}" ${S.sel.has(g.id)?'checked':''} ${isRecent(g)?'disabled':''}>
       <div class="main"><div class="title">${esc(g.name)}</div><div class="meta">${(g.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}${g.approval?'<span class="tag">Requiere aprobación</span>':''}${esc(g.url.replace('https://www.',''))}</div></div></label>
-      ${isRecent(g)?`<span class="pill warn" title="Publicaste aquí ${esc(ago(g.lastShared))}. Para proteger tu cuenta, cada grupo se puede usar una vez cada ${SAFE.RECENT_H} h.">${ic('lock_clock')}Desde ${esc(hhmm(availAt(g)))}</span>`:`<span class="small muted">${g.lastShared?esc(ago(g.lastShared)):'Nunca'}</span>`}</div>`).join('')}</div></div>
+      ${isRecent(g)?`<button class="pill warn pill-btn" data-unlock="${g.id}" title="Publicaste aquí ${esc(ago(g.lastShared))}. Para proteger tu cuenta, cada grupo se puede usar una vez cada ${SAFE.RECENT_H} h. Pulsa si en realidad no se publicó.">${ic('lock_clock')}Desde ${esc(hhmm(availAt(g)))}</button>`:`<span class="small muted">${g.lastShared?esc(ago(g.lastShared)):'Nunca'}</span>`}</div>`).join('')}</div></div>
     <div class="dest-foot"><button class="btn text" data-nav="grupos">${ic('edit')}Gestionar grupos</button>${act.length>avail.length?`<span class="inl">${ic('lock_clock')}<span>${act.length-avail.length} grupo(s) en espera de ${SAFE.RECENT_H} h · <a href="#ayuda/buenas-practicas" data-help="buenas-practicas">¿Por qué?</a></span></span>`:''}<span class="inl ml-auto">${ic('cloud_done')}Selección guardada</span></div>`;
   const ind=$('#destAll');if(ind)ind.indeterminate=nSel>0&&nSel<avail.length;
   $('#st3').classList.toggle('ok',nSel>0);
@@ -1221,6 +1223,7 @@ $('#destBox').addEventListener('change',e=>{
   renderDest();renderPreview();renderSummary();
 });
 $('#destBox').addEventListener('click',e=>{
+  const ul=e.target.closest('[data-unlock]');if(ul){e.preventDefault();unlockGroup(ul.dataset.unlock);return}
   const t=e.target.closest('[data-dtag]');if(t){S.sel=new Set(activeGroups().filter(g=>!isRecent(g)&&(g.tags||[]).includes(t.dataset.dtag)).map(g=>g.id));renderDest();renderPreview();renderSummary();snack(`Seleccionados los grupos con etiqueta «${t.dataset.dtag}»`)}
 });
 function renderSummary(){
@@ -1740,6 +1743,20 @@ async function doVerify(txt){
 $('#vfPaste').onclick=async()=>{let t=$('#vfText').value;if(!t.trim()){try{t=await navigator.clipboard.readText()}catch(e){$('#vfText').closest('details').open=true;$('#vfText').focus();snack('Pega la verificación en el cuadro con Ctrl+V');return}}doVerify(t)};
 $('#vfText').addEventListener('input',e=>{if(/FBP_CHECK:/.test(e.target.value))doVerify(e.target.value)});
 function verifyPill(i){if(!i.verify)return '';return i.verify.found?`<span class="pill ok" title="Verificada ${esc(fmtDate(i.verify.at))}">${ic('verified')}Verificada</span>`:`<span class="pill warn" title="Verificación ${esc(fmtDate(i.verify.at))}">${ic('search_off')}No encontrada</span>`}
+/* Corregir un registro «Publicado» que en realidad no se publicó */
+function recomputeShared(gid,url){const g=S.groups.find(x=>x.id===gid)||S.groups.find(x=>groupKey(x.url)===groupKey(url));if(!g)return;
+  const ts=S.history.flatMap(h=>h.items.filter(i=>i.status==='done'&&i.at&&(i.gid===g.id||groupKey(i.url)===groupKey(g.url))).map(i=>i.at));
+  g.lastShared=ts.length?Math.max(...ts):null;save('fbp.groups',S.groups)}
+function unpublishItem(it){it.status='skipped';it.error='Marcado como no publicado';it.review=undefined;it.verify=undefined;persist.history();recomputeShared(it.gid,it.url);renderAllGroups()}
+function confirmUnpublish(name){return confirmBox(`¿No llegaste a publicar en «${name}»?`,'Se corregirá el registro: el grupo quedará disponible y dejará de contar para los límites por hora y por día. Si en realidad sí se publicó, volver a publicar antes de 24 h puede hacer que los administradores o Facebook lo consideren spam.','No se publicó, liberar')}
+async function unlockGroup(gid){
+  const g=S.groups.find(x=>x.id===gid);if(!g)return;
+  if(!await confirmUnpublish(g.name))return;
+  const items=S.history.flatMap(h=>h.items.filter(i=>i.status==='done'&&i.at&&i.at>Date.now()-SAFE.RECENT_H*3600e3&&(i.gid===g.id||groupKey(i.url)===groupKey(g.url))));
+  if(items.length)items.forEach(i=>{i.status='skipped';i.error='Marcado como no publicado';i.review=undefined;i.verify=undefined});
+  persist.history();recomputeShared(g.id,g.url);if(isRecent(g)){g.lastShared=null;save('fbp.groups',S.groups)}
+  if(S.sel)S.sel.add(g.id);renderAllGroups();snack(`«${g.name}» liberado: ya puedes seleccionarlo`);
+}
 const grpApproval=gid=>{const g=S.groups.find(x=>x.id===gid);return !!(g&&g.approval)};
 function awaitingItems(){return S.history.flatMap(h=>h.items.filter(i=>i.status==='done'&&i.review==='awaiting').map(i=>({h,i})))}
 function setReview(hid,idx,val){const h=S.history.find(x=>x.id===hid);const i=h&&h.items[idx];if(!i)return;const prev=i.review;i.review=val;i.rat=Date.now();persist.history();
@@ -1759,11 +1776,12 @@ function renderHistory(){
       <span class="pill ok">${d-a} publicados</span>${a?`<span class="pill info">${a} en aprobación</span>`:''}${s?`<span class="pill">${s} omitidos</span>`:''}${p?`<span class="pill warn">${p} pendientes</span>`:''}
       <div class="prog hide-sm" aria-hidden="true"><i style="width:${(d+s)/h.items.length*100}%"></i></div>${ic('chevron','exp')}</summary>
       <div class="det">${h.url?`<p class="inl" style="margin:0 0 10px;word-break:break-all">${ic('link')}<a href="${esc(h.url)}" target="_blank" rel="noopener">${esc(h.url)}</a></p>`:''}${h.text?`<pre>${esc(h.text)}</pre>`:''}
-        <div class="list" style="margin-bottom:12px">${h.items.map((i,ix)=>`<div class="row" style="min-height:44px;flex-wrap:wrap"><span class="dot ${i.status}">${i.status==='done'?ic(i.review==='awaiting'?'pending':i.review==='rejected'?'block':'check'):i.status==='skipped'?ic('close'):''}</span><div class="main" style="min-width:140px"><div class="title">${esc(i.name)}</div></div>${reviewPill(i)}${verifyPill(i)}${i.review==='awaiting'?reviewBtns(h.id,ix):''}${i.status==='done'?`<button class="btn text sm" data-vf="${h.id}" data-i="${ix}">${ic('fact_check')}Verificar</button>`:''}<span class="small muted">${i.at?esc(ago(i.at)):'Pendiente'}</span><a class="icon-btn sm" href="${esc(i.url)}" target="_blank" rel="noopener" aria-label="Abrir grupo">${ic('open')}</a></div>`).join('')}</div>
+        <div class="list" style="margin-bottom:12px">${h.items.map((i,ix)=>`<div class="row" style="min-height:44px;flex-wrap:wrap"><span class="dot ${i.status}">${i.status==='done'?ic(i.review==='awaiting'?'pending':i.review==='rejected'?'block':'check'):i.status==='skipped'?ic('close'):''}</span><div class="main" style="min-width:140px"><div class="title">${esc(i.name)}</div></div>${reviewPill(i)}${verifyPill(i)}${i.review==='awaiting'?reviewBtns(h.id,ix):''}${i.status==='done'?`<button class="btn text sm" data-vf="${h.id}" data-i="${ix}">${ic('fact_check')}Verificar</button><button class="btn text sm" data-unpub="${h.id}" data-i="${ix}" title="Corrige el registro si en realidad no se publicó">${ic('undo')}No se publicó</button>`:''}<span class="small muted">${i.at?esc(ago(i.at)):'Pendiente'}</span><a class="icon-btn sm" href="${esc(i.url)}" target="_blank" rel="noopener" aria-label="Abrir grupo">${ic('open')}</a></div>`).join('')}</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">${p?`<button class="btn filled" data-hres="${h.id}">${ic('play')}Reanudar (${p})</button>`:''}
           <button class="btn outlined" data-hreuse="${h.id}">${ic('refresh')}Reutilizar contenido</button><button class="btn text danger" data-hdel="${h.id}">${ic('delete')}Eliminar</button></div></div></details>`}).join('');
 }
 $('#histBox').addEventListener('click',e=>{
+  const up=e.target.closest('[data-unpub]');if(up){e.preventDefault();const h=S.history.find(x=>x.id===up.dataset.unpub);const it=h&&h.items[+up.dataset.i];if(it)confirmUnpublish(it.name).then(ok=>{if(ok){unpublishItem(it);snack(`«${it.name}» marcado como no publicado y liberado`)}});return}
   const vf=e.target.closest('[data-vf]');if(vf){e.preventDefault();openVerify(vf.dataset.vf,+vf.dataset.i);return}
   const rv=e.target.closest('[data-rv]');if(rv){e.preventDefault();setReview(rv.dataset.h,+rv.dataset.i,rv.dataset.rv);return}
   const r=e.target.closest('[data-hres]'),u=e.target.closest('[data-hreuse]'),d=e.target.closest('[data-hdel]');
@@ -1865,7 +1883,7 @@ H('multimedia','Publicar','Imágenes, vídeo y audio','imagen foto video audio a
 <div class="callout">Si el navegador se queda sin espacio, el archivo se mantiene solo mientras la página esté abierta y verás un aviso. Pulsa <b>Nueva publicación</b> para liberar espacio.</div>`),
 H('destinos','Publicar','Elegir grupos de destino','destinos seleccionar grupos etiquetas 24 horas guardar seleccion',`
 <p>En <b>Destinos</b> aparecen solo los grupos <b>activos</b>. Marca o desmarca los que quieras para esta publicación. <b>La selección se guarda automáticamente</b> y la encontrarás igual al volver.</p>
-<ul><li><b>Seleccionar por etiqueta:</b> pulsa una etiqueta para seleccionar solo los grupos que la tienen.</li><li><b>Grupos en espera:</b> los grupos donde publicaste en las últimas 24 h aparecen bloqueados con la hora a la que vuelven a estar disponibles. <a data-help="buenas-practicas">¿Por qué?</a></li><li>Los grupos que actives o añadas después se seleccionan solos.</li></ul>
+<ul><li><b>Seleccionar por etiqueta:</b> pulsa una etiqueta para seleccionar solo los grupos que la tienen.</li><li><b>Grupos en espera:</b> los grupos donde publicaste en las últimas 24 h aparecen bloqueados con la hora a la que vuelven a estar disponibles. <a data-help="buenas-practicas">¿Por qué?</a> Si en realidad <b>no llegó a publicarse</b> (por ejemplo, en una prueba), pulsa ese aviso y confirma: el grupo queda liberado. También puedes usar <b>No se publicó</b> en el Historial.</li><li>Los grupos que actives o añadas después se seleccionan solos.</li></ul>
 <p>Para activar, desactivar o etiquetar grupos, ve a <a data-help="grupos">Gestionar grupos</a>.</p>`),
 H('vista-previa','Publicar','Vista previa','vista previa preview',`
 <p>Muestra una aproximación de cómo se verá la publicación en el <b>primer grupo seleccionado</b>, con las <a data-help="variables">variables</a> ya sustituidas.</p><p>Si no adjuntas archivos y hay URL, se muestra una tarjeta de enlace. Facebook generará la tarjeta real al pegar el enlace, con la imagen y el texto de la publicación original.</p>`),

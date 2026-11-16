@@ -180,6 +180,17 @@ await t('rechaza una verificación de otro grupo', async () => {
   return /no de/.test(await verifyInApp(other));
 });
 
+console.log('5. Corregir un registro: «no se publicó»');
+await t('el grupo bloqueado 24 h se puede liberar desde Destinos', async () => {
+  await go(APP + '#publicar');
+  if (!(await ev(`!!document.querySelector('[data-unlock]')&&document.querySelector('[data-dsel]').disabled`))) throw new Error('no aparece bloqueado');
+  await ev(`document.querySelector('[data-unlock]').click()`); await sleep(300);
+  await ev(`document.getElementById('cfYes').click()`); await sleep(400);
+  const r = await ev(`JSON.stringify({recent:isRecent(S.groups[0]),status:S.history[0].items[0].status,disabled:document.querySelector('[data-dsel]').disabled,checked:document.querySelector('[data-dsel]').checked,day:usage().day.length})`);
+  const o = JSON.parse(r);
+  if (o.recent || o.status !== 'skipped' || o.disabled || !o.checked || o.day !== 0) throw new Error(r);
+  return 'grupo disponible y seleccionado; ya no cuenta para los límites';
+});
 await t('sin errores de JavaScript', async () => errors.length === 0 || (() => { throw new Error(errors.join(' | ')); })());
 
 console.log(`\n${passed} correctas, ${failed} fallidas\n`);
