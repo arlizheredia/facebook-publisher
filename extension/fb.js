@@ -56,6 +56,8 @@
   const attachedCount = d => d.querySelectorAll('img[src^="blob:"],video[src^="blob:"],img[src^="data:"]').length;
 
   async function post(job) {
+    const loginForm = document.querySelector('input[name=email]') && document.querySelector('input[name=pass]') && !document.querySelector('[role=main] [role=feed]');
+    if (loginForm && !/checkpoint/.test(location.pathname)) return {ok: false, step: 'login', error: 'No has iniciado sesión en Facebook en este navegador.'};
     if (/\/login|checkpoint/.test(location.pathname)) return {ok: false, step: 'login', blocked: /checkpoint/.test(location.pathname), error: 'Inicia sesión en Facebook en este navegador y vuelve a intentarlo'};
     progress('Esperando a que cargue el grupo…');
     await waitFor(() => document.querySelector('[role=main]'), 20000);

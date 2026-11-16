@@ -24,9 +24,78 @@ chrome.runtime.onMessage.addListener((msg, sender, send) => {
     handlePost(msg.job).then(send, e => send({ok: false, step: 'ext', error: String((e && e.message) || e)})).finally(() => { busy = false; });
     return true;
   }
+  if (msg.cmd === 'preview') { preview(msg.job && msg.job.url).then(send, () => send({ok: false})); return true; }
+  if (msg.cmd === 'closeFb') {
+    if (fbWinId != null) chrome.windows.remove(fbWinId).catch(() => {});
+    fbWinId = null; fbTabId = null; send({ok: true}); return;
+  }
+  if (msg.cmd === 'status') { checkStatus(!!(msg.job && msg.job.details)).then(send); return true; }
   if (msg.cmd === 'focusApp') { if (appTabId != null) chrome.tabs.update(appTabId, {active: true}).catch(() => {}); send({ok: true}); return; }
   send({ok: false, step: 'ext', error: 'Orden desconocida'});
 });
+
+/* Conexión con Facebook y sesión iniciada.
+ * Solo se lee la cookie c_user (identificador numérico del usuario), nunca el token de sesión (xs).
+ * Con details, se consulta facebook.com/me para mostrar el nombre y la foto del perfil propio.
+ * Nada se envía fuera del navegador. */
+let who = {id: null, at: 0, data: null};
+const ent = s => s.replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16))).replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(+d))
+  .replace(/&quot;/g, '"').replace(/&#039;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+function b64(buf) { let s = ''; const u = new Uint8Array(buf); for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); }
+async function imgData(u, max) {
+  if (!/^https:\/\/[a-z0-9.-]+\.(fbcdn\.net|facebook\.com)\//i.test(u)) return null;
+  const ir = await fetch(u, {credentials: 'omit'});
+  const type = (ir.headers.get('content-type') || 'image/jpeg').split(';')[0];
+  const buf = await ir.arrayBuffer();
+  return /^image\/(jpeg|png|webp|gif)$/.test(type) && buf.byteLength < max ? `data:${type};base64,${b64(buf)}` : null;
+}
+const meta = (html, k) => {
+  const m = html.match(new RegExp(`<meta[^>]+(?:property|name)=["']${k}["'][^>]+content=["']([^"']*)["']`, 'i')) ||
+            html.match(new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]+(?:property|name)=["']${k}["']`, 'i'));
+  return m ? ent(m[1]) : '';
+};
+/* Vista previa de la publicación de origen: miniatura, título y descripción (etiquetas og:) */
+async function preview(url) {
+  if (typeof url !== 'string' || !/^https:\/\/(www\.facebook\.com|fb\.watch)\//.test(url)) return {ok: false};
+  const r = await fetch(url, {credentials: 'include', cache: 'no-store'});
+  const html = (await r.text()).slice(0, 3e6);
+  const title = meta(html, 'og:title') || ent((html.match(/<title[^>]*>([^<]{1,300})<\/title>/i) || [])[1] || '');
+  const description = meta(html, 'og:description');
+  let image = null;
+  const og = meta(html, 'og:image');
+  if (og) { try { image = await imgData(og, 1500000); } catch {} }
+  const clean = t => t.replace(/\s*[|\-–]\s*Facebook\s*$/i, '').trim();
+  return {ok: !!(title || image), title: clean(title).slice(0, 200), description: description.slice(0, 300), image};
+}
+async function whoAmI(id) {
+  if (who.id === id && who.data && Date.now() - who.at < 10 * 60e3) return who.data;
+  const data = {name: '', avatar: null, profileUrl: null};
+  try {
+    const r = await fetch('https://www.facebook.com/me', {credentials: 'include', cache: 'no-store'});
+    const html = (await r.text()).slice(0, 2e6);
+    const t = (html.match(/<title[^>]*>([^<]{1,200})<\/title>/i) || [])[1] || '';
+    const name = ent(t).replace(/^\(\d+\)\s*/, '').replace(/\s*[|\-–]\s*Facebook\s*$/i, '').trim();
+    if (name && !/^facebook$/i.test(name) && !/inicia sesi[oó]n|log in/i.test(name) && name.length <= 80) data.name = name;
+    if (/^https:\/\/www\.facebook\.com\/[^?#]+/.test(r.url) && !/\/login/.test(r.url)) data.profileUrl = r.url.split('?')[0];
+    const og = (html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i) || [])[1];
+    if (og) data.avatar = await imgData(ent(og), 300000);
+  } catch { /* sin detalles: se muestra solo el identificador */ }
+  who = {id, at: Date.now(), data};
+  return data;
+}
+async function checkStatus(details) {
+  let online = true;
+  try {
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 8000);
+    await fetch('https://www.facebook.com/favicon.ico', {cache: 'no-store', credentials: 'omit', signal: ctl.signal});
+    clearTimeout(t);
+  } catch { online = false; }
+  let loggedIn = null, userId = null;
+  try { const c = await chrome.cookies.get({url: 'https://www.facebook.com/', name: 'c_user'}); loggedIn = !!(c && c.value); if (loggedIn && /^\d{1,20}$/.test(c.value)) userId = c.value; } catch { loggedIn = null; }
+  const res = {ok: true, online, loggedIn, userId};
+  if (details && online && loggedIn) Object.assign(res, await whoAmI(userId));
+  return res;
+}
 
 function progress(step) {
   if (appTabId != null) chrome.tabs.sendMessage(appTabId, {to: 'bridge', type: 'progress', step}).catch(() => {});
@@ -59,6 +128,9 @@ async function openGroup(url) {
 
 async function handlePost(job) {
   if (!validJob(job)) return {ok: false, step: 'ext', error: 'Datos de publicación no válidos'};
+  const st = await checkStatus();
+  if (!st.online) return {ok: false, step: 'network', error: 'Sin conexión con Facebook. Comprueba tu conexión a Internet.'};
+  if (st.loggedIn === false) return {ok: false, step: 'login', error: 'No has iniciado sesión en Facebook en este navegador.'};
   progress('Abriendo el grupo…');
   const tabId = await openGroup(job.url);
   if (tabId == null) return {ok: false, step: 'load', error: 'El grupo no terminó de cargar'};

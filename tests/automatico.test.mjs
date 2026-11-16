@@ -84,9 +84,14 @@ if(c)c.addEventListener('click',()=>{
 });
 </script></body></html>`;
 }
+const PNG = fs.readFileSync(path.join(ROOT, 'extension', 'icon128.png'));
+const USER = {id: '100012345678', name: 'Ana Pérez'};
 function fulfill(sessionId, ev) {
   const u = ev.request.url; let body = '', type = 'text/html; charset=utf-8', code = 200;
   if (u.startsWith(APP_URL)) body = appHtml;
+  else if (/^https:\/\/www\.facebook\.com\/me(\?|$)/.test(u)) body = `<html><head><title>(3) ${USER.name} | Facebook</title><meta property="og:image" content="https://scontent.test.fbcdn.net/avatar.png"></head><body></body></html>`;
+  else if (/\/reel\//.test(u)) body = '<html><head><title>Reel | Facebook</title><meta property="og:title" content="Reel de prueba · Ofertas de la semana"><meta property="og:description" content="Descripción del reel de prueba"><meta property="og:image" content="https://scontent.test.fbcdn.net/reel.png"></head><body></body></html>';
+  else if (/favicon\.ico|fbcdn\.net/.test(u)) { body = PNG; type = 'image/png'; }
   else if (u.includes('/__fbp_test_posted')) { posted.push(JSON.parse(ev.request.postData || '{}')); body = 'ok'; type = 'text/plain'; }
   else if (u.startsWith('https://fonts.')) { body = ''; type = 'text/css'; }
   else { const m = u.match(/\/groups\/([^/?#]+)/); const g = m && GROUPS.find(x => x.slug === m[1]); body = g ? mockGroup(g) : '<h1>404</h1>'; code = g ? 200 : 404; }
@@ -110,7 +115,9 @@ async function t(name, fn) {
   catch (e) { failed++; console.log(`  ✗ ${name}\n      ${String(e.message || e).split('\n')[0]}`); }
 }
 /* Interceptación a nivel de navegador: cubre también las ventanas que abre la extensión desde su primera petición */
-await send('Fetch.enable', {patterns: [{urlPattern: 'https://www.facebook.com/*'}, {urlPattern: 'https://arlizheredia.github.io/*'}, {urlPattern: 'https://fonts.*'}]});
+await send('Fetch.enable', {patterns: [{urlPattern: 'https://www.facebook.com/*'}, {urlPattern: 'https://*.fbcdn.net/*'}, {urlPattern: 'https://arlizheredia.github.io/*'}, {urlPattern: 'https://fonts.*'}]});
+const login = () => send('Storage.setCookies', {cookies: [{name: 'c_user', value: USER.id, domain: '.facebook.com', path: '/', secure: true}]});
+await login();
 await send('Target.setAutoAttach', {autoAttach: true, waitForDebuggerOnStart: true, flatten: true});
 await send('Target.setDiscoverTargets', {discover: true});
 const ext = await send('Extensions.loadUnpacked', {path: path.join(ROOT, 'extension')});
@@ -141,9 +148,6 @@ console.log('1. Extensión');
 await t('la app detecta la extensión', async () => (await ev(`Ext.ready`)) ? `v${await ev('Ext.version')}` : false);
 await ev(`(()=>{localStorage.setItem('fbp.welcomed','true');S.groups=cleanGroups(${JSON.stringify(GROUPS.map(g => ({id: g.id, name: g.name, url: `https://www.facebook.com/groups/${g.slug}/`, active: true})))});persist.groups();
   srcEl.value=${JSON.stringify(POST_URL)};srcEl.dispatchEvent(new Event('input'));txtEl.value='¡Hola, comunidad de {grupo}!';txtEl.dispatchEvent(new Event('input'))})()`);
-await ev(`(async()=>{const c=document.createElement('canvas');c.width=60;c.height=60;const x=c.getContext('2d');x.fillStyle='#1877f2';x.fillRect(0,0,60,60);
-  const b=await new Promise(r=>c.toBlob(r,'image/png'));addFiles([new File([b],'oferta.png',{type:'image/png'})])})()`);
-await sleep(500);
 await t('el asistente detecta la extensión y activa la publicación automática', async () => {
   await ev(`document.getElementById('autoChip').click()`); await sleep(300);
   if (!(await ev(`document.getElementById('autoDlg').open&&document.getElementById('wzStatus').textContent.includes('detectada')`))) throw new Error('extensión no detectada en el asistente');
@@ -151,10 +155,64 @@ await t('el asistente detecta la extensión y activa la publicación automática
   await ev(`document.getElementById('wzAck').click();document.getElementById('wzOn').click()`); await sleep(200);
   return (await ev(`S.settings.autoMode&&S.settings.autoTest&&!document.getElementById('autoDlg').open`)) ? 'activada en modo prueba' : false;
 });
+await t('muestra la cuenta de Facebook detectada con verificación, foto y nombre', async () => {
+  await ev(`checkFb(true)`); await sleep(300);
+  const r = await ev(`JSON.stringify({st:Fb.state,name:Fb.name,id:Fb.id,img:!!document.querySelector('#fbAcct img'),ok:!!document.querySelector('#fbAcct .bdg.ok'),txt:document.getElementById('fbAcct').textContent})`);
+  const o = JSON.parse(r);
+  if (o.st !== 'in' || o.name !== USER.name || o.id !== USER.id || !o.img || !o.ok) throw new Error(r);
+  return `${o.name} (ID ${o.id})`;
+});
+await t('la vista previa muestra la miniatura y el título reales de la publicación', async () => {
+  for (let i = 0; i < 20 && !(await ev(`!!document.querySelector('#preview .lk-shot img')`)); i++) await sleep(300);
+  const r = await ev(`JSON.stringify({img:!!document.querySelector('#preview .lk-shot img'),title:document.querySelector('#preview .lk-h')?.textContent})`);
+  const o = JSON.parse(r);
+  return o.img && /Reel de prueba/.test(o.title || '') ? o.title : (() => { throw new Error(r); })();
+});
+if (process.env.FBP_SHOTS) {
+  await send('Emulation.setDeviceMetricsOverride', {width: 1400, height: 1000, deviceScaleFactor: 1, mobile: false}, app); await sleep(500);
+  const shot = await send('Page.captureScreenshot', {format: 'png'}, app);
+  fs.writeFileSync(path.join(process.env.FBP_SHOTS, 'auto-publicar.png'), Buffer.from(shot.result.data, 'base64'));
+  await ev(`document.getElementById('fbAcct').click()`); await sleep(300);
+  const s2 = await send('Page.captureScreenshot', {format: 'png'}, app);
+  fs.writeFileSync(path.join(process.env.FBP_SHOTS, 'auto-cuenta.png'), Buffer.from(s2.result.data, 'base64')); await ev(`closePop()`);
+}
+console.log('   (la vista previa con miniatura solo aparece sin archivos adjuntos; se adjunta la imagen después)');
+await ev(`(async()=>{const c=document.createElement('canvas');c.width=60;c.height=60;const x=c.getContext('2d');x.fillStyle='#1877f2';x.fillRect(0,0,60,60);
+  const b=await new Promise(r=>c.toBlob(r,'image/png'));addFiles([new File([b],'oferta.png',{type:'image/png'})])})()`);
+await sleep(500);
+await t('el selector de pausa está en la barra y no baja de 30 s', async () => {
+  const r = await ev(`(()=>{const s=document.getElementById('paceSel');const v=[...s.options].map(o=>+o.value);s.value='120';s.dispatchEvent(new Event('change'));const p=S.settings.pause;S.settings.pause=60;persist.settings();renderSummary();return JSON.stringify({min:Math.min(...v),p})})()`);
+  const o = JSON.parse(r); return o.min === 30 && o.p === 120 ? `mínimo ${o.min} s; cambio a ${o.p} s aplicado` : (() => { throw new Error(r); })();
+});
+
+console.log('2. Errores antes de publicar');
+await send('Network.enable', {}, app);
+await send('Network.emulateNetworkConditions', {offline: true, latency: 0, downloadThroughput: -1, uploadThroughput: -1}, app); await sleep(400);
+await t('sin Internet: aviso fijo y mensaje de error al pulsar Comenzar', async () => {
+  await ev(`S.sel=new Set(['g1']);renderDest();renderSummary()`);
+  const banner = await ev(`!document.getElementById('netBanner').hidden`);
+  await ev(`document.getElementById('startBtn').click()`); await sleep(400);
+  const r = await ev(`JSON.stringify({open:document.getElementById('confirmDlg').open,title:document.getElementById('cfTitle').textContent,check:document.getElementById('checkDlg').open})`);
+  await ev(`document.getElementById('cfYes').click()`);
+  const o = JSON.parse(r); return banner && o.open && /Sin conexión a Internet/.test(o.title) && !o.check ? o.title.replace(/^\w+/, '').trim() : (() => { throw new Error(banner + r); })();
+});
+await send('Network.emulateNetworkConditions', {offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1}, app); await sleep(400);
+await send('Storage.clearCookies', {});
+await t('sin sesión de Facebook: mensaje de error con «Abrir Facebook»', async () => {
+  await ev(`document.getElementById('startBtn').click()`);
+  for (let i = 0; i < 30 && !(await ev(`document.getElementById('confirmDlg').open`)); i++) await sleep(300);
+  const r = await ev(`JSON.stringify({title:document.getElementById('cfTitle').textContent,ok:document.getElementById('cfYes').textContent,chip:document.getElementById('fbAcct').textContent,check:document.getElementById('checkDlg').open})`);
+  await ev(`document.getElementById('cfNo').click()`);
+  const o = JSON.parse(r); return /No has iniciado sesión/.test(o.title) && o.ok === 'Abrir Facebook' && /Sin sesión/.test(o.chip) && !o.check ? 'bloquea el inicio y lo indica en la barra' : (() => { throw new Error(r); })();
+});
+await login(); await ev(`checkFb(true)`);
+
 await t('el botón cambia a «Probar publicación automática»', async () => /Probar publicación automática/.test(await ev(`document.getElementById('startBtn').textContent`)));
 
-console.log('2. Modo prueba');
-await ev(`S.sel=new Set(['g1']);openPreflight();document.getElementById('checkGo').click()`);
+console.log('3. Modo prueba');
+await ev(`S.sel=new Set(['g1']);renderDest();openPreflight()`);
+for (let i = 0; i < 30 && !(await ev(`document.getElementById('checkDlg').open`)); i++) await sleep(300);
+await ev(`document.getElementById('checkGo').click()`);
 await waitAuto();
 await t('prepara la publicación en el grupo sin pulsar «Publicar»', async () => posted.length === 0 && (await ev(`S.run.testDone===true&&S.history[0].items[0].status==='pending'`)));
 await t('«Todo bien: publicar de verdad» desactiva el modo prueba con un clic', async () => {
@@ -162,12 +220,14 @@ await t('«Todo bien: publicar de verdad» desactiva el modo prueba con un clic'
   return (await ev(`S.settings.autoTest===false&&!S.run`)) === true;
 });
 
-console.log('3. Publicación automática real (Facebook simulado)');
-await ev(`S.sel=new Set(['g1','g2','g3','g4']);renderDest();renderSummary()`);
+console.log('4. Publicación automática real (Facebook simulado)');
+const fbWindows = async () => (await send('Target.getTargets')).result.targetInfos.filter(t => t.type === 'page' && t.url.startsWith('https://www.facebook.com/')).length;
+await ev(`S.sel=new Set(['g1']);renderDest();renderSummary()`);
 await t('el botón cambia a «Comenzar publicación automática»', async () => /Comenzar publicación automática/.test(await ev(`document.getElementById('startBtn').textContent`)));
-await ev(`openPreflight();document.getElementById('checkGo').click()`);
+await ev(`openPreflight()`); for (let i = 0; i < 30 && !(await ev(`document.getElementById('checkDlg').open`)); i++) await sleep(300);
+await t('la comprobación previa muestra la cuenta con la que se publicará', async () => /Cuenta: Ana Pérez/.test(await ev(`document.getElementById('checkList').textContent`)));
+await ev(`document.getElementById('checkGo').click()`);
 await waitAuto(240000);
-const items = await ev(`JSON.stringify(S.history[0].items.map(i=>({n:i.name,s:i.status,r:i.review||null,e:i.error||null})))`).then(JSON.parse);
 const p1 = posted.find(p => p.group === MAIN);
 await t('publica en el grupo principal el texto personalizado con la URL', async () => {
   if (!p1) throw new Error('no se publicó');
@@ -175,11 +235,20 @@ await t('publica en el grupo principal el texto personalizado con la URL', async
   return JSON.stringify(p1.text);
 });
 await t('adjunta la imagen', async () => p1 && p1.files.length === 1 && p1.files[0].name === 'oferta.png' ? `${p1.files[0].name} (${p1.files[0].size} B)` : false);
-await t('marca «Publicado» en el Historial', async () => items[0].s === 'done' && !items[0].r);
-await t('detecta «pendiente de aprobación»', async () => items[1].s === 'done' && items[1].r === 'awaiting');
-await t('omite el grupo donde no es miembro y sigue', async () => items[2].s === 'skipped' && /miembro/.test(items[2].e || '') ? items[2].e : false);
-await t('ante un aviso de Facebook se detiene y bloquea 24 h', async () => items[3].s === 'pending' && (await ev(`S.lock>Date.now()`)) && /demasiado rápido/.test(await ev(`S.run.stopMsg`)));
-await t('respeta la pausa entre grupos (no publica dos seguidos sin esperar)', async () => (await ev(`(()=>{const t=S.history[0].items.filter(i=>i.status==='done').map(i=>i.at).sort();return t.length<2||t[1]-t[0]>=S.settings.pause*1000})()`)) === true);
+await t('marca «Publicado» en el Historial', async () => (await ev(`S.history[0].items[0].status==='done'&&!S.history[0].items[0].review`)) === true);
+await t('al terminar, cierra la ventana de Facebook', async () => { await sleep(800); const n = await fbWindows(); return n === 0 ? 'ventana cerrada' : (() => { throw new Error(n + ' ventanas abiertas'); })(); });
+await ev(`closeRun(true)`);
+
+await ev(`S.sel=new Set(['g2','g3','g4']);renderDest();renderSummary();openPreflight()`);
+for (let i = 0; i < 30 && !(await ev(`document.getElementById('checkDlg').open`)); i++) await sleep(300);
+await ev(`document.getElementById('checkGo').click()`);
+await waitAuto(240000);
+const items = await ev(`JSON.stringify(S.history[0].items.map(i=>({n:i.name,s:i.status,r:i.review||null,e:i.error||null})))`).then(JSON.parse);
+await t('detecta «pendiente de aprobación»', async () => items[0].s === 'done' && items[0].r === 'awaiting');
+await t('omite el grupo donde no es miembro y sigue', async () => items[1].s === 'skipped' && /miembro/.test(items[1].e || '') ? items[1].e : false);
+await t('ante un aviso de Facebook se detiene y bloquea 24 h', async () => items[2].s === 'pending' && (await ev(`S.lock>Date.now()`)) && /demasiado rápido/.test(await ev(`S.run.stopMsg`)));
+await t('si se detiene por un aviso, deja abierta la ventana para revisarla', async () => (await fbWindows()) === 1);
+await t('respeta la pausa entre grupos (no publica dos seguidos sin esperar)', async () => (await ev(`(()=>{const t=S.history.flatMap(h=>h.items).filter(i=>i.status==='done').map(i=>i.at).sort((a,b)=>a-b);for(let i=1;i<t.length;i++)if(t[i]-t[i-1]<S.settings.pause*1000)return false;return true})()`)) === true);
 await t('solo se publicó en los grupos correctos', async () => posted.length === 2 && posted.map(p => p.group).join() === `${MAIN},2000000002` ? posted.map(p => p.group).join(', ') : false);
 await t('sin errores de JavaScript en la app', async () => errors.length === 0 || (() => { throw new Error(errors.slice(0, 3).join(' | ')); })());
 

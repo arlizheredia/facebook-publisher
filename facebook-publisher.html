@@ -245,6 +245,13 @@ input[type=checkbox].cb{accent-color:var(--primary);width:18px;height:18px;margi
 .fb-link .lk-img{height:120px;background:linear-gradient(135deg,#2d88ff 0%,#0b57d0 60%,#062e6f 100%);display:grid;place-items:center;color:#fff}
 .fb-link .lk-img .ms{font-size:44px;opacity:.9}
 .fb-link .lk-t{padding:8px 12px}
+.fb-link .lk-s{font-size:12px;color:var(--text-3);margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.lk-shot{position:relative;background:#000;display:grid;place-items:center;max-height:360px;overflow:hidden}
+.lk-shot img{width:100%;max-height:360px;object-fit:cover;display:block}
+.lk-shot.vid img{object-fit:contain}
+.lk-shot .play{position:absolute;width:56px;height:56px;border-radius:50%;background:rgba(0,0,0,.55);display:grid;place-items:center;color:#fff}
+.lk-shot .play .ms{font-size:36px}
+.lk-loading{background:var(--surface-3)!important}
 .fb-link .lk-d{font-size:11px;color:var(--text-3);text-transform:uppercase}
 .fb-link .lk-h{font-weight:600;font-size:14px;word-break:break-all}
 .fb-actions{display:flex;border-top:1px solid var(--outline-2);margin:0 14px;padding:4px 0;color:var(--text-3);font-size:13px;font-weight:600}
@@ -302,6 +309,25 @@ input[type=checkbox].cb{accent-color:var(--primary);width:18px;height:18px;margi
 .wz-ack{display:flex;gap:10px;align-items:flex-start;margin:8px 0;cursor:pointer;font-size:13px;line-height:19px}
 .wz-ack .cb{margin-top:1px}
 #autoChip .ms{margin-left:-4px}
+.banner.err{background:var(--error-container);color:var(--error);max-width:1180px;margin:0 auto 16px}
+.banner.err>.ms{color:var(--error)}
+.fb-acct{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 12px 0 4px;border-radius:20px;border:1px solid var(--outline-2);background:var(--surface);color:var(--text);cursor:pointer;font:500 13px var(--font);max-width:240px;margin-right:4px}
+.fb-acct:hover{background:var(--surface-2)}
+.fb-acct .av{position:relative;width:32px;height:32px;border-radius:50%;background:var(--primary-container);color:var(--on-primary-container);display:grid;place-items:center;flex:none;font-size:12px;font-weight:500}
+.fb-acct .av img{width:32px;height:32px;border-radius:50%;object-fit:cover;display:block}
+.fb-acct .av .ms{font-size:20px}
+.fb-acct .bdg{position:absolute;right:-3px;bottom:-3px;width:16px;height:16px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--surface)}
+.fb-acct .bdg .ms{font-size:11px;font-weight:700;color:#fff}
+.fb-acct .bdg.ok{background:#1e8e3e}.fb-acct .bdg.bad{background:var(--error)}.fb-acct .bdg.warn{background:#b06000}
+.fb-acct .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fb-acct.bad{border-color:color-mix(in srgb,var(--error) 50%,transparent);color:var(--error)}
+.acct-pop{padding:16px;min-width:260px}
+.acct-pop .big{width:64px;height:64px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 10px;background:var(--primary-container)}
+.acct-pop .row2{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.pace{display:inline-flex;align-items:center;gap:6px;color:var(--text-2);font-size:13px;font-weight:500}
+.pace .ms{font-size:18px}
+.pace select{height:36px;border-radius:18px;border:1px solid var(--outline);background:var(--surface);color:var(--text);padding:0 10px;font:500 13px var(--font);cursor:pointer}
+@media (max-width:720px){.fb-acct .nm{display:none}.fb-acct{padding:0 4px}}
 .empty-actions{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap}
 .empty.compact{padding:24px 16px}
 .empty.compact .ill{width:88px;height:88px;margin-bottom:16px}
@@ -498,6 +524,7 @@ details.adv[open] summary .ms{transform:rotate(180deg)}
     <span class="brand-name"><span class="long">Facebook </span><b>Publisher</b></span>
   </a>
   <div class="spacer"></div>
+  <button class="fb-acct" id="fbAcct" hidden aria-haspopup="dialog"></button>
   <button class="icon-btn tip" data-tip="Ayuda (F1)" id="helpBtn" aria-label="Centro de Ayuda"><span class="ms" aria-hidden="true">help</span></button>
   <button class="icon-btn tip" data-tip="Tema" id="themeBtn" aria-label="Cambiar tema"><span class="ms" aria-hidden="true">brightness_auto</span></button>
   <button class="icon-btn tip" data-tip="Ajustes" id="settingsBtn" aria-label="Ajustes"><span class="ms" aria-hidden="true">settings</span></button>
@@ -512,6 +539,7 @@ details.adv[open] summary .ms{transform:rotate(180deg)}
   </nav>
 
   <main id="main" tabindex="-1">
+    <div class="banner err" id="netBanner" role="alert" hidden><span class="ms" aria-hidden="true">wifi_off</span><div><b>Sin conexión a Internet.</b> No se puede publicar hasta que vuelva la conexión. Tu trabajo está guardado.</div></div>
     <!-- ================= PUBLICAR ================= -->
     <section class="view" id="view-publicar" aria-labelledby="h-pub">
       <div class="page-head">
@@ -618,6 +646,8 @@ details.adv[open] summary .ms{transform:rotate(180deg)}
 
           <div class="publish-bar">
             <div class="sum" id="pubSum"></div>
+            <label class="pace" title="Tiempo de espera entre un grupo y el siguiente. Más tiempo = menos riesgo para tu cuenta."><span class="ms" aria-hidden="true">timer</span><span class="hide-sm">Pausa</span>
+              <select id="paceSel" aria-label="Pausa entre grupos"></select></label>
             <button class="btn text" id="autoChip"></button>
             <button class="btn filled lg" id="startBtn"><span class="ms" aria-hidden="true">play_arrow</span>Iniciar publicación asistida</button>
           </div>
@@ -773,6 +803,8 @@ details.adv[open] summary .ms{transform:rotate(180deg)}
       <label class="switch"><input type="checkbox" id="setAuto"><span></span></label></div>
     <div class="set-row"><div class="main"><div class="t">Modo prueba</div><div class="d">Prepara la publicación en el primer grupo pero <b>no pulsa «Publicar»</b>, para que compruebes que todo está bien. Desactívalo cuando hayas comprobado que funciona.</div></div>
       <label class="switch"><input type="checkbox" id="setAutoTest"><span></span></label></div>
+    <div class="set-row"><div class="main"><div class="t">Cerrar la ventana de Facebook al terminar</div><div class="d">Al acabar todos los grupos. Si se detiene por un error, la ventana se queda abierta para que veas qué pasó.</div></div>
+      <label class="switch"><input type="checkbox" id="setAutoClose"><span></span></label></div>
     <div class="set-row"><div class="main"><div class="t">Cómo abrir cada grupo</div><div class="d">Solo en el modo asistido (manual). <a href="#" data-help="modos-apertura">¿Qué opción elijo?</a></div></div>
       <select class="input" id="setMode" style="width:220px;height:40px"><option value="side">Ventana lateral</option><option value="tab">Pestaña nueva</option><option value="share">Diálogo «Compartir» de Facebook</option></select></div>
     <div class="set-row" style="border:0;padding-bottom:0"><div class="main"><div class="t" style="color:var(--primary);display:flex;align-items:center;gap:8px"><span class="ms" aria-hidden="true">verified_user</span>Protección de la cuenta</div><div class="d">Límites que reducen el riesgo de bloqueos. Puedes hacerlos más estrictos, pero no desactivarlos. <a href="#" data-help="buenas-practicas">Más información</a></div></div></div>
@@ -901,11 +933,11 @@ function download(name,data,type='application/json'){const b=new Blob([data],{ty
 /* ---------- Estado ---------- */
 /* Límites de protección de la cuenta (no se pueden desactivar) */
 const SAFE={MIN_PAUSE:30,MAX_PAUSE:900,MAX_DAY:40,MAX_HOUR:15,RECENT_H:24,LOCK_H:24};
-const DEF_SETTINGS={mode:'side',pause:60,appendUrl:true,sound:true,dayCap:20,hourCap:8,clearAfter:'ask',autoMode:false,autoTest:true};
+const DEF_SETTINGS={mode:'side',pause:60,appendUrl:true,sound:true,dayCap:20,hourCap:8,clearAfter:'ask',autoMode:false,autoTest:true,autoClose:true};
 const clamp=(v,a,b,d)=>{v=parseInt(v);return isNaN(v)?d:Math.max(a,Math.min(b,v))};
 function cleanSettings(o){o=Object.assign({},DEF_SETTINGS,o&&typeof o==='object'?o:{});
   return {mode:['side','tab','share'].includes(o.mode)?o.mode:'side',pause:clamp(o.pause,SAFE.MIN_PAUSE,SAFE.MAX_PAUSE,60),appendUrl:o.appendUrl!==false,sound:o.sound!==false,
-    dayCap:clamp(o.dayCap,1,SAFE.MAX_DAY,20),hourCap:clamp(o.hourCap,1,SAFE.MAX_HOUR,8),clearAfter:['ask','always','never'].includes(o.clearAfter)?o.clearAfter:'ask',autoMode:o.autoMode===true,autoTest:o.autoTest!==false}}
+    dayCap:clamp(o.dayCap,1,SAFE.MAX_DAY,20),hourCap:clamp(o.hourCap,1,SAFE.MAX_HOUR,8),clearAfter:['ask','always','never'].includes(o.clearAfter)?o.clearAfter:'ask',autoMode:o.autoMode===true,autoTest:o.autoTest!==false,autoClose:o.autoClose!==false}}
 /* Los datos guardados se validan al leerlos: en github.io el almacenamiento se comparte con otras apps del mismo dominio */
 const str=(v,max)=>typeof v==='string'?v.slice(0,max):'';
 const okId=v=>typeof v==='string'&&/^[\w-]{1,40}$/.test(v)?v:null;
@@ -949,7 +981,14 @@ function snack(msg,action,fn,ms=4500){
 function confirmBox(title,text,okLabel='Aceptar',danger=false){
   return new Promise(res=>{const d=$('#confirmDlg');$('#cfTitle').textContent=title;$('#cfText').textContent=text;
     const y=$('#cfYes');y.textContent=okLabel;y.style.background=danger?'var(--error)':'';y.style.color=danger?'var(--bg)':'';
-    const done=v=>{d.close();res(v)};y.onclick=()=>done(true);$('#cfNo').onclick=()=>done(false);d.oncancel=()=>res(false);d.showModal()})
+    const n=$('#cfNo');n.hidden=false;n.textContent='Cancelar';
+    const done=v=>{d.close();res(v)};y.onclick=()=>done(true);n.onclick=()=>done(false);d.oncancel=()=>res(false);d.showModal()})
+}
+/* Mensaje de error con una acción opcional. Devuelve 'ok' o 'cancel'. */
+function alertBox(icon,title,text,{ok='Entendido',cancel=null}={}){
+  return new Promise(res=>{const d=$('#confirmDlg');$('#cfTitle').innerHTML=`<span class="ms" aria-hidden="true" style="color:var(--error);vertical-align:-5px;margin-right:10px">${esc(icon)}</span>${esc(title)}`;$('#cfText').textContent=text;
+    const y=$('#cfYes'),n=$('#cfNo');y.textContent=ok;y.style.background='';y.style.color='';n.hidden=!cancel;n.textContent=cancel||'';
+    const done=v=>{d.close();res(v)};y.onclick=()=>done('ok');n.onclick=()=>done('cancel');d.oncancel=()=>res('cancel');d.showModal()})
 }
 
 /* ---------- Tema ---------- */
@@ -1047,7 +1086,7 @@ function validateUrl(){
   $('#st1').classList.toggle('ok',!!r.url);
   return r;
 }
-srcEl.addEventListener('input',()=>{validateUrl();renderPreview();renderSummary();saveDraft()});
+srcEl.addEventListener('input',()=>{validateUrl();renderPreview();renderSummary();saveDraft();loadPreview()});
 srcEl.addEventListener('blur',()=>{const r=srcInfo();if(r.url&&r.url!==srcEl.value){srcEl.value=r.url;saveDraft()}});
 $('#pasteUrl').onclick=async()=>{try{srcEl.value=(await navigator.clipboard.readText()).trim();srcEl.dispatchEvent(new Event('input'));srcEl.dispatchEvent(new Event('blur'))}catch(e){srcEl.focus();snack('Pulsa Ctrl+V para pegar la URL')}};
 $('#openUrl').onclick=()=>{const r=srcInfo();if(r.url)window.open(r.url,'_blank','noopener');else snack('Primero introduce una URL válida')};
@@ -1207,12 +1246,29 @@ async function audioToVideo(id){
 
 /* Vista previa */
 function linkify(t){return esc(t).replace(/(https?:\/\/[^\s<]+)/g,'<span class="hl">$1</span>').replace(/(^|\s)(#[\p{L}\p{N}_]+)/gu,'$1<span class="hl">$2</span>').replace(/\{(grupo|fecha|enlace)\}/gi,'<span class="hl">{$1}</span>')}
+/* Miniatura real de la publicación de origen (vía extensión, con la sesión del usuario) */
+const Prev={url:null,data:null,loading:false};
+const okImg=v=>typeof v==='string'&&/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(v)?v:null;
+const loadPreview=debounce(async()=>{
+  const r=srcInfo();
+  if(!r.url||!Ext.ready||verLt(Ext.version,MIN_EXT)||!navigator.onLine){if(Prev.url!==null){Prev.url=null;Prev.data=null;Prev.loading=false;renderPreview()}return}
+  if(Prev.url===r.url)return;
+  Prev.url=r.url;Prev.data=null;Prev.loading=true;renderPreview();
+  let d=null;try{d=JSON.parse(sessionStorage.getItem('fbp.pv:'+r.url)||'null')}catch(e){}
+  if(!d)d=await Ext.call('preview',{url:r.url},30000);
+  if(Prev.url!==r.url)return;Prev.loading=false;
+  if(d&&d.ok){Prev.data={title:str(d.title,200),description:str(d.description,300),image:okImg(d.image)};try{sessionStorage.setItem('fbp.pv:'+r.url,JSON.stringify({ok:true,...Prev.data}))}catch(e){}}
+  renderPreview()},700);
 function renderPreview(){
   const sel=selectedGroups();const g=sel[0];const r=srcInfo();
   const t=finalText(g);const pv=$('#pvGroup');pv.hidden=!g;if(g)pv.textContent='En: '+(g.name.length>22?g.name.slice(0,21)+'…':g.name);
   const media=S.media.filter(m=>m.type!=='audio');const n=media.length;
   const mediaHtml=n?`<div class="fb-media n${Math.min(n,4)}">${media.slice(0,4).map((m,i)=>`<div>${m.type==='image'?`<img src="${m.url}" alt="">`:`<video src="${m.url}" muted></video>`}${i===3&&n>4?`<div class="more">+${n-4}</div>`:''}</div>`).join('')}</div>`:'';
-  const linkHtml=(!n&&r.url)?`<div class="fb-link"><div class="lk-img">${ic('globe')}</div><div class="lk-t"><div class="lk-d">${esc(r.host||'facebook.com')}</div><div class="lk-h">${esc(r.kind)} de Facebook</div></div></div>`:'';
+  const pvd=Prev.url===r.url?Prev.data:null,isVid=/Reel|Vídeo/.test(r.kind||'');
+  const shot=pvd&&pvd.image?`<div class="lk-shot ${isVid?'vid':''}"><img src="${esc(pvd.image)}" alt="Miniatura de la publicación">${isVid?`<span class="play">${ic('play_arrow')}</span>`:''}</div>`
+    :Prev.loading&&Prev.url===r.url?`<div class="lk-img lk-loading"><span class="spin"></span></div>`:`<div class="lk-img">${ic(isVid?'smart_display':'globe')}</div>`;
+  const linkHtml=(!n&&r.url)?`<div class="fb-link">${shot}<div class="lk-t"><div class="lk-d">${esc(r.host||'facebook.com')} · ${esc(r.kind)}</div><div class="lk-h">${esc(pvd&&pvd.title||r.kind+' de Facebook')}</div>${pvd&&pvd.description?`<div class="lk-s">${esc(pvd.description)}</div>`:''}</div></div>
+    ${!pvd&&!Prev.loading&&!Ext.ready?`<div class="hint" style="margin:0 14px 10px">${ic('info')}Con la extensión instalada verás aquí la miniatura real de la publicación.</div>`:''}`:'';
   $('#preview').innerHTML=`<div class="fb-post"><div class="ph"><div class="av">Tú</div><div><div class="who">Tu nombre${g?` <span style="font-weight:400;color:var(--text-3)">▸</span> ${esc(g.name)}`:''}</div><div class="when">Ahora · ${ic('group')}</div></div></div>
     <div class="body">${t.trim()?linkify(t):'<span class="ph-empty">Tu texto aparecerá aquí…</span>'}</div>${mediaHtml}${linkHtml}
     <div class="fb-actions"><span>👍 Me gusta</span><span>💬 Comentar</span><span>↗ Compartir</span></div></div>`;
@@ -1262,7 +1318,7 @@ function renderSummary(){
   const est=Math.ceil(n*(25+(+S.settings.pause||0))/60),used=usage().day.length;
   $('#pubSum').innerHTML=n?`<b>${n} grupo${n>1?'s':''}</b> seleccionado${n>1?'s':''} · ≈ ${est} min · <span title="Grupos publicados en las últimas 24 h">${ic('verified_user','sm')} hoy ${used}/${S.settings.dayCap}</span> ${!hasContent?'<br><span class="small" style="color:var(--error)">Añade una URL, texto o archivos para empezar</span>':r.error?'<br><span class="small" style="color:var(--error)">Revisa la URL de origen</span>':''}`:'<span class="muted">Selecciona al menos un grupo de destino</span>';
   $('#startBtn').disabled=!n||!hasContent||!!r.error;
-  renderAutoChip();
+  renderAutoChip();renderPace();
   $('#startBtn').innerHTML=autoActive()?`${ic('smart_toy')}${S.settings.autoTest?'Probar publicación automática':'Comenzar publicación automática'}`:`${ic('play_arrow')}Iniciar publicación asistida`;
 }
 
@@ -1482,10 +1538,69 @@ const Ext={ready:false,version:null,_id:0,_p:{},onStep:null,
     const id=++this._id;return new Promise(res=>{const t=setTimeout(()=>{delete this._p[id];res({ok:false,step:'timeout',error:'La extensión no respondió a tiempo'})},timeout);
       this._p[id]=r=>{clearTimeout(t);res(r&&typeof r==='object'?r:{ok:false,step:'ext',error:'Respuesta no válida'})};window.postMessage({src:'fbp-app',id,cmd,job},'*')})}};
 window.addEventListener('message',e=>{if(e.source!==window)return;const d=e.data;if(!d||d.src!=='fbp-ext')return;
-  if(d.type==='hello'){const was=Ext.ready;Ext.ready=true;Ext.version=str(d.version,20);if(!was){renderExt();renderSummary();if($('#autoDlg').open)renderWizard()}}
+  if(d.type==='hello'){const was=Ext.ready;Ext.ready=true;Ext.version=str(d.version,20);if(!was){renderExt();renderSummary();if($('#autoDlg').open)renderWizard();checkFb(true);loadPreview()}}
   else if(d.reply&&Ext._p[d.reply]){Ext._p[d.reply](d.res);delete Ext._p[d.reply]}
   else if(d.type==='progress'&&Ext.onStep)Ext.onStep(str(d.step,200))});
 const autoActive=()=>S.settings.autoMode&&Ext.ready;
+/* ---------- Conexión a Internet ---------- */
+function renderNet(){$('#netBanner').hidden=navigator.onLine}
+window.addEventListener('offline',()=>{renderNet();const R=S.run;if(R&&R.autoRunning&&!R.stop){R.stop=true;R.stopMsg='Se perdió la conexión a Internet. Pulsa «Continuar» cuando vuelva; tu progreso está guardado.'}snack('Sin conexión a Internet')});
+window.addEventListener('online',()=>{renderNet();snack('Conexión recuperada');checkFb(true)});
+const offlineError=()=>alertBox('wifi_off','Sin conexión a Internet','Comprueba tu conexión (wifi, cable o datos) y vuelve a intentarlo. No se ha publicado nada y tu trabajo está guardado.');
+/* ---------- Cuenta de Facebook detectada (vía extensión) ---------- */
+const Fb={state:'unknown',id:'',name:'',avatar:null,url:null,at:0};
+const MIN_EXT='1.2.0';
+const verLt=(a,b)=>{const x=String(a||'0').split('.').map(Number),y=b.split('.').map(Number);for(let i=0;i<3;i++){if((x[i]||0)!==(y[i]||0))return (x[i]||0)<(y[i]||0)}return false};
+let fbChecking=null;
+async function checkFb(force){
+  if(!Ext.ready){renderFb();return Fb}
+  if(verLt(Ext.version,MIN_EXT)){Fb.state='old';renderFb();return Fb}
+  if(!force&&Date.now()-Fb.at<30000)return Fb;
+  if(fbChecking)return fbChecking;
+  fbChecking=(async()=>{
+    if(!navigator.onLine){Fb.state='offline';Fb.at=Date.now();renderFb();return Fb}
+    const r=await Ext.call('status',{details:true},25000);Fb.at=Date.now();
+    if(!r.ok)Fb.state='unknown';else if(r.online===false)Fb.state='offline';else if(r.loggedIn===false)Fb.state='out';
+    else if(r.loggedIn){Fb.state='in';Fb.id=/^\d{1,20}$/.test(r.userId||'')?r.userId:'';Fb.name=str(r.name,80);
+      Fb.avatar=typeof r.avatar==='string'&&/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(r.avatar)?r.avatar:null;
+      Fb.url=typeof r.profileUrl==='string'&&/^https:\/\/www\.facebook\.com\/[^\s"'<>]+$/.test(r.profileUrl)?r.profileUrl:null}
+    else Fb.state='unknown';
+    renderFb();return Fb})();
+  try{return await fbChecking}finally{fbChecking=null}
+}
+function renderFb(){const b=$('#fbAcct');if(!b)return;
+  if(!Ext.ready){b.hidden=true;return}b.hidden=false;b.classList.toggle('bad',Fb.state==='out'||Fb.state==='offline');
+  const av=Fb.state==='in'?(Fb.avatar?`<img src="${esc(Fb.avatar)}" alt="">`:esc(initials(Fb.name||'FB'))):ic({out:'no_accounts',offline:'cloud_off',old:'extension',unknown:'help'}[Fb.state]||'help');
+  const bdg=Fb.state==='in'?`<span class="bdg ok">${ic('check')}</span>`:Fb.state==='out'||Fb.state==='offline'?`<span class="bdg bad">${ic('priority_high')}</span>`:`<span class="bdg warn">${ic('priority_high')}</span>`;
+  const label={in:Fb.name||(Fb.id?'ID '+Fb.id:'Sesión detectada'),out:'Sin sesión de Facebook',offline:'Sin conexión',old:'Actualiza la extensión',unknown:'Comprobando…'}[Fb.state];
+  b.innerHTML=`<span class="av">${av}${bdg}</span><span class="nm">${esc(label)}</span>`;
+  b.title={in:`Sesión de Facebook detectada${Fb.name?': '+Fb.name:''}`,out:'No has iniciado sesión en Facebook en este navegador',offline:'Sin conexión con Facebook',old:'La extensión necesita actualizarse para comprobar la sesión',unknown:'Comprobando la sesión de Facebook'}[Fb.state];
+}
+$('#fbAcct').onclick=e=>{
+  const at=Fb.at?ago(Fb.at):'—';
+  const body={in:`${Fb.avatar?`<img class="big" src="${esc(Fb.avatar)}" alt="">`:`<div class="big" style="display:grid;place-items:center;font:500 22px var(--font);color:var(--on-primary-container)">${esc(initials(Fb.name||'FB'))}</div>`}
+      <div style="text-align:center"><div style="display:inline-flex;align-items:center;gap:6px;color:var(--success);font-weight:500">${ic('verified','sm')}Sesión de Facebook detectada</div>
+      <div style="font:500 16px var(--font);margin-top:4px">${esc(Fb.name||'Nombre no disponible')}</div>${Fb.id?`<div class="small muted">ID ${esc(Fb.id)}</div>`:''}<div class="small muted">Comprobado ${esc(at)}</div></div>
+      <div class="row2">${Fb.url?`<a class="btn text sm" href="${esc(Fb.url)}" target="_blank" rel="noopener noreferrer">${ic('open_in_new')}Ver perfil</a>`:''}<button class="btn tonal sm" data-acct="refresh">${ic('refresh')}Comprobar</button></div>
+      <p class="small muted" style="margin:12px 0 0;text-align:center;max-width:260px">Se publicará con esta cuenta. Para usar otra, cambia de cuenta en Facebook en este navegador.</p>`,
+    out:`<div style="text-align:center"><span class="ms" style="font-size:40px;color:var(--error)">no_accounts</span><div style="font:500 16px var(--font);margin:6px 0">No has iniciado sesión en Facebook</div><p class="small muted" style="margin:0 0 4px;max-width:260px">Inicia sesión en Facebook en este mismo navegador Chrome para publicar automáticamente.</p></div>
+      <div class="row2"><button class="btn filled sm" data-acct="login">${ic('login')}Abrir Facebook</button><button class="btn text sm" data-acct="refresh">${ic('refresh')}Comprobar</button></div>`,
+    offline:`<div style="text-align:center"><span class="ms" style="font-size:40px;color:var(--error)">cloud_off</span><div style="font:500 16px var(--font);margin:6px 0">Sin conexión con Facebook</div></div><div class="row2"><button class="btn tonal sm" data-acct="refresh">${ic('refresh')}Reintentar</button></div>`,
+    old:`<div style="text-align:center"><span class="ms" style="font-size:40px;color:var(--warn)">extension</span><div style="font:500 16px var(--font);margin:6px 0">Actualiza la extensión</div><p class="small muted" style="margin:0;max-width:260px">Tienes la v${esc(Ext.version)}. Descarga la nueva, reemplaza los archivos de su carpeta y pulsa ↻ en chrome://extensions.</p></div>
+      <div class="row2"><a class="btn filled sm" href="facebook-publisher-extension.zip" download>${ic('download')}Descargar</a></div>`,
+    unknown:`<div style="text-align:center"><div style="margin:6px 0">Comprobando la sesión…</div></div><div class="row2"><button class="btn tonal sm" data-acct="refresh">${ic('refresh')}Comprobar</button></div>`}[Fb.state];
+  openPop(e.currentTarget,`<div class="acct-pop">${body}</div>`,async ev=>{const a=ev.target.closest('[data-acct]');if(!a)return;
+    if(a.dataset.acct==='login'){window.open('https://www.facebook.com/','_blank','noopener,noreferrer');closePop()}
+    if(a.dataset.acct==='refresh'){closePop();await checkFb(true);snack(Fb.state==='in'?`Sesión detectada${Fb.name?': '+Fb.name:''}`:Fb.state==='out'?'No hay sesión de Facebook':'Comprobación terminada')}});
+  const r=e.currentTarget.getBoundingClientRect();if(popEl)popEl.style.left=Math.max(8,Math.min(innerWidth-popEl.offsetWidth-8,r.right-popEl.offsetWidth))+'px';
+};
+window.addEventListener('focus',()=>{if(Ext.ready)checkFb(false)});
+/* ---------- Pausa entre grupos, visible en la barra de publicación ---------- */
+const PACES=[30,45,60,90,120,180,300,600,900];
+function renderPace(){const sel=$('#paceSel');if(!sel)return;const cur=S.settings.pause;const opts=[...new Set([...PACES,cur])].sort((a,b)=>a-b);
+  const lbl=v=>v<60?`${v} s`:v%60?`${Math.floor(v/60)} min ${v%60} s`:`${v/60} min`;
+  sel.innerHTML=opts.map(v=>`<option value="${v}" ${v===cur?'selected':''}>${lbl(v)}${v===SAFE.MIN_PAUSE?' (mínimo)':v===60?' (recomendado)':''}</option>`).join('')}
+$('#paceSel').onchange=e=>{S.settings.pause=clamp(e.target.value,SAFE.MIN_PAUSE,SAFE.MAX_PAUSE,60);persist.settings();renderSummary();snack(`Pausa entre grupos: ${e.target.selectedOptions[0].textContent.replace(/ \(.*\)/,'')}`)};
 function renderAutoChip(){const b=$('#autoChip');if(!b)return;const st=S.settings;
   if(st.autoMode&&Ext.ready){b.innerHTML=`${ic('smart_toy')}Automático${st.autoTest?' · prueba':''}`;b.title='Publicación automática activada. Pulsa para cambiarla.'}
   else if(st.autoMode){b.innerHTML=`${ic('extension_off')}Instalar extensión`;b.title='La publicación automática está activada pero la extensión no se detecta'}
@@ -1507,7 +1622,8 @@ $('#wzOn').onclick=()=>{if(S.settings.autoMode&&Ext.ready&&$('#wzOn').textConten
   snack('¡Activada! Pulsa «Probar publicación automática» para hacer la prueba',null,null,7000)};
 $('#autoDlg').addEventListener('close',()=>{try{sessionStorage.removeItem('fbp.wizard')}catch(e){}});
 function renderExt(){const el=$('#extStatus');if(!el)return;
-  el.innerHTML=Ext.ready?`<span style="color:var(--success)">${ic('check_circle','sm')} Extensión instalada (v${esc(Ext.version)})</span>`
+  el.innerHTML=Ext.ready&&verLt(Ext.version,MIN_EXT)?`<span style="color:var(--warn)">${ic('warning','sm')} Tienes la v${esc(Ext.version)}: <a href="facebook-publisher-extension.zip" download>descarga la nueva</a>, reemplaza los archivos de su carpeta y pulsa ↻ en chrome://extensions.</span>`
+    :Ext.ready?`<span style="color:var(--success)">${ic('check_circle','sm')} Extensión instalada (v${esc(Ext.version)})</span>`
     :`${ic('extension_off','sm')} Extensión no detectada. <a href="facebook-publisher-extension.zip" download>Descargar extensión</a> · <a href="#" data-help="automatico">Cómo instalarla</a>`}
 const fileToB64=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(r.error);r.readAsDataURL(f)});
 async function runAuto(){
@@ -1526,17 +1642,24 @@ async function runAuto(){
       R.phase='wait';renderRun();await new Promise(r=>setTimeout(r,Math.min(5000,Math.max(500,G.until-Date.now()+300))));G=gate()}
     if(R.stop||S.run!==R)break;
     if(isRecentId(it.gid)){it.status='skipped';it.error='Ya publicaste aquí hace menos de 24 h';it.at=Date.now();persist.history();continue}
-    R.phase='posting';R.step='Preparando…';R.log=[];renderRun();
+    if(!navigator.onLine){R.stop=true;R.stopMsg='Sin conexión a Internet. Pulsa «Continuar» cuando vuelva; tu progreso está guardado.';break}
+    R.phase='posting';R.step='Comprobando conexión y sesión…';R.log=[];renderRun();
+    const f=await checkFb(true);if(S.run!==R)break;
+    if(f.state==='offline'){R.stop=true;R.stopMsg='No hay conexión con Facebook. Comprueba tu conexión a Internet y pulsa «Continuar».';break}
+    if(f.state==='out'){R.stop=true;R.stopMsg='No hay ninguna sesión de Facebook iniciada en este navegador. Inicia sesión en Facebook y pulsa «Continuar».';break}
+    R.step='Preparando…';renderRun();
     const res=await Ext.call('post',{url:it.url,text:runText(it),files,test});
     if(S.run!==R)break;
     if(res.ok&&res.test){R.stop=true;R.testDone=true;R.stopMsg='Mira la ventana de Facebook: el texto, las imágenes y el enlace deberían estar listos en el cuadro de publicación, sin publicar. Ciérralo sin publicar y, si todo estaba bien, pulsa «Todo bien: publicar de verdad».';break}
     if(res.ok){it.error=undefined;mark('done',res.review||undefined)}
     else if(res.blocked){setLock(Date.now()+SAFE.LOCK_H*3600e3);renderLock();R.stop=true;R.stopMsg='Facebook mostró un aviso: «'+str(res.error,200)+'». Se ha detenido todo y bloqueado 24 h para proteger tu cuenta.';it.error=str(res.error,200);persist.history();break}
+    else if(res.step==='login'||res.step==='network'){R.stop=true;R.stopMsg=(res.step==='login'?'No hay ninguna sesión de Facebook iniciada en este navegador. Inicia sesión en Facebook y pulsa «Continuar».':'No hay conexión con Facebook. Comprueba tu conexión a Internet y pulsa «Continuar».');if(res.step==='login'){Fb.state='out';renderFb()}break}
     else{it.status='skipped';it.at=Date.now();it.error=str(res.error,200)+(res.step?` [${res.step}]`:'');persist.history();
       R.fails=(R.fails||0)+1;if(R.fails>=2&&!R.entry.items.some(i=>i.status==='done')){R.stop=true;R.stopMsg='Dos grupos seguidos han fallado. Puede que Facebook haya cambiado su interfaz o que haya que iniciar sesión. Último error: '+it.error}}
     if(res.ok)R.fails=0;
     renderRun();
   }
+  if(S.run===R&&!R.stop&&!R.testDone&&S.settings.autoClose&&!R.entry.items.some(i=>i.status==='pending')){await Ext.call('closeFb',{},5000);snack('Publicación terminada: se cerró la ventana de Facebook')}
   R.autoRunning=false;R.phase='';Ext.onStep=null;if(S.run===R){if(R.idx>=R.entry.items.length||!R.entry.items.some(i=>i.status==='pending'))R.idx=R.entry.items.length;renderRun()}
 }
 function renderAuto(main,it){
@@ -1588,13 +1711,22 @@ function startRun(fromHist){
   $('#runDlg').showModal();renderRun();if(S.run.auto)runAuto();
 }
 $('#startBtn').onclick=()=>openPreflight();
-function openPreflight(){
+async function openPreflight(){
+  if(!navigator.onLine){await offlineError();return}
   const r=validateUrl();if(r.error){snack('La URL de origen no es válida');srcEl.focus();return}
   if(!hasForm()){snack('Añade una URL, texto o archivos');return}
   const sel=selectedGroups().filter(g=>!isRecent(g));if(!sel.length){snack('Selecciona al menos un grupo disponible');return}
+  if(autoActive()){
+    const sb=$('#startBtn');const prev=sb.innerHTML;sb.disabled=true;sb.innerHTML=`<span class="spin" style="width:18px;height:18px;border-width:2px;margin:0"></span>Comprobando conexión y sesión…`;
+    const f=await checkFb(true);sb.innerHTML=prev;sb.disabled=false;renderSummary();
+    if(f.state==='offline'){await alertBox('cloud_off','No hay conexión con Facebook','No se puede acceder a facebook.com. Comprueba tu conexión a Internet o inténtalo más tarde. No se ha publicado nada.');return}
+    if(f.state==='out'){if(await alertBox('no_accounts','No has iniciado sesión en Facebook','Para publicar automáticamente, inicia sesión en Facebook en este mismo navegador Chrome y vuelve a pulsar «Comenzar». No se ha publicado nada.',{ok:'Abrir Facebook',cancel:'Cerrar'})==='ok')window.open('https://www.facebook.com/','_blank','noopener,noreferrer');return}
+  }
   const st=S.settings,u=usage(),now=Date.now(),left=Math.max(0,st.dayCap-u.day.length);
   const text=txtEl.value,checks=[];const add=(lvl,icon,t,d)=>checks.push({lvl,icon,t,d});
   const locked=S.lock&&S.lock>now;
+  if(autoActive()&&Fb.state==='in')add('ok','verified',`Cuenta: ${esc(Fb.name||('ID '+Fb.id))}`,'Se publicará con esta cuenta de Facebook.');
+  if(autoActive()&&Fb.state==='old')add('warn','extension','Actualiza la extensión','No se ha podido comprobar la sesión de Facebook con la versión instalada.');
   if(S.settings.autoMode)add(Ext.ready?'info':'warn',Ext.ready?'smart_toy':'extension_off',Ext.ready?(S.settings.autoTest?'Publicación automática · modo prueba':'Publicación automática'):'Extensión no detectada',
     Ext.ready?(S.settings.autoTest?'Se preparará la publicación en el primer grupo sin pulsar «Publicar», para que la revises.':'La extensión publicará en cada grupo con tu sesión. Mantén abiertas esta pestaña y la ventana de Facebook.'):'Se usará el modo asistido. Instala o activa la extensión para publicar automáticamente.');
   if(locked)add('err','block','Bloqueo de seguridad activo',`Indicaste que Facebook mostró un aviso. Podrás publicar a partir de ${esc(hhmm(S.lock))}.`);
@@ -1847,7 +1979,7 @@ $('#clearHist').onclick=async()=>{if(!S.history.length)return;if(await confirmBo
 /* ============================================================
    AJUSTES
    ============================================================ */
-function openSettings(){const s=S.settings;$('#setAuto').checked=s.autoMode;$('#setAutoTest').checked=s.autoTest;renderExt();$('#setMode').value=s.mode;$('#setPause').value=s.pause;$('#setHour').value=s.hourCap;$('#setDay').value=s.dayCap;$('#setClear').value=s.clearAfter;$('#setAppend').checked=s.appendUrl;$('#setSound').checked=s.sound;
+function openSettings(){const s=S.settings;$('#setAuto').checked=s.autoMode;$('#setAutoTest').checked=s.autoTest;$('#setAutoClose').checked=s.autoClose;renderExt();$('#setMode').value=s.mode;$('#setPause').value=s.pause;$('#setHour').value=s.hourCap;$('#setDay').value=s.dayCap;$('#setClear').value=s.clearAfter;$('#setAppend').checked=s.appendUrl;$('#setSound').checked=s.sound;
   const locked=S.lock&&S.lock>Date.now();$('#lockRow').hidden=!locked;if(locked)$('#lockTxt').textContent=`Nuevas publicaciones bloqueadas hasta ${hhmm(S.lock)}.`;applyTheme();$('#settingsDlg').showModal()}
 function numSetting(id,key,min,max){$(id).onchange=e=>{S.settings[key]=clamp(e.target.value,min,max,DEF_SETTINGS[key]);e.target.value=S.settings[key];persist.settings();renderSummary();
   if(+e.target.value!==+e.target.dataset.prev)snack('Ajuste guardado')}}
@@ -1860,6 +1992,7 @@ $('#setAuto').onchange=async e=>{if(e.target.checked){
     if(!ok){e.target.checked=false;return}}
   S.settings.autoMode=e.target.checked;persist.settings();renderSummary();if(e.target.checked&&!Ext.ready)snack('Instala la extensión para usar la publicación automática','Cómo',()=>openHelp('automatico'),8000)};
 $('#setAutoTest').onchange=e=>{S.settings.autoTest=e.target.checked;persist.settings();renderSummary()};
+$('#setAutoClose').onchange=e=>{S.settings.autoClose=e.target.checked;persist.settings()};
 $('#setMode').onchange=e=>{S.settings.mode=e.target.value;persist.settings()};
 $('#setPause').onchange=e=>{const v=parseInt(e.target.value);S.settings.pause=clamp(v,SAFE.MIN_PAUSE,SAFE.MAX_PAUSE,60);e.target.value=S.settings.pause;persist.settings();renderSummary();if(v<SAFE.MIN_PAUSE)snack(`La pausa mínima es de ${SAFE.MIN_PAUSE} segundos para proteger tu cuenta`)};
 $('#setAppend').onchange=e=>{S.settings.appendUrl=e.target.checked;persist.settings();renderPreview()};
@@ -1984,7 +2117,8 @@ H('automatico','Empezar','Publicación automática (extensión)','automatico aut
 <p>Tus credenciales nunca pasan por la app ni por la extensión: se usa la sesión que ya tienes abierta en Chrome.</p>
 <h3>Instalación (una vez)</h3><ol><li><a href="facebook-publisher-extension.zip" download>Descarga la extensión</a> y descomprime el .zip en una carpeta que no vayas a borrar.</li><li>Abre <code>chrome://extensions</code> y activa el <b>Modo de desarrollador</b> (arriba a la derecha).</li><li>Pulsa <b>Cargar descomprimida</b> y elige la carpeta.</li><li>Recarga Facebook Publisher. En <b>Ajustes</b> verás «Extensión instalada».</li><li>Activa <b>Publicar automáticamente</b>. Si abres la app como archivo local, en los detalles de la extensión activa también «Permitir acceso a URLs de archivo».</li></ol>
 <h3>Primera vez: modo prueba</h3><p>Con el <b>Modo prueba</b> (activado por defecto), la extensión prepara la publicación en el primer grupo <b>sin pulsar «Publicar»</b>. Revisa en la ventana de Facebook que el texto, las imágenes y la vista previa del enlace están bien, cierra ese cuadro sin publicar, desactiva el modo prueba en Ajustes y empieza de nuevo.</p>
-<h3>Mientras publica</h3><ul><li>Deja abiertas la pestaña de la app y la ventana de Facebook. Puedes usar otras aplicaciones.</li><li><b>Detener después de este grupo</b> para pausar; <b>Continuar</b> para seguir. El progreso queda en el Historial.</li><li>Si un grupo falla (no eres miembro, no permite publicar…), se omite con el motivo y se pasa al siguiente.</li></ul>
+<h3>Cuenta, conexión y vista previa</h3><ul><li>Arriba a la derecha verás la <b>cuenta de Facebook detectada</b> (foto, nombre y una marca de verificación). Púlsala para ver los detalles o volver a comprobar. Se publicará con esa cuenta.</li><li>Antes de empezar y antes de cada grupo se comprueba que hay <b>conexión a Internet</b> y una <b>sesión de Facebook</b>. Si falta alguna, verás un mensaje de error y no se publicará nada.</li><li>En la <b>vista previa</b> aparece la miniatura real de la publicación o reel de origen.</li><li>La extensión solo lee tu identificador de usuario y tu propio perfil para mostrarlos; nunca lee tu contraseña ni tu token de sesión, y nada sale de tu navegador.</li></ul>
+<h3>Mientras publica</h3><ul><li>Deja abiertas la pestaña de la app y la ventana de Facebook. Puedes usar otras aplicaciones. Al terminar todos los grupos, la ventana de Facebook <b>se cierra sola</b> (lo puedes cambiar en Ajustes).</li><li>La <b>pausa entre grupos</b> se elige en la barra de publicación, junto al botón de inicio: mínimo 30 s, recomendado 60 s o más. Facebook no publica un mínimo oficial; cuanto más larga, menos riesgo.</li><li><b>Detener después de este grupo</b> para pausar; <b>Continuar</b> para seguir. El progreso queda en el Historial.</li><li>Si un grupo falla (no eres miembro, no permite publicar…), se omite con el motivo y se pasa al siguiente.</li></ul>
 <div class="callout warn"><b>Riesgos:</b> las condiciones de Facebook no permiten publicar de forma automatizada. Aunque los límites reducen mucho el riesgo, puede haber bloqueos temporales o restricciones de la cuenta. Empieza con pocos grupos y límites bajos. Facebook cambia su interfaz con frecuencia: si la extensión deja de encontrar algún botón, se detendrá y podrás seguir con el modo asistido.</div>`),
 H('verificar','Historial','Verificar que una publicación aparece en el grupo','verificar comprobar test validar aparece reel grupo marcador',`
 <p>Facebook no permite que otras webs consulten los grupos, y la app nunca usa tu cuenta. Por eso la verificación se hace <b>en tu navegador, con tu sesión</b>, usando el <a data-help="marcador">marcador</a>, que solo lee lo que ves en pantalla.</p>
@@ -2120,6 +2254,7 @@ hydrateIcons();applyTheme();route();validateUrl();updateCount();renderMedia();re
 MediaDB.all().then(rows=>{(rows||[]).sort((a,b)=>(a.order||0)-(b.order||0)).forEach(r=>{if(r&&r.blob&&['image','video','audio'].includes(r.type)&&!S.media.some(m=>m.id===r.id))S.media.push({id:r.id,file:r.blob,url:URL.createObjectURL(r.blob),type:r.type,name:str(r.name,200)||'archivo',order:r.order})});
   if(S.media.length){renderMedia();renderPreview();updateCount();renderSummary()}});
 [300,1500,4000].forEach(t=>setTimeout(()=>{if(!Ext.ready)window.postMessage({src:'fbp-app',cmd:'hello'},'*')},t));
+renderNet();
 try{if(sessionStorage.getItem('fbp.wizard')==='1')setTimeout(openAutoWizard,600)}catch(e){}
 setInterval(()=>{renderLock();if($('#view-publicar').classList.contains('active')&&!S.run)renderDest()},60000);
 </script>
