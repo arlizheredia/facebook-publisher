@@ -76,6 +76,11 @@ kbd{border:1px solid var(--outline-2);border-bottom-width:2px;color:var(--text-2
 .pring .bg{stroke:var(--primary-container)}
 .pring .fg{stroke:var(--primary);stroke-linecap:round;transition:stroke-dashoffset .6s ease}
 .pring b{position:absolute;inset:0;display:grid;place-items:center;font:500 18px/1 var(--font-display);font-variant-numeric:tabular-nums}
+.fbmsgs{margin-top:14px}
+.fbmsg{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:var(--surface-2);margin-bottom:6px;font-size:13px;line-height:19px}
+.fbmsg>.ms{font-size:20px;color:var(--primary);margin-top:-1px}
+.fbmsg.err{background:var(--error-container);color:var(--error)}.fbmsg.err>.ms{color:var(--error)}
+.fbmsg.info>.ms{color:var(--primary)}.fbmsg.notice>.ms{color:var(--warn)}
 .ap-count{display:flex;align-items:baseline;gap:6px;margin:0 0 6px;font-variant-numeric:tabular-nums}
 .cool .ap-count{justify-content:center}
 .ap-count b{font:500 26px/1 var(--font-display);color:var(--text)}
@@ -423,6 +428,7 @@ dialog .input,dialog .textarea{background:var(--surface)}
 .panic-line{margin:12px 0 0;line-height:20px}
 .panic-line .hlp{margin:4px 0 0 -6px}
 #cfTitle{display:flex;gap:12px;align-items:flex-start}
+#cfText{white-space:pre-line}
 #cfTitle .ms{flex:none;margin-top:4px}
 .dlg-b{padding:8px 24px;overflow:auto;max-height:calc(100vh - 220px);max-height:calc(100dvh - 200px)}
 .dlg-f{padding:16px 24px 24px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
@@ -952,7 +958,7 @@ details.adv[open] summary .ms{transform:rotate(180deg)}
 <!-- Preflight dialog -->
 <dialog id="checkDlg">
   <div class="dlg-h"><span class="ms" aria-hidden="true" style="color:var(--primary);font-size:28px">verified_user</span><h2>Comprobación de seguridad</h2><button class="help-link" data-help="buenas-practicas" aria-label="Ayuda"><span class="ms" aria-hidden="true">help</span></button></div>
-  <div class="dlg-b"><p class="muted" style="margin-top:0">Revisamos tu publicación antes de empezar para proteger tu cuenta de Facebook.</p><div id="checkList" class="list"></div></div>
+  <div class="dlg-b"><p class="muted" style="margin-top:0">Revisamos tu publicación antes de empezar para proteger tu cuenta de Facebook.</p><div id="checkList" class="list"></div><div class="banner warn" id="checkOverride" hidden style="margin:12px 0 0;align-items:center;flex-wrap:wrap"></div></div>
   <div class="dlg-f"><button class="btn text" data-close>Revisar</button><button class="btn filled" id="checkGo"><span class="ms" aria-hidden="true">play_arrow</span>Empezar</button></div>
 </dialog>
 
@@ -1027,7 +1033,7 @@ function cleanGroups(list){const seen=new Set();return (Array.isArray(list)?list
     notes:str(g.notes,500),active:g.active!==false,approval:g.approval===true,lastShared:okTs(g.lastShared),created:okTs(g.created)||Date.now()}}).filter(Boolean)}
 function cleanHistory(list){return (Array.isArray(list)?list:[]).map(h=>{if(!h||typeof h!=='object')return null;
   const items=(Array.isArray(h.items)?h.items:[]).map(i=>{const url=i&&normGroupUrl(str(i.url,300));if(!url)return null;
-    return {gid:okId(i.gid)||'',name:str(i.name,140),url,notes:str(i.notes,500),status:['pending','done','skipped'].includes(i.status)?i.status:'pending',at:okTs(i.at),review:i.status==='done'&&['awaiting','approved','rejected'].includes(i.review)?i.review:undefined,rat:okTs(i.rat),error:i.error?str(i.error,240):undefined,inflight:i.status==='pending'?okTs(i.inflight)||undefined:undefined,verify:i.verify&&typeof i.verify==='object'&&okTs(i.verify.at)?{at:i.verify.at,found:i.verify.found===true}:undefined}}).filter(Boolean);
+    return {gid:okId(i.gid)||'',name:str(i.name,140),url,notes:str(i.notes,500),status:['pending','done','skipped'].includes(i.status)?i.status:'pending',at:okTs(i.at),review:i.status==='done'&&['awaiting','approved','rejected'].includes(i.review)?i.review:undefined,rat:okTs(i.rat),error:i.error?str(i.error,240):undefined,fbMsg:i.fbMsg?str(i.fbMsg,800):undefined,inflight:i.status==='pending'?okTs(i.inflight)||undefined:undefined,verify:i.verify&&typeof i.verify==='object'&&okTs(i.verify.at)?{at:i.verify.at,found:i.verify.found===true}:undefined}}).filter(Boolean);
   if(!items.length)return null;const u=parseFbUrl(str(h.url,2000));
   return {id:okId(h.id)||uid(),date:okTs(h.date)||Date.now(),url:u.url||'',text:str(h.text,63206),mediaCount:clamp(h.mediaCount,0,999,0),appendUrl:h.appendUrl!==false,items}}).filter(Boolean).slice(0,300)}
 function cleanTemplates(list){return (Array.isArray(list)?list:[]).map(t=>t&&typeof t==='object'&&typeof t.text==='string'?{id:okId(t.id)||uid(),name:str(t.name,80)||'Plantilla',text:str(t.text,63206)}:null).filter(Boolean)}
@@ -1636,7 +1642,7 @@ window.addEventListener('online',()=>{renderNet();snack('Conexión recuperada');
 const offlineError=()=>alertBox('wifi_off','Sin conexión a Internet','Comprueba tu conexión (wifi, cable o datos) y vuelve a intentarlo. No se ha publicado nada y tu trabajo está guardado.');
 /* ---------- Cuenta de Facebook detectada (vía extensión) ---------- */
 const Fb={state:'unknown',id:'',name:'',avatar:null,url:null,at:0};
-const MIN_EXT='1.3.0';
+const MIN_EXT='1.4.0';
 const verLt=(a,b)=>{const x=String(a||'0').split('.').map(Number),y=b.split('.').map(Number);for(let i=0;i<3;i++){if((x[i]||0)!==(y[i]||0))return (x[i]||0)<(y[i]||0)}return false};
 let fbChecking=null;
 async function checkFb(force){
@@ -1740,12 +1746,17 @@ async function runAuto(){
     if(f.state==='out'){R.stop=true;R.stopMsg='No hay ninguna sesión de Facebook iniciada en este navegador. Inicia sesión en Facebook y pulsa «Continuar».';break}
     R.step='Preparando…';renderRun();
     if(!test){it.inflight=Date.now();persist.history()}
-    const res=await Ext.call('post',{url:it.url,text:runText(it),files,test});
-    delete it.inflight;persist.history();
+    const res=await Ext.call('post',{url:it.url,text:runText(it),files,test,groupName:it.name});
+    delete it.inflight;
+    const fbm=Array.isArray(res.messages)?res.messages.map(m=>str(m,400)).filter(Boolean).slice(0,5):[];
+    if(fbm.length&&!test){it.fbMsg=fbm.join(' · ');R.msgs=R.msgs||[];fbm.forEach(m=>R.msgs.unshift({g:it.name,t:m,lv:res.blocked?'err':RX_PEND.test(m)?'info':'notice',at:Date.now()}));beep();
+      if(!res.blocked)snack(`Facebook en «${it.name}»: ${fbm[0].slice(0,120)}${fbm[0].length>120?'…':''}`,null,null,9000)}
+    persist.history();
     if(S.run!==R)break;
     if(res.ok&&res.test){R.stop=true;R.testDone=true;R.stopMsg='Mira la ventana de Facebook: el texto, las imágenes y el enlace deberían estar listos en el cuadro de publicación, sin publicar. Ciérralo sin publicar y, si todo estaba bien, pulsa «Todo bien: publicar de verdad».';break}
     if(res.ok){it.error=undefined;mark('done',res.review||undefined)}
-    else if(res.blocked){setLock(Date.now()+SAFE.LOCK_H*3600e3);renderLock();R.stop=true;R.stopMsg='Facebook mostró un aviso: «'+str(res.error,200)+'». Se ha detenido todo y bloqueado 24 h para proteger tu cuenta.';it.error=str(res.error,200);persist.history();break}
+    else if(res.blocked){setLock(Date.now()+SAFE.LOCK_H*3600e3,`«${str(res.error,300)}» (en ${it.name})`);renderLock();R.stop=true;R.stopMsg='Facebook mostró un aviso: «'+str(res.error,200)+'». Se ha detenido todo y bloqueado 24 h para proteger tu cuenta.';it.error=str(res.error,200);persist.history();
+      setTimeout(()=>alertBox('report',`Facebook mostró un aviso en «${it.name}»`,`«${str(res.error,300)}»\n\nSe ha detenido la publicación y se ha bloqueado durante 24 horas para proteger tu cuenta. Tu progreso está guardado.`,{ok:'Entendido',cancel:'Qué hacer'}).then(v=>{if(v==='cancel')openHelp('aviso-facebook')}),300);break}
     else if(res.step==='login'||res.step==='network'){R.stop=true;R.stopMsg=(res.step==='login'?'No hay ninguna sesión de Facebook iniciada en este navegador. Inicia sesión en Facebook y pulsa «Continuar».':'No hay conexión con Facebook. Comprueba tu conexión a Internet y pulsa «Continuar».');if(res.step==='login'){Fb.state='out';renderFb()}break}
     else{it.status='skipped';it.at=Date.now();it.error=str(res.error,200)+(res.step?` [${res.step}]`:'');persist.history();
       R.fails=(R.fails||0)+1;if(R.fails>=2&&!R.entry.items.some(i=>i.status==='done')){R.stop=true;R.stopMsg='Dos grupos seguidos han fallado. Puede que Facebook haya cambiado su interfaz o que haya que iniciar sesión. Último error: '+it.error}}
@@ -1755,6 +1766,9 @@ async function runAuto(){
   if(S.run===R&&!R.stop&&!R.testDone&&S.settings.autoClose&&!R.entry.items.some(i=>i.status==='pending')){await Ext.call('closeFb',{},5000);snack('Publicación terminada: se cerró la ventana de Facebook')}
   R.autoRunning=false;R.phase='';Ext.onStep=null;if(S.run===R){if(R.idx>=R.entry.items.length||!R.entry.items.some(i=>i.status==='pending'))R.idx=R.entry.items.length;renderRun()}
 }
+const RX_PEND=/(pendiente|pending|se est[aá] revisando|being reviewed|aprob(ar|aci[oó]n)|approv(e|al))/i;
+function fbMsgsHtml(R){if(!R.msgs||!R.msgs.length)return '';const ico={err:'report',info:'pending',notice:'chat_info'};
+  return `<div class="fbmsgs" id="fbMsgs"><div class="rp-label" style="margin-top:0">${ic('campaign','sm')} Mensajes de Facebook (${R.msgs.length})</div>${R.msgs.slice(0,6).map(m=>`<div class="fbmsg ${m.lv}">${ic(ico[m.lv]||'chat_info')}<div><b>${esc(m.g)}</b> · ${esc(hm(m.at))}<div>«${esc(m.t)}»</div></div></div>`).join('')}</div>`}
 const STEP_P=[[/Comprobando/,0.03],[/Preparando/,0.05],[/Abriendo el grupo/,0.1],[/Esperando a que cargue/,0.2],[/cuadro de publicación/,0.35],[/Escribiendo/,0.5],[/Adjuntando/,0.62],[/vista previa/,0.72],[/«Publicar» esté/,0.8],[/Publicando/,0.9]];
 function autoPct(R){const items=R.entry.items,n=items.length||1,done=items.filter(i=>i.status!=='pending').length;
   let f=0;if(R.autoRunning&&!R.stop&&R.phase==='posting')for(const [rx,v] of STEP_P)if(rx.test(R.step||''))f=v;
@@ -1774,6 +1788,7 @@ function renderAuto(main,it){
     main.innerHTML=`<div class="cool" style="padding:24px 0"><div class="empty" style="padding:0"><div class="ill" style="${R.testDone?'':'background:var(--warn-container);color:var(--warn)'}">${ic(R.testDone?'science':'pause_circle')}</div></div>
       <h3 style="font-size:22px;line-height:28px;margin:0">${R.testDone?'Modo prueba completado':'Publicación automática detenida'}</h3>
       <p class="muted" style="margin:0;max-width:520px">${esc(R.stopMsg||'La has detenido. Tu progreso está guardado.')}</p>${R.testDone?'':apStatsHtml(R)}
+      ${R.testDone?'':`<div style="max-width:560px;width:100%;text-align:left">${fbMsgsHtml(R)}</div>`}
       ${errs?`<details class="adv" style="max-width:520px;text-align:left"><summary>Ver incidencias${ic('chevron')}</summary><ul class="small" style="margin:8px 0">${errs}</ul></details>`:''}
       <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">${R.testDone?`<button class="btn filled" id="aReal">${ic('bolt')}Todo bien: publicar de verdad</button><button class="btn text" id="aBad">${ic('help')}Algo salió mal</button>`:gate().reason==='lock'||gate().reason==='day'?'':`<button class="btn filled" id="aGo">${ic('play_arrow')}Continuar</button>`}<button class="btn outlined" id="aClose">${R.testDone||!R.entry.items.some(i=>i.status==='pending')?'Cerrar':'Continuar más tarde'}</button></div></div>`;
     const g=$('#aGo');if(g)g.onclick=()=>{R.stop=false;R.testDone=false;runAuto()};$('#aClose').onclick=async()=>{const pend=R.entry.items.some(i=>i.status==='pending');await closeRun(true);if(pend&&!R.testDone)snack('Progreso guardado. Pulsa «Continuar» en Publicar o «Reanudar» en el Historial cuando quieras.',null,null,8000)};const rl=$('#aReal');if(rl)rl.onclick=async()=>{S.settings.autoTest=false;persist.settings();await closeRun(true);renderSummary();snack('Modo prueba desactivado. Cierra el cuadro de prueba en Facebook y pulsa «Comenzar publicación automática».',null,null,9000)};
@@ -1784,6 +1799,7 @@ function renderAuto(main,it){
       <div style="min-width:0;flex:1"><h4 id="autoStep" aria-live="polite">${esc(R.step||'Preparando…')}</h4><div class="ap-track"><i id="apBar" style="width:${autoPct(R)}%"></i></div>${apStatsHtml(R)}
       <p class="muted small" style="margin:0">La extensión trabaja en la ventana de Facebook. No la cierres ni cierres esta pestaña; puedes seguir usando otras aplicaciones.</p>
       <ol class="small muted" id="autoLog" style="margin:8px 0 0;padding-left:18px">${(R.log||[]).slice(-6).map(x=>`<li>${esc(x)}</li>`).join('')}</ol></div></div>
+    ${fbMsgsHtml(R)}
     ${errs?`<details class="adv"><summary>Incidencias${ic('chevron')}</summary><ul class="small" style="margin:8px 0">${errs}</ul></details>`:''}
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px"><button class="btn outlined" id="aStop">${ic('stop_circle')}Detener después de este grupo</button><button class="btn text danger" id="aPanic">${ic('report')}Facebook me mostró un aviso</button></div>`;
   $('#aStop').onclick=()=>{R.stop=true;R.stopMsg='La has detenido. Tu progreso está guardado; pulsa Continuar cuando quieras.';snack('Se detendrá al terminar el grupo actual')};$('#aPanic').onclick=()=>{R.stop=true;panicStop()};
@@ -1800,7 +1816,7 @@ function gate(){
   if(u.last&&now<u.last+st.pause*1000)return {ok:false,reason:'pause',until:u.last+st.pause*1000,total:st.pause};
   return {ok:true};
 }
-function setLock(ts){S.lock=ts;save('fbp.lock',ts)}
+function setLock(ts,why){S.lock=ts;save('fbp.lock',ts);save('fbp.lockMsg',ts?str(why||'',400):'')}
 function saveRunState(id){const rid=S.run?S.run.entry.id:id;const h=rid&&S.history.find(x=>x.id===rid);
   if(h&&h.items.some(i=>i.status==='pending')){save('fbp.run',{id:rid});try{sessionStorage.removeItem('fbp.resumeHidden')}catch(e){}}else{try{localStorage.removeItem('fbp.run')}catch(e){}}}
 async function resolveInflight(entry){
@@ -1844,7 +1860,8 @@ async function openPreflight(){
   if(autoActive()&&Fb.state==='old')add('warn','extension','Actualiza la extensión','No se ha podido comprobar la sesión de Facebook con la versión instalada.');
   if(S.settings.autoMode)add(Ext.ready?'info':'warn',Ext.ready?'smart_toy':'extension_off',Ext.ready?(S.settings.autoTest?'Publicación automática · modo prueba':'Publicación automática'):'Extensión no detectada',
     Ext.ready?(S.settings.autoTest?'Se preparará la publicación en el primer grupo sin pulsar «Publicar», para que la revises.':'La extensión publicará en cada grupo con tu sesión. Mantén abiertas esta pestaña y la ventana de Facebook.'):'Se usará el modo asistido. Instala o activa la extensión para publicar automáticamente.');
-  if(locked)add('err','block','Bloqueo de seguridad activo',`Indicaste que Facebook mostró un aviso. Podrás publicar a partir de ${esc(hhmm(S.lock))}.`);
+  const lockWhy=str(load('fbp.lockMsg','')||'',400);
+  if(locked)add('err','block','Bloqueo de seguridad activo',`${lockWhy?`Motivo: ${esc(lockWhy)}. `:'Se detectó un aviso de Facebook. '}Podrás publicar a partir de ${esc(hhmm(S.lock))}.`);
   if(left===0)add('warn','event_busy','Límite diario alcanzado',`Ya has publicado en ${u.day.length} grupos en 24 h. Puedes preparar la cola: el asistente esperará hasta ${esc(hhmm(gate().until||now))}.`);
   else if(sel.length>left)add('warn','event_busy',`Hoy solo quedan ${left} de ${st.dayCap} publicaciones`,`Has seleccionado ${sel.length} grupos. El resto quedará pendiente y podrás reanudarlo desde el Historial.`);
   else add('ok','event_available','Dentro del límite diario',`${u.day.length+sel.length} de ${st.dayCap} grupos en 24 h.`);
@@ -1860,6 +1877,11 @@ async function openPreflight(){
   if(!checks.some(c=>c.lvl!=='ok'&&c.lvl!=='info'))add('ok','check_circle','Todo listo','Tu publicación cumple las recomendaciones de seguridad.');
   const col={ok:'var(--success)',warn:'var(--warn)',err:'var(--error)',info:'var(--primary)'};
   $('#checkList').innerHTML=checks.map(c=>`<div class="row" style="align-items:flex-start"><span class="ms" aria-hidden="true" style="color:${col[c.lvl]};margin-top:2px">${c.icon}</span><div class="main"><div class="title" style="white-space:normal">${c.t}</div><div class="meta" style="white-space:normal">${c.d}</div></div></div>`).join('');
+  const ov=$('#checkOverride');ov.hidden=!locked;
+  if(locked)ov.innerHTML=`${ic('warning')}<div style="flex:1"><b>¿Fue una falsa alarma?</b> Si has comprobado en Facebook que tu cuenta no tiene avisos ni restricciones, puedes quitar el bloqueo y publicar.</div><button class="btn outlined sm danger" id="checkForce">Publicar de todas maneras</button>`;
+  if(locked)$('#checkForce').onclick=async()=>{$('#checkDlg').close();
+    if(!await confirmBox('¿Quitar el bloqueo y publicar de todas maneras?','Si Facebook te mostró de verdad un aviso, seguir publicando ahora puede provocar restricciones o el bloqueo de tu cuenta. Hazlo solo si has comprobado que fue una falsa alarma. Las pausas y los límites por hora y por día siguen activos.','Publicar de todas maneras',true)){openPreflight();return}
+    setLock(null);renderLock();snack('Bloqueo quitado');openPreflight()};
   const go=$('#checkGo');go.disabled=!!locked;go.innerHTML=`${ic('play_arrow')}Empezar (${sel.length} grupo${sel.length>1?'s':''})`;
   go.onclick=()=>{$('#checkDlg').close();startRun()};
   $('#checkDlg').showModal();
@@ -1879,7 +1901,7 @@ function renderResume(){
     h.items.forEach(i=>{if(i.status==='pending'){i.status='skipped';i.error='Descartado';i.at=Date.now();delete i.inflight}});persist.history();saveRunState(h.id);renderResume();snack('Publicación cerrada')};
 }
 function renderLock(){const b=$('#lockBanner');const on=S.lock&&S.lock>Date.now();b.hidden=!on;
-  if(on)b.innerHTML=`${ic('shield')}<div style="flex:1"><b>Publicación en pausa para proteger tu cuenta</b><div class="small">Indicaste que Facebook mostró un aviso. Podrás volver a publicar a partir de ${esc(hhmm(S.lock))}. <a href="#ayuda/aviso-facebook" data-help="aviso-facebook">Qué hacer mientras tanto</a></div></div>`}
+  if(on)b.innerHTML=`${ic('shield')}<div style="flex:1"><b>Publicación en pausa para proteger tu cuenta</b><div class="small">${(()=>{const w=str(load('fbp.lockMsg','')||'',300);return w?'Motivo: '+esc(w)+'. ':'Se detectó un aviso de Facebook. '})()}Podrás volver a publicar a partir de ${esc(hhmm(S.lock))}. <a href="#ayuda/aviso-facebook" data-help="aviso-facebook">Qué hacer mientras tanto</a></div></div>`}
 function runText(item){const e=S.run.entry;const prev=S.settings.appendUrl;S.settings.appendUrl=e.appendUrl!==false;const t=finalText(item,e.text,e.url);S.settings.appendUrl=prev;return t}
 function openTarget(item){
   const e=S.run.entry;const mode=S.settings.mode;
@@ -1911,7 +1933,7 @@ function mark(status,review){
 const isRecentId=gid=>{const g=S.groups.find(x=>x.id===gid);return !!g&&isRecent(g)};
 async function panicStop(){
   if(!await confirmBox('¿Facebook te ha mostrado un aviso?','Detendremos la publicación y bloquearemos nuevas publicaciones durante 24 horas para que tu cuenta se recupere. Tu progreso queda guardado en el Historial.','Detener y proteger',true))return;
-  setLock(Date.now()+SAFE.LOCK_H*3600e3);await closeRun(true);renderLock();openHelp('aviso-facebook');
+  setLock(Date.now()+SAFE.LOCK_H*3600e3,'Lo indicaste tú con «Facebook me mostró un aviso».');await closeRun(true);renderLock();openHelp('aviso-facebook');
 }
 function beep(){if(!S.settings.sound)return;try{const a=new (window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.frequency.value=880;g.gain.setValueAtTime(.08,a.currentTime);g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+.35);o.connect(g).connect(a.destination);o.start();o.stop(a.currentTime+.36);setTimeout(()=>a.close(),600)}catch(e){}}
 function renderRun(){
@@ -1923,6 +1945,7 @@ function renderRun(){
     const a=items.filter(i=>i.status==='done'&&i.review==='awaiting').length,d=items.filter(i=>i.status==='done').length-a,s=items.filter(i=>i.status==='skipped').length;
     main.innerHTML=`<div class="summary"><div class="empty" style="padding:0"><div class="ill" style="background:var(--success-container);color:var(--success)">${ic('task_alt')}</div></div>
       <h2 style="font-size:24px;line-height:32px;margin:0 0 8px">¡Listo! Has terminado esta publicación</h2><p class="muted">Todo queda registrado en el Historial.</p>
+      ${R.msgs&&R.msgs.length?`<div style="max-width:560px;margin:16px auto 0;text-align:left">${fbMsgsHtml(R)}</div>`:''}
       <div class="stats"><div class="stat"><div class="k">${ic('check_circle')}Publicados</div><div class="v" style="color:var(--success)">${d}</div></div>${a?`<div class="stat"><div class="k">${ic('pending')}En aprobación</div><div class="v" style="color:var(--primary)">${a}</div></div>`:''}<div class="stat"><div class="k">${ic('skip_next')}Omitidos</div><div class="v">${s}</div></div></div>
       <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn outlined" id="rHist">${ic('history')}Ver historial</button><button class="btn filled" id="rEnd">Cerrar</button></div></div>`;
     $('#rHist').onclick=()=>{closeRun(true);location.hash='historial'};$('#rEnd').onclick=()=>closeRun(true);document.title='Facebook Publisher';
@@ -1948,7 +1971,7 @@ function renderRun(){
     main.innerHTML=`<div class="cool"><div class="ring"><svg viewBox="0 0 140 140"><circle class="bg" cx="70" cy="70" r="62"/><circle class="fg" id="coolFg" cx="70" cy="70" r="62" stroke-dasharray="${C}" stroke-dashoffset="0"/></svg><b id="coolN"></b></div>
       <h3 style="font-size:22px;line-height:28px;margin:0">${MSG[0]}</h3><p class="muted" style="margin:0;max-width:440px">${MSG[1]} <a href="#ayuda/buenas-practicas" data-help="buenas-practicas">Más información</a></p>
       ${G.reason!=='pause'?`<p style="margin:0">Podrás continuar: <b>${esc(hhmm(G.until))}</b></p>`:''}
-      <p style="margin:0">Siguiente: <b>${esc(it.name)}</b></p>${R.auto?apStatsHtml(R):''}
+      <p style="margin:0">Siguiente: <b>${esc(it.name)}</b></p>${R.auto?apStatsHtml(R)+`<div style="max-width:560px;width:100%;text-align:left">${fbMsgsHtml(R)}</div>`:''}
       <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">${G.reason==='pause'?'':`<button class="btn outlined" id="coolLater">${ic('schedule')}Continuar más tarde</button>`}
       <button class="btn text danger" id="rPanic2">${ic('report')}Facebook me mostró un aviso</button></div></div>`;
     const cl=$('#coolLater');if(cl)cl.onclick=()=>{R.stop=true;closeRun(true)};$('#rPanic2').onclick=panicStop;
@@ -2082,7 +2105,7 @@ function renderHistory(){
       <div class="prog hide-sm" aria-hidden="true"><i style="width:${(d+s)/h.items.length*100}%"></i></div>${ic('chevron','exp')}</summary>
       <div class="det">${h.url?`<p class="inl" style="margin:0 0 10px;word-break:break-all">${ic('link')}<a href="${esc(h.url)}" target="_blank" rel="noopener">${esc(h.url)}</a></p>`:''}${h.text?`<pre>${esc(h.text)}</pre>`:''}
         <div class="list" style="margin-bottom:12px">${h.items.map((i,ix)=>`<div class="row hrow"><span class="dot ${i.status}">${i.status==='done'?ic(i.review==='awaiting'?'pending':i.review==='rejected'?'block':'check'):i.status==='skipped'?ic('close'):''}</span>
-  <div class="main"><div class="title">${esc(i.name)}</div><div class="meta">${i.status==='done'?(reviewPill(i)||'<span>Publicado</span>')+verifyPill(i):i.status==='skipped'?`<span title="${esc(i.error||'')}">Omitido${i.error?' · '+esc(i.error):''}</span>`:'<span>Por hacer</span>'}</div></div>
+  <div class="main"><div class="title">${esc(i.name)}</div><div class="meta">${i.fbMsg?`<span class="pill" title="${esc(i.fbMsg)}" style="max-width:100%;overflow:hidden;text-overflow:ellipsis">${ic('campaign')}Facebook: «${esc(i.fbMsg.slice(0,70))}${i.fbMsg.length>70?'…':''}»</span>`:''}${i.status==='done'?(reviewPill(i)||'<span>Publicado</span>')+verifyPill(i):i.status==='skipped'?`<span title="${esc(i.error||'')}">Omitido${i.error?' · '+esc(i.error):''}</span>`:'<span>Por hacer</span>'}</div></div>
   <div class="h-acts">${i.review==='awaiting'?reviewBtns(h.id,ix):''}${i.status==='done'?`<button class="btn text sm" data-vf="${h.id}" data-i="${ix}">${ic('fact_check')}Verificar</button><button class="btn text sm" data-unpub="${h.id}" data-i="${ix}" title="Corrige el registro si en realidad no se publicó">${ic('undo')}No se publicó</button>`:''}</div>
   <span class="h-time small muted">${i.at?esc(ago(i.at)):'—'}</span><a class="icon-btn sm" href="${esc(i.url)}" target="_blank" rel="noopener" aria-label="Abrir grupo" title="Abrir grupo">${ic('open')}</a></div>`).join('')}</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">${p?`<button class="btn filled" data-hres="${h.id}">${ic('play')}Reanudar (${p})</button>`:''}
@@ -2121,7 +2144,7 @@ function postLabel(h){
 }
 function reasonOf(e){e=String(e||'');
   if(/miembro/i.test(e))return 'no somos miembros del grupo';
-  if(/no permite publicar|Escribe algo/i.test(e))return 'el grupo no permite publicar';
+  if(/no permite publicar|Escribe algo|no puedes publicar|solo los administradores|can'?t post|only admins|desactivadas/i.test(e))return 'el grupo no permite publicar';
   if(/24 h/i.test(e))return 'ya se había publicado en las últimas 24 horas';
   if(/no publicado/i.test(e))return 'finalmente no se publicó';
   if(/sesi[oó]n/i.test(e))return 'no había sesión iniciada en Facebook';
@@ -2165,6 +2188,7 @@ function buildReport(date,ids,meta){
   const O=[];
   const apr=S.groups.filter(g=>g.approval&&all.some(i=>i.gid===g.id||groupKey(i.url)===groupKey(g.url))).map(g=>g.name);
   if(apr.length)O.push(`${apr.length===1?'El grupo':'Los grupos'} ${listNames(apr)} ${apr.length===1?'revisa':'revisan'} las publicaciones antes de mostrarlas, así que su visibilidad depende de la aprobación de los administradores.`);
+  all.filter(i=>i.fbMsg).forEach(i=>O.push(`En ${listNames([i.name])}, Facebook mostró el mensaje: «${i.fbMsg.split(' · ')[0].replace(/[«»]/g,'"').slice(0,220)}».`));
   if(rej.length)O.push(`Conviene revisar las normas de ${listNames(rej.map(i=>i.name))} antes de volver a publicar allí.`);
   if(shared>1){const ps=S.settings.pause,pt=ps<60?`${ps} segundos`:ps%60?`${Math.floor(ps/60)} min ${ps%60} s`:`${ps/60} ${ps===60?'minuto':'minutos'}`;O.push(`La difusión se hizo de forma escalonada, con pausas de ${pt} entre grupos y sin repetir ningún grupo en 24 horas, para cuidar la reputación de la cuenta.`)}
   if(O.length){L.push('Observaciones');O.forEach(o=>L.push('- '+o));L.push('')}
@@ -2430,7 +2454,7 @@ H('automatico','Empezar','Publicación automática (extensión)','automatico aut
 <h3>Instalación (una vez)</h3><ol><li><a href="facebook-publisher-extension.zip" download>Descarga la extensión</a> y descomprime el .zip en una carpeta que no vayas a borrar.</li><li>Abre <code>chrome://extensions</code> y activa el <b>Modo de desarrollador</b> (arriba a la derecha).</li><li>Pulsa <b>Cargar descomprimida</b> y elige la carpeta.</li><li>Recarga Facebook Publisher. En <b>Ajustes</b> verás «Extensión instalada».</li><li>Activa <b>Publicar automáticamente</b>. Si abres la app como archivo local, en los detalles de la extensión activa también «Permitir acceso a URLs de archivo».</li></ol>
 <h3>Primera vez: modo prueba</h3><p>Con el <b>Modo prueba</b> (activado por defecto), la extensión prepara la publicación en el primer grupo <b>sin pulsar «Publicar»</b>. Revisa en la ventana de Facebook que el texto, las imágenes y la vista previa del enlace están bien, cierra ese cuadro sin publicar, desactiva el modo prueba en Ajustes y empieza de nuevo.</p>
 <h3>Cuenta, conexión y vista previa</h3><ul><li>Arriba a la derecha verás la <b>cuenta de Facebook detectada</b> (foto, nombre y una marca de verificación). Púlsala para ver los detalles o volver a comprobar. Se publicará con esa cuenta.</li><li>Antes de empezar y antes de cada grupo se comprueba que hay <b>conexión a Internet</b> y una <b>sesión de Facebook</b>. Si falta alguna, verás un mensaje de error y no se publicará nada.</li><li>En la <b>vista previa</b> aparece la miniatura real de la publicación o reel de origen.</li><li>La extensión solo lee tu identificador de usuario y tu propio perfil para mostrarlos; nunca lee tu contraseña ni tu token de sesión, y nada sale de tu navegador.</li></ul>
-<h3>Mientras publica</h3><ul><li>Deja abiertas la pestaña de la app y la ventana de Facebook. Puedes usar otras aplicaciones. Al terminar todos los grupos, la ventana de Facebook <b>se cierra sola</b> (lo puedes cambiar en Ajustes).</li><li>La <b>pausa entre grupos</b> se elige en la barra de publicación, junto al botón de inicio: mínimo 30 s, recomendado 60 s o más. Facebook no publica un mínimo oficial; cuanto más larga, menos riesgo.</li><li><b>Detener después de este grupo</b> para pausar; <b>Continuar</b> para seguir. El progreso queda en el Historial.</li><li>Si un grupo falla (no eres miembro, no permite publicar…), se omite con el motivo y se pasa al siguiente.</li></ul>
+<h3>Mientras publica</h3><ul><li>Deja abiertas la pestaña de la app y la ventana de Facebook. Puedes usar otras aplicaciones. Al terminar todos los grupos, la ventana de Facebook <b>se cierra sola</b> (lo puedes cambiar en Ajustes).</li><li>La <b>pausa entre grupos</b> se elige en la barra de publicación, junto al botón de inicio: mínimo 30 s, recomendado 60 s o más. Facebook no publica un mínimo oficial; cuanto más larga, menos riesgo.</li><li><b>Detener después de este grupo</b> para pausar; <b>Continuar</b> para seguir. El progreso queda en el Historial.</li><li>Si un grupo falla (no eres miembro, no permite publicar…), se omite con el motivo y se pasa al siguiente.</li><li><b>Si Facebook muestra un mensaje</b> (por ejemplo «pendiente de aprobación» o un aviso), recibirás una <b>notificación del sistema</b> con su texto exacto y lo verás en «Mensajes de Facebook». Queda guardado en el Historial y aparece en el informe diario. Si es un aviso de bloqueo, además se detiene todo y se muestra una ventana con el mensaje.</li></ul>
 <div class="callout warn"><b>Riesgos:</b> las condiciones de Facebook no permiten publicar de forma automatizada. Aunque los límites reducen mucho el riesgo, puede haber bloqueos temporales o restricciones de la cuenta. Empieza con pocos grupos y límites bajos. Facebook cambia su interfaz con frecuencia: si la extensión deja de encontrar algún botón, se detendrá y podrás seguir con el modo asistido.</div>`),
 H('informe','Historial','Informe diario de difusión','informe reporte resumen diario pdf word docx copiar exportar cliente marca',`
 <p>Genera un resumen profesional de lo que se ha compartido en un día, listo para enviar a un cliente o incluir en tu informe diario.</p>

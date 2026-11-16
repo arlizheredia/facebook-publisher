@@ -21,7 +21,7 @@ chrome.runtime.onMessage.addListener((msg, sender, send) => {
   if (msg.cmd === 'post') {
     if (busy) { send({ok: false, step: 'ext', error: 'Ya hay una publicación en curso'}); return; }
     busy = true;
-    handlePost(msg.job).then(send, e => send({ok: false, step: 'ext', error: String((e && e.message) || e)})).finally(() => { busy = false; });
+    handlePost(msg.job).then(r => { notifyResult(msg.job, r); return r; }).then(send, e => send({ok: false, step: 'ext', error: String((e && e.message) || e)})).finally(() => { busy = false; });
     return true;
   }
   if (msg.cmd === 'preview') { preview(msg.job && msg.job.url).then(send, () => send({ok: false})); return true; }
@@ -118,6 +118,21 @@ async function checkStatus(details) {
   if (details && online && loggedIn) Object.assign(res, await whoAmI(userId));
   return res;
 }
+
+/* Notificación del sistema cuando Facebook muestra un mensaje */
+function notifyResult(job, r) {
+  if (!r || job.test || !chrome.notifications) return;
+  const msgs = Array.isArray(r.messages) ? r.messages : [];
+  if (!msgs.length && !r.blocked) return;
+  const group = typeof job.groupName === 'string' ? job.groupName.slice(0, 80) : 'un grupo';
+  const title = r.blocked ? `Facebook mostró un aviso en «${group}»` : `Facebook mostró un mensaje en «${group}»`;
+  const text = (r.blocked ? r.error : msgs[0]) || '';
+  chrome.notifications.create('', {type: 'basic', iconUrl: 'icon128.png', title, message: String(text).slice(0, 250) + (r.blocked ? '\nSe ha detenido la publicación para proteger tu cuenta.' : ''), priority: 2, requireInteraction: !!r.blocked}, () => void chrome.runtime.lastError);
+}
+if (chrome.notifications) chrome.notifications.onClicked.addListener(id => {
+  if (appTabId != null) chrome.tabs.get(appTabId).then(t => { chrome.windows.update(t.windowId, {focused: true}); chrome.tabs.update(appTabId, {active: true}); }).catch(() => {});
+  chrome.notifications.clear(id);
+});
 
 function progress(step) {
   if (appTabId != null) chrome.tabs.sendMessage(appTabId, {to: 'bridge', type: 'progress', step}).catch(() => {});

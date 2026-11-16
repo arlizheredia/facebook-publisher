@@ -28,7 +28,9 @@ const GROUPS = [
   {id: 'g3', slug: '2000000003', name: 'Grupo sin ser miembro', mode: 'notmember'},
   {id: 'g4', slug: '2000000004', name: 'Grupo con aviso', mode: 'block'},
   {id: 'g5', slug: '2000000005', name: 'Grupo cinco', mode: 'ok'},
-  {id: 'g6', slug: '2000000006', name: 'Grupo seis', mode: 'ok'}
+  {id: 'g6', slug: '2000000006', name: 'Grupo seis', mode: 'ok'},
+  {id: 'g7', slug: '2000000007', name: 'Grupo con mensaje', mode: 'notice'},
+  {id: 'g8', slug: '2000000008', name: 'Grupo solo administradores', mode: 'adminsonly'}
 ];
 
 /* ---------- Chrome por tubería (necesario para cargar extensiones) ---------- */
@@ -62,7 +64,7 @@ function mockGroup(g) {
     ? '<div role="button" aria-label="Unirte al grupo">Unirte al grupo</div>'
     : '<div role="button" id="c"><div><span>Escribe algo...</span></div></div>';
   return `<!doctype html><html><head><meta charset="utf-8"><title>${g.name} | Facebook</title></head><body>
-<div role="main"><h1>${g.name}</h1>${composer}<div role="feed" id="feed"></div></div>
+<div role="main"><h1>${g.name}</h1>${composer}<div role="feed" id="feed"></div></div>${g.mode === 'adminsonly' ? '<div role="dialog"><div>Solo los administradores pueden publicar en este grupo.</div><div role="button">Aceptar</div></div>' : ''}
 <script>
 const MODE=${JSON.stringify(g.mode)};
 function msg(t){const d=document.createElement('div');d.setAttribute('role','dialog');d.innerHTML='<div>'+t+'</div><div role="button" aria-label="Cerrar">Cerrar</div>';document.body.appendChild(d)}
@@ -83,6 +85,7 @@ if(c)c.addEventListener('click',()=>{
     if(MODE==='block'){msg('Estás publicando demasiado rápido. Se ha bloqueado temporalmente esta función.');return}
     await fetch('https://www.facebook.com/__fbp_test_posted',{method:'POST',body:JSON.stringify({group:${JSON.stringify(g.slug)},text:tb.innerText,files:files.map(f=>({name:f.name,type:f.type,size:f.size}))})});
     d.remove();
+    if(MODE==='notice')msg('Tu publicación se compartió, pero puede tardar unos minutos en aparecer para los miembros del grupo.');
     if(MODE==='pending')msg('Tu publicación está pendiente. Los administradores la revisarán antes de que aparezca en el grupo.');
   });
 });
@@ -110,10 +113,13 @@ function fulfill(sessionId, ev) {
   send('Fetch.fulfillRequest', {requestId: ev.requestId, responseCode: code, responseHeaders: [{name: 'Content-Type', value: type}], body: Buffer.from(body).toString('base64')}, sessionId);
 }
 const errors = [];
+let swSession = null;
+const swEval = async expr => { const r = await send('Runtime.evaluate', {expression: expr, awaitPromise: true, returnByValue: true}, swSession); if (process.env.DEBUG_SW) console.log('SW', JSON.stringify(r).slice(0, 400)); return r.result?.result?.value; };
 listeners.push(async m => {
   if (m.method === 'Target.attachedToTarget') {
     const sid = m.params.sessionId;
     if (m.params.targetInfo.type === 'page') await send('Runtime.enable', {}, sid);
+    if (m.params.targetInfo.type === 'service_worker' && /^chrome-extension:\/\/[a-p]{32}\/background\.js/.test(m.params.targetInfo.url)) swSession = sid;
     send('Runtime.runIfWaitingForDebugger', {}, sid);
   }
   if (m.method === 'Fetch.requestPaused') fulfill(m.sessionId, m.params);
@@ -294,6 +300,30 @@ await t('continúa automáticamente y completa los grupos que faltaban', async (
 await ev(`closeRun(true)`); await sleep(300);
 await t('al completarse, desaparece el aviso de publicación a medias', async () => (await ev(`load('fbp.run',null)===null&&document.getElementById('resumeBanner').hidden`)) === true);
 
+console.log('6. Mensajes de Facebook');
+await fastForward();
+await ev(`S.sel=new Set(['g7','g8']);renderDest();renderSummary();openPreflight()`);
+for (let i = 0; i < 30 && !(await ev(`document.getElementById('checkDlg').open`)); i++) await sleep(300);
+await ev(`document.getElementById('checkGo').click()`);
+await waitAuto(240000);
+await t('captura el texto exacto del mensaje que muestra Facebook', async () => {
+  const m = await ev(`S.history[0].items[0].fbMsg||''`);
+  return /puede tardar unos minutos en aparecer/.test(m) && (await ev(`S.history[0].items[0].status`)) === 'done' ? `«${m}»` : (() => { throw new Error(m); })();
+});
+await t('lo muestra en «Mensajes de Facebook» durante la publicación', async () => /Mensajes de Facebook \(1\)/.test(await ev(`document.getElementById('runMain').textContent`)));
+await t('envía una notificación del sistema con el grupo y el mensaje', async () => {
+  if (!swSession) throw new Error('sin acceso al service worker');
+  const n = await swEval(`chrome.notifications.getAll().then(o=>JSON.stringify(Object.keys(o).length))`);
+  return +n >= 1 ? `${n} notificación(es) creadas` : (() => { throw new Error('notificaciones: ' + n); })();
+});
+await ev(`closeRun(true)`);
+await t('una restricción del grupo («solo administradores») omite ese grupo sin bloquear la cuenta', async () => {
+  const r = await ev(`JSON.stringify({s:S.history[0].items[1].status,e:S.history[0].items[1].error,lock:!!(S.lock&&S.lock>Date.now())})`); const o = JSON.parse(r);
+  return o.s === 'skipped' && /Solo los administradores/.test(o.e) && !o.lock ? o.e : (() => { throw new Error(r); })();
+});
+await t('el mensaje queda en el Historial', async () => { await ev(`location.hash='historial'`); await sleep(400); return /Facebook: «Tu publicación se compartió/.test(await ev(`document.getElementById('histBox').textContent`)); });
+await ev(`location.hash='publicar'`);
+
 await ev(`S.sel=new Set(['g2','g3','g4']);renderDest();renderSummary();openPreflight()`);
 for (let i = 0; i < 30 && !(await ev(`document.getElementById('checkDlg').open`)); i++) await sleep(300);
 await ev(`document.getElementById('checkGo').click()`);
@@ -301,10 +331,32 @@ await waitAuto(240000);
 const items = await ev(`JSON.stringify(S.history[0].items.map(i=>({n:i.name,s:i.status,r:i.review||null,e:i.error||null})))`).then(JSON.parse);
 await t('detecta «pendiente de aprobación»', async () => items[0].s === 'done' && items[0].r === 'awaiting');
 await t('omite el grupo donde no es miembro y sigue', async () => items[1].s === 'skipped' && /miembro/.test(items[1].e || '') ? items[1].e : false);
+await t('el mensaje de «pendiente» también se registra', async () => /pendiente/.test(await ev(`S.history[0].items[0].fbMsg||''`)));
+await t('un aviso de bloqueo abre una ventana con el mensaje de Facebook', async () => {
+  const r = await ev(`JSON.stringify({open:document.getElementById('confirmDlg').open,t:document.getElementById('cfTitle').textContent,x:document.getElementById('cfText').textContent})`); const o = JSON.parse(r);
+  if (!o.open || !/Facebook mostró un aviso en «Grupo con aviso»/.test(o.t) || !/demasiado rápido/.test(o.x)) throw new Error(r);
+  await ev(`document.getElementById('cfYes').click()`); return o.t.replace(/^report/, '');
+});
 await t('ante un aviso de Facebook se detiene y bloquea 24 h', async () => items[2].s === 'pending' && (await ev(`S.lock>Date.now()`)) && /demasiado rápido/.test(await ev(`S.run.stopMsg`)));
 await t('si se detiene por un aviso, deja abierta la ventana para revisarla', async () => (await fbWindows()) === 1);
+await ev(`closeRun(true)`);
+await ev(`S.sel=new Set(['g4']);renderDest();renderSummary();openPreflight()`);
+for (let i = 0; i < 30 && !(await ev(`document.getElementById('checkDlg').open`)); i++) await sleep(300);
+await t('con bloqueo activo, la comprobación muestra el motivo exacto y la opción «Publicar de todas maneras»', async () => {
+  const r = await ev(`JSON.stringify({dis:document.getElementById('checkGo').disabled,ov:!document.getElementById('checkOverride').hidden,list:document.getElementById('checkList').textContent,btn:(document.getElementById('checkForce')||{}).textContent})`); const o = JSON.parse(r);
+  return o.dis && o.ov && /Motivo: «Estás publicando demasiado rápido/.test(o.list) && o.btn === 'Publicar de todas maneras' ? 'botón visible con el motivo' : (() => { throw new Error(r); })();
+});
+await t('«Publicar de todas maneras» pide confirmación, quita el bloqueo y permite empezar', async () => {
+  await ev(`document.getElementById('checkForce').click()`); await sleep(300);
+  if (!(await ev(`document.getElementById('confirmDlg').open&&/de todas maneras/.test(document.getElementById('cfTitle').textContent)`))) throw new Error('sin confirmación');
+  await ev(`document.getElementById('cfYes').click()`);
+  for (let i = 0; i < 30 && !(await ev(`document.getElementById('checkDlg').open`)); i++) await sleep(300);
+  const r = await ev(`JSON.stringify({lock:S.lock,go:document.getElementById('checkGo').disabled,ov:document.getElementById('checkOverride').hidden})`); const o = JSON.parse(r);
+  await ev(`document.getElementById('checkDlg').close()`);
+  return !o.lock && !o.go && o.ov ? 'bloqueo quitado; «Empezar» habilitado' : (() => { throw new Error(r); })();
+});
 await t('respeta la pausa entre grupos (no publica dos seguidos sin esperar)', async () => (await ev(`(()=>{const t=S.history.flatMap(h=>h.items).filter(i=>i.status==='done').map(i=>i.at).sort((a,b)=>a-b);for(let i=1;i<t.length;i++)if(t[i]-t[i-1]<S.settings.pause*1000)return false;return true})()`)) === true);
-await t('solo se publicó en los grupos correctos', async () => posted.length === 4 && posted.map(p => p.group).join() === `${MAIN},2000000005,2000000006,2000000002` ? posted.map(p => p.group).join(', ') : false);
+await t('solo se publicó en los grupos correctos', async () => posted.length === 5 && posted.map(p => p.group).join() === `${MAIN},2000000005,2000000006,2000000007,2000000002` ? posted.map(p => p.group).join(', ') : false);
 await t('sin errores de JavaScript en la app', async () => errors.length === 0 || (() => { throw new Error(errors.slice(0, 3).join(' | ')); })());
 
 console.log(`\n${passed} correctas, ${failed} fallidas\n`);

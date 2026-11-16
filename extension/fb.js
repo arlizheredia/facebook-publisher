@@ -29,7 +29,8 @@
     post: /^(publicar|post)$/i,
     photo: /(foto\/v[ií]deo|photo\/video)/i,
     pending: /(pendiente|pending|se est[aá] revisando|being reviewed|aprob(ar|aci[oó]n)|approv(e|al))/i,
-    block: /(demasiado r[aá]pido|going too fast|too fast|bloqueado temporalmente|bloqueo temporal|temporarily blocked|you'?re temporarily|no puedes publicar|you can'?t post|no puedes usar esta funci[oó]n|can'?t use this feature|cuenta (est[aá] )?restringida|account (is )?restricted|confirma tu identidad|confirm your identity|uso indebido de esta funci[oó]n|misusing this feature|va en contra de nuestras normas|goes against our community standards)/i
+    block: /(demasiado r[aá]pido|going too fast|too fast|bloqueado temporalmente|bloqueo temporal|temporarily blocked|you'?re temporarily|no puedes usar esta funci[oó]n|can'?t use this feature|cuenta (est[aá] )?restringida|account (is )?restricted|confirma tu identidad|confirm your identity|uso indebido de esta funci[oó]n|misusing this feature|va en contra de nuestras normas|goes against our community standards)/i,
+    groupBlock: /(no puedes publicar en este grupo|you can'?t post in this group|solo los administradores pueden publicar|only admins can post|las publicaciones est[aá]n desactivadas|posting is turned off|no puedes publicar|you can'?t post)/i
   };
   const dialogs = () => [...document.querySelectorAll('[role=dialog],[role=alertdialog]')].filter(vis);
   const textboxIn = d => [...d.querySelectorAll('[contenteditable=true][role=textbox],[contenteditable=true]')].find(vis);
@@ -42,6 +43,12 @@
       if (RX.block.test(t)) return t.slice(0, 240);
     }
     return null;
+  }
+  const BTN_LINE = /^(cerrar|close|aceptar|ok|entendido|got it|cancelar|cancel|ver m[aá]s|see more|más información|learn more|continuar|continue|listo|done|x)$/i;
+  function msgText(n) {
+    const lines = (n.innerText || '').split('\n').map(l => l.replace(/\s+/g, ' ').trim()).filter(l => l && !BTN_LINE.test(l));
+    const t = lines.join(' ').trim();
+    return t.length >= 8 ? t.slice(0, 400) : '';
   }
   function b64ToFile(f) {
     const bin = atob(f.data.replace(/^data:[^,]*,/, ''));
@@ -63,7 +70,9 @@
     await waitFor(() => document.querySelector('[role=main]'), 20000);
     await sleep(1500);
     const pre = alertText();
-    if (pre) return {ok: false, blocked: true, step: 'load', error: pre};
+    if (pre) return {ok: false, blocked: true, step: 'load', error: pre, messages: [pre]};
+    const grp = [...document.querySelectorAll('[role=dialog],[role=alertdialog],[role=alert]')].filter(vis).map(msgText).find(t => t && RX.groupBlock.test(t));
+    if (grp) return {ok: false, step: 'group', error: grp, messages: [grp]};
 
     progress('Abriendo el cuadro de publicación…');
     let d = composerDialog();
@@ -127,22 +136,28 @@
     }
 
     progress('Publicando…');
-    const existing = new Set(dialogs());
+    const existing = new Set([...document.querySelectorAll('[role=dialog],[role=alertdialog],[role=alert],[role=status]')]);
     click(btn);
-    const closed = await waitFor(() => !vis(d), 120000, 500);
-    let review = null, blockMsg = null;
-    const t0 = Date.now();
-    while (Date.now() - t0 < 5000) {
-      blockMsg = alertText(existing);
-      if (blockMsg) break;
-      for (const n of [...dialogs(), ...document.querySelectorAll('[role=alert],[role=status]')]) {
-        if (!existing.has(n) && vis(n) && RX.pending.test(fullText(n))) review = 'awaiting';
+    /* Mensajes nuevos que muestre Facebook (diálogos, alertas o avisos breves), con su texto literal */
+    const messages = [];
+    const collect = () => {
+      for (const n of document.querySelectorAll('[role=dialog],[role=alertdialog],[role=alert],[role=status]')) {
+        if (existing.has(n) || n === d || n.contains(d) || !vis(n)) continue;
+        const t = msgText(n);
+        if (t && !messages.includes(t)) messages.push(t);
       }
-      await sleep(400);
-    }
-    if (blockMsg) return {ok: false, blocked: true, step: 'publish', error: blockMsg};
-    if (!closed) return {ok: false, step: 'publish', error: 'El cuadro de publicación no se cerró: revisa la ventana de Facebook'};
-    return {ok: true, review};
+    };
+    let blockMsg = null;
+    const closed = await waitFor(() => { collect(); blockMsg = messages.find(m => RX.block.test(m)) || alertText(existing); return blockMsg || !vis(d); }, 120000, 400);
+    const t0 = Date.now();
+    while (!blockMsg && Date.now() - t0 < 5000) { collect(); blockMsg = messages.find(m => RX.block.test(m)) || null; await sleep(400); }
+    if (blockMsg && !messages.includes(blockMsg)) messages.unshift(blockMsg);
+    const review = messages.some(m => RX.pending.test(m)) ? 'awaiting' : null;
+    if (blockMsg) return {ok: false, blocked: true, step: 'publish', error: blockMsg, messages};
+    const grpMsg = messages.find(m => RX.groupBlock.test(m));
+    if (grpMsg && vis(d)) return {ok: false, step: 'group', error: grpMsg, messages};
+    if (!closed || vis(d)) return {ok: false, step: 'publish', error: 'El cuadro de publicación no se cerró: revisa la ventana de Facebook', messages};
+    return {ok: true, review, messages};
   }
 
   /* Lectura de la miniatura de una publicación (solo lectura, para la vista previa) */
