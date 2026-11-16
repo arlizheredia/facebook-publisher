@@ -145,8 +145,24 @@
     return {ok: true, review};
   }
 
+  /* Lectura de la miniatura de una publicación (solo lectura, para la vista previa) */
+  function readMeta() {
+    const m = k => (document.querySelector(`meta[property="${k}"],meta[name="${k}"]`) || {}).content || '';
+    let image = m('og:image');
+    if (!image) { const v = [...document.querySelectorAll('video[poster]')].find(vis); if (v) image = v.poster; }
+    if (!image) {
+      const imgs = [...document.querySelectorAll('[role=main] img, img')].filter(i => vis(i) && /fbcdn\.net/.test(i.src) && i.naturalWidth >= 200);
+      imgs.sort((a, b) => b.naturalWidth * b.naturalHeight - a.naturalWidth * a.naturalHeight);
+      if (imgs[0]) image = imgs[0].currentSrc || imgs[0].src;
+    }
+    const title = m('og:title') || document.title.replace(/^\(\d+\)\s*/, '');
+    return {image, title};
+  }
+
   chrome.runtime.onMessage.addListener((msg, sender, send) => {
-    if (sender.id !== chrome.runtime.id || !msg || msg.cmd !== 'post') return;
+    if (sender.id !== chrome.runtime.id || !msg) return;
+    if (msg.cmd === 'meta') { send(readMeta()); return; }
+    if (msg.cmd !== 'post') return;
     if (window.__fbpBusy) { send({ok: false, step: 'ext', error: 'Publicación en curso'}); return; }
     window.__fbpBusy = true;
     post(msg.job).then(send, e => send({ok: false, step: 'script', error: String((e && e.message) || e)})).finally(() => { window.__fbpBusy = false; });

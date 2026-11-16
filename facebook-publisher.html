@@ -251,6 +251,10 @@ input[type=checkbox].cb{accent-color:var(--primary);width:18px;height:18px;margi
 .lk-shot.vid img{object-fit:contain}
 .lk-shot .play{position:absolute;width:56px;height:56px;border-radius:50%;background:rgba(0,0,0,.55);display:grid;place-items:center;color:#fff}
 .lk-shot .play .ms{font-size:36px}
+.pv-hint{display:flex;align-items:center;gap:8px;margin:0 14px 12px;padding:8px 10px;border-radius:10px;background:var(--surface-2);font-size:12px;line-height:16px;color:var(--text-2)}
+.pv-hint>.ms{font-size:18px;color:var(--text-3)}
+.pv-hint>span{flex:1}
+.pv-hint .btn{flex:none}
 .lk-loading{background:var(--surface-3)!important}
 .fb-link .lk-d{font-size:11px;color:var(--text-3);text-transform:uppercase}
 .fb-link .lk-h{font-weight:600;font-size:14px;word-break:break-all}
@@ -266,6 +270,15 @@ input[type=checkbox].cb{accent-color:var(--primary);width:18px;height:18px;margi
 .row .title{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row .meta{font-size:12px;line-height:18px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row .meta a{color:var(--text-2)}
+.hrow{min-height:56px}
+.hrow .h-acts{display:flex;align-items:center;justify-content:flex-end;gap:2px;flex-wrap:wrap}
+.hrow .h-time{width:96px;text-align:right;flex:none}
+.hrow .meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;white-space:normal}
+@media (max-width:860px){.hrow{flex-wrap:wrap;row-gap:4px}.hrow .main{flex:1 1 0;min-width:0}.hrow .h-time{width:auto}.hrow .h-acts{order:5;flex-basis:100%;justify-content:flex-start;padding-left:34px}.hrow .h-acts .btn.text:first-child{margin-left:-10px}}
+@media (max-width:720px){.card-head{flex-wrap:wrap}.card-head>div:not(.ml-auto){flex:1 1 0;min-width:0}.card-head .hlp.ml-auto{margin-left:-6px;flex-basis:100%}}
+.row .meta>.tag,.row .meta>.pill,.row .meta>span{vertical-align:middle}
+.row .meta .pill{height:18px;font-size:11px;padding:0 6px;gap:3px}
+.row .meta .pill .ms{font-size:13px}
 .row.off .title{color:var(--text-3)}
 .row label.click{display:flex;align-items:center;gap:12px;flex:1;min-width:0;cursor:pointer}
 .scroll-list{max-height:360px;overflow:auto}
@@ -273,8 +286,13 @@ input[type=checkbox].cb{accent-color:var(--primary);width:18px;height:18px;margi
 .avatar{width:36px;height:36px;border-radius:50%;background:var(--primary-container);color:var(--on-primary-container);display:grid;place-items:center;font-weight:500;font-size:13px;flex:none}
 .row.off .avatar{background:var(--surface-3);color:var(--text-3)}
 
-.publish-bar{position:sticky;bottom:16px;z-index:20;display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--surface-2);box-shadow:var(--shadow-2);border-radius:28px;padding:8px 8px 8px 24px;margin-top:8px}
-.publish-bar .sum{flex:1;min-width:200px}
+.publish-bar{position:sticky;bottom:16px;z-index:20;display:flex;align-items:center;gap:16px;background:var(--surface-2);box-shadow:var(--shadow-2);border-radius:28px;padding:10px 10px 10px 24px;margin-top:8px}
+.publish-bar .sum{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.publish-bar #pubSum{line-height:20px}
+.publish-bar #pubSum .ms{font-size:16px;vertical-align:-3px}
+.publish-bar .sum2{display:flex;align-items:center;gap:4px 12px;flex-wrap:wrap}
+.publish-bar .sum2 .btn.text{height:32px;padding:0 10px;margin-left:-4px}
+.publish-bar #startBtn{flex:none}
 .publish-bar .sum b{font-weight:500}
 
 /* Banners */
@@ -326,7 +344,7 @@ input[type=checkbox].cb{accent-color:var(--primary);width:18px;height:18px;margi
 .acct-pop .row2{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px}
 .pace{display:inline-flex;align-items:center;gap:6px;color:var(--text-2);font-size:13px;font-weight:500}
 .pace .ms{font-size:18px}
-.pace select{height:36px;border-radius:18px;border:1px solid var(--outline);background:var(--surface);color:var(--text);padding:0 10px;font:500 13px var(--font);cursor:pointer}
+.pace select{height:32px;border-radius:16px;border:1px solid var(--outline);background:var(--surface);color:var(--text);padding:0 10px;font:500 13px var(--font);cursor:pointer}
 @media (max-width:720px){.fb-acct .nm{display:none}.fb-acct{padding:0 4px}}
 .empty-actions{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap}
 .empty.compact{padding:24px 16px}
@@ -367,6 +385,10 @@ dialog[open]{animation:dlg .2s cubic-bezier(.2,0,0,1)}
 dialog .input,dialog .textarea{background:var(--surface)}
 .dlg-h{padding:24px 24px 8px;display:flex;align-items:center;gap:8px}
 .dlg-h h2{font-size:24px;line-height:32px;margin:0;flex:1}
+.panic-line{margin:12px 0 0;line-height:20px}
+.panic-line .hlp{margin:4px 0 0 -6px}
+#cfTitle{display:flex;gap:12px;align-items:flex-start}
+#cfTitle .ms{flex:none;margin-top:4px}
 .dlg-b{padding:8px 24px;overflow:auto;max-height:calc(100vh - 220px);max-height:calc(100dvh - 200px)}
 .dlg-f{padding:16px 24px 24px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 .set-row{display:flex;gap:16px;align-items:center;padding:14px 0;border-bottom:1px solid var(--outline-2)}
@@ -504,8 +526,8 @@ details.adv[open] summary .ms{transform:rotate(180deg)}
   .run-body{grid-template-columns:1fr}
   .run-queue{display:none}
   .run-main{padding:20px}
-  .publish-bar{border-radius:20px;padding:12px 16px;bottom:92px}
-  .publish-bar .btn{width:100%}
+  .publish-bar{border-radius:20px;padding:12px 16px;bottom:92px;flex-direction:column;align-items:stretch;gap:10px}
+  .publish-bar #startBtn{width:100%}
   .help-hero{padding:20px;border-radius:20px}
   .help-search{flex:1 1 100%}
   .card{padding:16px}
@@ -645,10 +667,14 @@ details.adv[open] summary .ms{transform:rotate(180deg)}
           </div>
 
           <div class="publish-bar">
-            <div class="sum" id="pubSum"></div>
-            <label class="pace" title="Tiempo de espera entre un grupo y el siguiente. Más tiempo = menos riesgo para tu cuenta."><span class="ms" aria-hidden="true">timer</span><span class="hide-sm">Pausa</span>
-              <select id="paceSel" aria-label="Pausa entre grupos"></select></label>
-            <button class="btn text" id="autoChip"></button>
+            <div class="sum">
+              <div id="pubSum"></div>
+              <div class="sum2">
+                <label class="pace" title="Tiempo de espera entre un grupo y el siguiente. Más tiempo = menos riesgo para tu cuenta."><span class="ms" aria-hidden="true">timer</span>Pausa
+                  <select id="paceSel" aria-label="Pausa entre grupos"></select></label>
+                <button class="btn text sm" id="autoChip"></button>
+              </div>
+            </div>
             <button class="btn filled lg" id="startBtn"><span class="ms" aria-hidden="true">play_arrow</span>Iniciar publicación asistida</button>
           </div>
         </div>
@@ -986,7 +1012,7 @@ function confirmBox(title,text,okLabel='Aceptar',danger=false){
 }
 /* Mensaje de error con una acción opcional. Devuelve 'ok' o 'cancel'. */
 function alertBox(icon,title,text,{ok='Entendido',cancel=null}={}){
-  return new Promise(res=>{const d=$('#confirmDlg');$('#cfTitle').innerHTML=`<span class="ms" aria-hidden="true" style="color:var(--error);vertical-align:-5px;margin-right:10px">${esc(icon)}</span>${esc(title)}`;$('#cfText').textContent=text;
+  return new Promise(res=>{const d=$('#confirmDlg');$('#cfTitle').innerHTML=`<span class="ms" aria-hidden="true" style="color:var(--error)">${esc(icon)}</span><span>${esc(title)}</span>`;$('#cfText').textContent=text;
     const y=$('#cfYes'),n=$('#cfNo');y.textContent=ok;y.style.background='';y.style.color='';n.hidden=!cancel;n.textContent=cancel||'';
     const done=v=>{d.close();res(v)};y.onclick=()=>done('ok');n.onclick=()=>done('cancel');d.oncancel=()=>res('cancel');d.showModal()})
 }
@@ -1253,12 +1279,20 @@ const loadPreview=debounce(async()=>{
   const r=srcInfo();
   if(!r.url||!Ext.ready||verLt(Ext.version,MIN_EXT)||!navigator.onLine){if(Prev.url!==null){Prev.url=null;Prev.data=null;Prev.loading=false;renderPreview()}return}
   if(Prev.url===r.url)return;
-  Prev.url=r.url;Prev.data=null;Prev.loading=true;renderPreview();
+  Prev.url=r.url;Prev.data=null;Prev.failed=false;Prev.loading=true;renderPreview();
   let d=null;try{d=JSON.parse(sessionStorage.getItem('fbp.pv:'+r.url)||'null')}catch(e){}
   if(!d)d=await Ext.call('preview',{url:r.url},30000);
   if(Prev.url!==r.url)return;Prev.loading=false;
-  if(d&&d.ok){Prev.data={title:str(d.title,200),description:str(d.description,300),image:okImg(d.image)};try{sessionStorage.setItem('fbp.pv:'+r.url,JSON.stringify({ok:true,...Prev.data}))}catch(e){}}
+  if(d&&d.ok){Prev.data={title:str(d.title,200),description:str(d.description,300),image:okImg(d.image)};if(Prev.data.image){try{sessionStorage.setItem('fbp.pv:'+r.url,JSON.stringify({ok:true,...Prev.data}))}catch(e){}}else Prev.failed=true}else Prev.failed=true;
   renderPreview()},700);
+function pvHint(pvd){
+  if(pvd&&pvd.image||Prev.loading)return '';
+  const box=(t,btn)=>`<div class="pv-hint">${ic('image_not_supported')}<span>${t}</span>${btn}</div>`;
+  if(!Ext.ready)return box('Instala la extensión para ver aquí la miniatura real de la publicación.',`<button class="btn tonal sm" data-pvact="install">Instalar</button>`);
+  if(verLt(Ext.version,MIN_EXT))return box(`Tu extensión (v${esc(Ext.version)}) no muestra miniaturas. Actualízala a la v${MIN_EXT}.`,`<button class="btn tonal sm" data-pvact="install">Actualizar</button>`);
+  if(Prev.failed)return box('No se pudo obtener la miniatura. Puede que la publicación no sea pública o que hayas cerrado sesión en Facebook.',`<button class="btn text sm" data-pvact="retry">Reintentar</button>`);
+  return '';
+}
 function renderPreview(){
   const sel=selectedGroups();const g=sel[0];const r=srcInfo();
   const t=finalText(g);const pv=$('#pvGroup');pv.hidden=!g;if(g)pv.textContent='En: '+(g.name.length>22?g.name.slice(0,21)+'…':g.name);
@@ -1268,7 +1302,7 @@ function renderPreview(){
   const shot=pvd&&pvd.image?`<div class="lk-shot ${isVid?'vid':''}"><img src="${esc(pvd.image)}" alt="Miniatura de la publicación">${isVid?`<span class="play">${ic('play_arrow')}</span>`:''}</div>`
     :Prev.loading&&Prev.url===r.url?`<div class="lk-img lk-loading"><span class="spin"></span></div>`:`<div class="lk-img">${ic(isVid?'smart_display':'globe')}</div>`;
   const linkHtml=(!n&&r.url)?`<div class="fb-link">${shot}<div class="lk-t"><div class="lk-d">${esc(r.host||'facebook.com')} · ${esc(r.kind)}</div><div class="lk-h">${esc(pvd&&pvd.title||r.kind+' de Facebook')}</div>${pvd&&pvd.description?`<div class="lk-s">${esc(pvd.description)}</div>`:''}</div></div>
-    ${!pvd&&!Prev.loading&&!Ext.ready?`<div class="hint" style="margin:0 14px 10px">${ic('info')}Con la extensión instalada verás aquí la miniatura real de la publicación.</div>`:''}`:'';
+    ${pvHint(pvd)}`:'';
   $('#preview').innerHTML=`<div class="fb-post"><div class="ph"><div class="av">Tú</div><div><div class="who">Tu nombre${g?` <span style="font-weight:400;color:var(--text-3)">▸</span> ${esc(g.name)}`:''}</div><div class="when">Ahora · ${ic('group')}</div></div></div>
     <div class="body">${t.trim()?linkify(t):'<span class="ph-empty">Tu texto aparecerá aquí…</span>'}</div>${mediaHtml}${linkHtml}
     <div class="fb-actions"><span>👍 Me gusta</span><span>💬 Comentar</span><span>↗ Compartir</span></div></div>`;
@@ -1549,7 +1583,7 @@ window.addEventListener('online',()=>{renderNet();snack('Conexión recuperada');
 const offlineError=()=>alertBox('wifi_off','Sin conexión a Internet','Comprueba tu conexión (wifi, cable o datos) y vuelve a intentarlo. No se ha publicado nada y tu trabajo está guardado.');
 /* ---------- Cuenta de Facebook detectada (vía extensión) ---------- */
 const Fb={state:'unknown',id:'',name:'',avatar:null,url:null,at:0};
-const MIN_EXT='1.2.0';
+const MIN_EXT='1.3.0';
 const verLt=(a,b)=>{const x=String(a||'0').split('.').map(Number),y=b.split('.').map(Number);for(let i=0;i<3;i++){if((x[i]||0)!==(y[i]||0))return (x[i]||0)<(y[i]||0)}return false};
 let fbChecking=null;
 async function checkFb(force){
@@ -1613,6 +1647,9 @@ function renderWizard(){const dl=(()=>{try{return sessionStorage.getItem('fbp.wz
   $('#wzReload').hidden=Ext.ready;$('#wzAck').disabled=!Ext.ready;$('#wzOn').disabled=!(Ext.ready&&$('#wzAck').checked);
   if(S.settings.autoMode&&Ext.ready){$('#wzOn').innerHTML=`${ic('toggle_off')}Desactivar`;$('#wzOn').disabled=false;$('#wzAck').checked=true}else $('#wzOn').innerHTML=`${ic('bolt')}Activar`}
 $('#autoChip').onclick=()=>openAutoWizard();
+$('#preview').addEventListener('click',e=>{const b=e.target.closest('[data-pvact]');if(!b)return;
+  if(b.dataset.pvact==='install')openAutoWizard();
+  if(b.dataset.pvact==='retry'){try{sessionStorage.removeItem('fbp.pv:'+Prev.url)}catch(_){}Prev.url=null;loadPreview()}});
 $('#wzDl').addEventListener('click',()=>{try{sessionStorage.setItem('fbp.wzdl','1')}catch(e){}setTimeout(renderWizard,300)});
 $('#wzCopy').onclick=async()=>{snack(await copyText('chrome://extensions')?'Copiado: pégalo en una pestaña nueva':'Escribe chrome://extensions en una pestaña nueva')};
 $('#wzAck').onchange=renderWizard;
@@ -1856,7 +1893,7 @@ function renderRun(){
       ${grpApproval(it.gid)?`<p class="small" style="margin:-4px 0 10px;color:var(--primary)">${ic('pending','sm')} Este grupo suele requerir aprobación.</p>`:''}
       <div class="acts"><button class="btn ${grpApproval(it.gid)?'outlined':'success'}" id="rDone">${ic('check')}Publicado <kbd>P</kbd></button><button class="btn ${grpApproval(it.gid)?'success':'tonal'}" id="rReview">${ic('pending')}Enviado a aprobación <kbd>A</kbd></button><button class="btn outlined" id="rSkip">${ic('skip')}Omitir <kbd>S</kbd></button>
       <a class="hlp" href="#ayuda/asistente" data-help="asistente">${ic('help')}Ayuda</a></div>
-      <p class="small muted" style="margin:12px 0 0">¿Facebook te muestra «Has publicado demasiado rápido», un control de seguridad o una restricción? <button class="hlp" id="rPanic" style="color:var(--error)">${ic('report')}Detener y proteger mi cuenta</button></p></div></div></div>
+      <p class="small muted panic-line">¿Facebook te muestra «Has publicado demasiado rápido», un control de seguridad o una restricción?<br><button class="hlp" id="rPanic" style="color:var(--error)">${ic('report')}Detener y proteger mi cuenta</button></p></div></div></div>
     ${R.entry.mediaCount>0&&!S.media.length?`<div class="note">${ic('info')}<div>Esta publicación tenía ${R.entry.mediaCount} archivo(s) que ya no están en el formulario. Vuelve a añadirlos en «Publicar» si los necesitas.</div></div>`:''}`;
   $('#rOpen').onclick=stepOpen;$('#rCopy').onclick=async()=>{snack(await copyText(txt)?'Texto copiado':'No se pudo copiar')};
   $('#rDone').onclick=()=>mark('done');$('#rReview').onclick=()=>mark('done','awaiting');$('#rSkip').onclick=()=>mark('skipped');$('#rPanic').onclick=panicStop;
@@ -1953,15 +1990,18 @@ function renderHistory(){
   if(!S.history.length){box.innerHTML=`<div class="card empty"><div class="ill">${ic('history')}</div><h3>Aún no hay actividad</h3><p>Cuando inicies una publicación asistida aparecerá aquí, con el estado de cada grupo.</p><button class="btn filled" data-nav="publicar">${ic('send')}Ir a Publicar</button></div>`;return}
   const aw=awaitingItems();
   const panel=aw.length?`<div class="card filled"><div class="card-head" style="margin-bottom:8px">${ic('pending')}<div><h2>Pendientes de aprobación (${aw.length})</h2><div class="sub">Comprueba en cada grupo (menú «Tu contenido») si los administradores las aprobaron.</div></div><a class="hlp ml-auto" href="#ayuda/no-aparece" data-help="no-aparece">${ic('help')}¿Por qué no aparece?</a></div>
-    <div class="list">${aw.map(({h,i})=>`<div class="row" style="flex-wrap:wrap"><span class="avatar" aria-hidden="true">${esc(initials(i.name))}</span><div class="main" style="min-width:160px"><div class="title">${esc(i.name)}</div><div class="meta">Enviada ${esc(ago(i.at))} · ${esc(((h.text||'').trim().split('\n')[0]||h.url||'').slice(0,60))}</div></div>
-      <button class="btn text sm" data-vf="${h.id}" data-i="${h.items.indexOf(i)}">${ic('fact_check')}Verificar</button>${reviewBtns(h.id,h.items.indexOf(i))}</div>`).join('')}</div></div>`:'';
+    <div class="list">${aw.map(({h,i})=>`<div class="row hrow"><span class="avatar" aria-hidden="true">${esc(initials(i.name))}</span><div class="main"><div class="title">${esc(i.name)}</div><div class="meta">Enviada ${esc(ago(i.at))} · ${esc(((h.text||'').trim().split('\n')[0]||h.url||'').slice(0,60))}</div></div>
+      <div class="h-acts"><button class="btn text sm" data-vf="${h.id}" data-i="${h.items.indexOf(i)}">${ic('fact_check')}Verificar</button>${reviewBtns(h.id,h.items.indexOf(i))}</div></div>`).join('')}</div></div>`:'';
   box.innerHTML=panel+S.history.map(h=>{const a=h.items.filter(i=>i.review==='awaiting').length,d=h.items.filter(i=>i.status==='done').length,s=h.items.filter(i=>i.status==='skipped').length,p=h.items.length-d-s;
     const title=(h.text||'').trim().split('\n')[0]||h.url||'Publicación sin texto';
     return `<details class="hist"><summary><div class="main"><div class="title">${esc(title.slice(0,90))}</div><div class="small muted">${esc(fmtDate(h.date))} · ${h.items.length} grupo(s)${h.url?' · '+esc(parseFbUrl(h.url).kind||''):''}</div></div>
       <span class="pill ok">${d-a} publicados</span>${a?`<span class="pill info">${a} en aprobación</span>`:''}${s?`<span class="pill">${s} omitidos</span>`:''}${p?`<span class="pill warn">${p} pendientes</span>`:''}
       <div class="prog hide-sm" aria-hidden="true"><i style="width:${(d+s)/h.items.length*100}%"></i></div>${ic('chevron','exp')}</summary>
       <div class="det">${h.url?`<p class="inl" style="margin:0 0 10px;word-break:break-all">${ic('link')}<a href="${esc(h.url)}" target="_blank" rel="noopener">${esc(h.url)}</a></p>`:''}${h.text?`<pre>${esc(h.text)}</pre>`:''}
-        <div class="list" style="margin-bottom:12px">${h.items.map((i,ix)=>`<div class="row" style="min-height:44px;flex-wrap:wrap"><span class="dot ${i.status}">${i.status==='done'?ic(i.review==='awaiting'?'pending':i.review==='rejected'?'block':'check'):i.status==='skipped'?ic('close'):''}</span><div class="main" style="min-width:140px"><div class="title">${esc(i.name)}</div></div>${reviewPill(i)}${verifyPill(i)}${i.review==='awaiting'?reviewBtns(h.id,ix):''}${i.status==='done'?`<button class="btn text sm" data-vf="${h.id}" data-i="${ix}">${ic('fact_check')}Verificar</button><button class="btn text sm" data-unpub="${h.id}" data-i="${ix}" title="Corrige el registro si en realidad no se publicó">${ic('undo')}No se publicó</button>`:''}<span class="small muted">${i.at?esc(ago(i.at)):'Pendiente'}</span><a class="icon-btn sm" href="${esc(i.url)}" target="_blank" rel="noopener" aria-label="Abrir grupo">${ic('open')}</a></div>`).join('')}</div>
+        <div class="list" style="margin-bottom:12px">${h.items.map((i,ix)=>`<div class="row hrow"><span class="dot ${i.status}">${i.status==='done'?ic(i.review==='awaiting'?'pending':i.review==='rejected'?'block':'check'):i.status==='skipped'?ic('close'):''}</span>
+  <div class="main"><div class="title">${esc(i.name)}</div><div class="meta">${i.status==='done'?(reviewPill(i)||'<span>Publicado</span>')+verifyPill(i):i.status==='skipped'?`<span title="${esc(i.error||'')}">Omitido${i.error?' · '+esc(i.error):''}</span>`:'<span>Por hacer</span>'}</div></div>
+  <div class="h-acts">${i.review==='awaiting'?reviewBtns(h.id,ix):''}${i.status==='done'?`<button class="btn text sm" data-vf="${h.id}" data-i="${ix}">${ic('fact_check')}Verificar</button><button class="btn text sm" data-unpub="${h.id}" data-i="${ix}" title="Corrige el registro si en realidad no se publicó">${ic('undo')}No se publicó</button>`:''}</div>
+  <span class="h-time small muted">${i.at?esc(ago(i.at)):'—'}</span><a class="icon-btn sm" href="${esc(i.url)}" target="_blank" rel="noopener" aria-label="Abrir grupo" title="Abrir grupo">${ic('open')}</a></div>`).join('')}</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">${p?`<button class="btn filled" data-hres="${h.id}">${ic('play')}Reanudar (${p})</button>`:''}
           <button class="btn outlined" data-hreuse="${h.id}">${ic('refresh')}Reutilizar contenido</button><button class="btn text danger" data-hdel="${h.id}">${ic('delete')}Eliminar</button></div></div></details>`}).join('');
 }

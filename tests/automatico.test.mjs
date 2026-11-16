@@ -10,6 +10,8 @@
  * Requisitos: Node 18+ y Chrome 126+ (CHROME=/ruta si no está en el PATH).
  */
 import {spawn, execSync} from 'node:child_process';
+import {createRequire} from 'node:module';
+const require = createRequire(import.meta.url);
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -86,10 +88,18 @@ if(c)c.addEventListener('click',()=>{
 }
 const PNG = fs.readFileSync(path.join(ROOT, 'extension', 'icon128.png'));
 const USER = {id: '100012345678', name: 'Ana Pérez'};
+/* PNG de 300×300 para el plan B de la miniatura (imagen ya cargada en la página) */
+const BIG = (() => { const zlib = require('node:zlib'); const n = 300, row = Buffer.alloc(1 + n * 4); for (let x = 0; x < n; x++) row.set([232, 113, 10, 255], 1 + x * 4);
+  const raw = Buffer.concat(Array.from({length: n}, () => row)); const crc = b => { let c, t = []; for (let i = 0; i < 256; i++) { c = i; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[i] = c >>> 0; } let r = 0xffffffff; for (const x of b) r = t[(r ^ x) & 255] ^ (r >>> 8); return (r ^ 0xffffffff) >>> 0; };
+  const chunk = (ty, d) => { const l = Buffer.alloc(4); l.writeUInt32BE(d.length); const td = Buffer.concat([Buffer.from(ty), d]); const c = Buffer.alloc(4); c.writeUInt32BE(crc(td)); return Buffer.concat([l, td, c]); };
+  const ih = Buffer.alloc(13); ih.writeUInt32BE(n, 0); ih.writeUInt32BE(n, 4); ih.set([8, 6, 0, 0, 0], 8);
+  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ih), chunk('IDAT', zlib.deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]); })();
 function fulfill(sessionId, ev) {
   const u = ev.request.url; let body = '', type = 'text/html; charset=utf-8', code = 200;
   if (u.startsWith(APP_URL)) body = appHtml;
   else if (/^https:\/\/www\.facebook\.com\/me(\?|$)/.test(u)) body = `<html><head><title>(3) ${USER.name} | Facebook</title><meta property="og:image" content="https://scontent.test.fbcdn.net/avatar.png"></head><body></body></html>`;
+  else if (/\/reel\/999/.test(u)) body = '<html><head><title>Otro reel | Facebook</title></head><body><div role="main"><img src="https://scontent.test.fbcdn.net/big.png" width="300" height="300"></div></body></html>';
+  else if (/big\.png/.test(u)) { body = BIG; type = 'image/png'; }
   else if (/\/reel\//.test(u)) body = '<html><head><title>Reel | Facebook</title><meta property="og:title" content="Reel de prueba · Ofertas de la semana"><meta property="og:description" content="Descripción del reel de prueba"><meta property="og:image" content="https://scontent.test.fbcdn.net/reel.png"></head><body></body></html>';
   else if (/favicon\.ico|fbcdn\.net/.test(u)) { body = PNG; type = 'image/png'; }
   else if (u.includes('/__fbp_test_posted')) { posted.push(JSON.parse(ev.request.postData || '{}')); body = 'ok'; type = 'text/plain'; }
@@ -176,6 +186,10 @@ if (process.env.FBP_SHOTS) {
   const s2 = await send('Page.captureScreenshot', {format: 'png'}, app);
   fs.writeFileSync(path.join(process.env.FBP_SHOTS, 'auto-cuenta.png'), Buffer.from(s2.result.data, 'base64')); await ev(`closePop()`);
 }
+await t('si Facebook no da la miniatura directamente, la obtiene abriendo la publicación en segundo plano', async () => {
+  const r = await ev(`Ext.call('preview',{url:'https://www.facebook.com/reel/999'},40000).then(r=>JSON.stringify({ok:r.ok,img:!!r.image,title:r.title}))`);
+  const o = JSON.parse(r); return o.ok && o.img ? `miniatura obtenida («${o.title}»)` : (() => { throw new Error(r); })();
+});
 console.log('   (la vista previa con miniatura solo aparece sin archivos adjuntos; se adjunta la imagen después)');
 await ev(`(async()=>{const c=document.createElement('canvas');c.width=60;c.height=60;const x=c.getContext('2d');x.fillStyle='#1877f2';x.fillRect(0,0,60,60);
   const b=await new Promise(r=>c.toBlob(r,'image/png'));addFiles([new File([b],'oferta.png',{type:'image/png'})])})()`);

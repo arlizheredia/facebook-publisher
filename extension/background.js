@@ -61,11 +61,33 @@ async function preview(url) {
   const html = (await r.text()).slice(0, 3e6);
   const title = meta(html, 'og:title') || ent((html.match(/<title[^>]*>([^<]{1,300})<\/title>/i) || [])[1] || '');
   const description = meta(html, 'og:description');
-  let image = null;
+  let image = null, t2 = '';
   const og = meta(html, 'og:image');
   if (og) { try { image = await imgData(og, 1500000); } catch {} }
+  if (!image) {
+    /* Plan B: abrir la publicación en una pestaña en segundo plano y leer la imagen ya cargada */
+    const got = await readInTab(url);
+    if (got && got.image) { try { image = await imgData(got.image, 1500000); } catch {} }
+    if (got && got.title) t2 = got.title;
+  }
   const clean = t => t.replace(/\s*[|\-–]\s*Facebook\s*$/i, '').trim();
-  return {ok: !!(title || image), title: clean(title).slice(0, 200), description: description.slice(0, 300), image};
+  return {ok: !!(title || t2 || image), title: clean(title || t2).slice(0, 200), description: description.slice(0, 300), image};
+}
+async function readInTab(url) {
+  let tab;
+  try {
+    tab = await chrome.tabs.create({url, active: false});
+    await new Promise(res => {
+      const t = setTimeout(() => { chrome.tabs.onUpdated.removeListener(l); res(); }, 25000);
+      const l = (id, info) => { if (id === tab.id && info.status === 'complete') { clearTimeout(t); chrome.tabs.onUpdated.removeListener(l); res(); } };
+      chrome.tabs.onUpdated.addListener(l);
+    });
+    for (let i = 0; i < 16; i++) {
+      try { const r = await chrome.tabs.sendMessage(tab.id, {cmd: 'meta'}); if (r && (r.image || i > 10)) return r; } catch {}
+      await sleep(700);
+    }
+    return null;
+  } catch { return null; } finally { if (tab) chrome.tabs.remove(tab.id).catch(() => {}); }
 }
 async function whoAmI(id) {
   if (who.id === id && who.data && Date.now() - who.at < 10 * 60e3) return who.data;
