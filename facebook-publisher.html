@@ -290,6 +290,7 @@ input[type=checkbox].cb{accent-color:var(--primary);width:18px;height:18px;margi
 .empty .ill .ms{font-size:56px}
 .empty h3{color:var(--text);font-size:22px;line-height:28px;margin:0 0 8px}
 .empty p{max-width:440px;margin:0 auto 24px}
+.empty-actions{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap}
 .empty.compact{padding:24px 16px}
 .empty.compact .ill{width:88px;height:88px;margin-bottom:16px}
 .empty.compact .ill .ms{font-size:40px}
@@ -1201,7 +1202,7 @@ const hhmm=ts=>new Date(ts).toLocaleString('es',{weekday:new Date(ts).toDateStri
 function allTags(list){return [...new Set((list||S.groups).flatMap(g=>g.tags||[]))].sort((a,b)=>a.localeCompare(b,'es'))}
 function renderDest(){
   ensureSel();const act=activeGroups(),box=$('#destBox');
-  if(!S.groups.length){box.innerHTML=`<div class="empty compact"><div class="ill">${ic('group')}</div><h3>Aún no has añadido grupos</h3><p>Añádelos uno a uno o captúralos todos desde Facebook con el marcador.</p><button class="btn filled" data-nav="grupos">${ic('add')}Añadir grupos</button> <button class="btn text" data-help="marcador">Cómo capturarlos</button></div>`;return}
+  if(!S.groups.length){box.innerHTML=`<div class="empty compact"><div class="ill">${ic('group')}</div><h3>Aún no has añadido grupos</h3><p>Añádelos uno a uno o captúralos todos desde Facebook con el marcador.</p><div class="empty-actions"><button class="btn filled" data-nav="grupos">${ic('add')}Añadir grupos</button><button class="btn text" data-help="marcador">${ic('help')}Cómo capturarlos</button></div></div>`;return}
   if(!act.length){box.innerHTML=`<div class="empty compact"><div class="ill">${ic('group')}</div><h3>No hay grupos activos</h3><p>Tienes ${S.groups.length} grupo(s), pero todos están desactivados.</p><button class="btn tonal" data-nav="grupos">Gestionar grupos</button></div>`;return}
   const tags=allTags(act);const nSel=S.sel.size;const avail=act.filter(g=>!isRecent(g));
   $('#destSub').textContent=`${nSel} de ${act.length} grupos activos seleccionados`;
@@ -1273,7 +1274,7 @@ function renderGroups(){
   [...S.gChecked].forEach(id=>{if(!S.groups.some(g=>g.id===id))S.gChecked.delete(id)});
   $('#bulk').classList.toggle('show',S.gChecked.size>0);$('#bulkCount').textContent=`${S.gChecked.size} seleccionado${S.gChecked.size>1?'s':''}`;
   if(!S.groups.length){box.innerHTML=`<div class="card empty"><div class="ill">${ic('group')}</div><h3>Tu lista de grupos está vacía</h3><p>Añade los grupos de Facebook en los que participas para poder compartir en ellos.</p>
-    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn filled" onclick="openGroupDlg()">${ic('add')}Añadir grupo</button><button class="btn outlined" onclick="openImport()">${ic('upload')}Importar</button><button class="btn text" data-help="marcador">Usar el marcador</button></div></div>`;return}
+    <div class="empty-actions"><button class="btn filled" onclick="openGroupDlg()">${ic('add')}Añadir grupo</button><button class="btn outlined" onclick="openImport()">${ic('upload')}Importar</button><button class="btn text" data-help="marcador">Usar el marcador</button></div></div>`;return}
   if(!list.length){box.innerHTML=`<div class="card empty"><h3>Sin resultados</h3><p>Ningún grupo coincide con la búsqueda o el filtro.</p></div>`;return}
   const allChecked=list.every(g=>S.gChecked.has(g.id));
   box.innerHTML=`<div class="list" style="background:var(--surface)"><div class="list-head"><input type="checkbox" class="cb" id="gAll" ${allChecked?'checked':''} aria-label="Seleccionar todos"><span style="flex:1">${list.length} grupo${list.length>1?'s':''} · ${S.groups.filter(g=>g.active).length} activos</span><span style="width:110px" class="hide-sm">Último uso</span><span style="width:52px">Activo</span><span style="width:72px"></span></div>
