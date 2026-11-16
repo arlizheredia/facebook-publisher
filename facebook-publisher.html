@@ -877,12 +877,10 @@ details.adv[open] summary .ms{transform:rotate(180deg)}
     <div class="set-row"><div class="main"><div class="t">Cómo abrir cada grupo</div><div class="d">Solo en el modo asistido (manual). <a href="#" data-help="modos-apertura">¿Qué opción elijo?</a></div></div>
       <select class="input" id="setMode" style="width:220px;height:40px"><option value="side">Ventana lateral</option><option value="tab">Pestaña nueva</option><option value="share">Diálogo «Compartir» de Facebook</option></select></div>
     <div class="set-row" style="border:0;padding-bottom:0"><div class="main"><div class="t" style="color:var(--primary);display:flex;align-items:center;gap:8px"><span class="ms" aria-hidden="true">verified_user</span>Protección de la cuenta</div><div class="d">Límites que reducen el riesgo de bloqueos. Puedes hacerlos más estrictos, pero no desactivarlos. <a href="#" data-help="buenas-practicas">Más información</a></div></div></div>
-    <div class="set-row"><div class="main"><div class="t">Pausa entre grupos</div><div class="d">Segundos tras cada publicación (mínimo 30, recomendado 60 o más).</div></div>
-      <input class="input" id="setPause" type="number" min="30" max="900" step="5" style="width:100px;height:40px"></div>
-    <div class="set-row"><div class="main"><div class="t">Máximo por hora</div><div class="d">Grupos en los que publicar en una hora (1–15, recomendado 8).</div></div>
-      <input class="input" id="setHour" type="number" min="1" max="15" style="width:100px;height:40px"></div>
-    <div class="set-row"><div class="main"><div class="t">Máximo por día</div><div class="d">Grupos en 24 horas (1–40, recomendado 20). Cada grupo, como mucho una vez cada 24 h.</div></div>
-      <input class="input" id="setDay" type="number" min="1" max="40" style="width:100px;height:40px"></div>
+    <div class="set-row"><div class="main"><div class="t">Pausa entre grupos</div><div class="d">Segundos tras cada publicación (mínimo 10). Cuanto más larga, menos riesgo.</div></div>
+      <input class="input" id="setPause" type="number" min="10" max="900" step="5" style="width:100px;height:40px"></div>
+    <div class="set-row"><div class="main"><div class="t">Máximo por día</div><div class="d">Grupos en 24 horas (1–1000, por defecto 500). Cada grupo, como mucho una vez cada 24 h.</div></div>
+      <input class="input" id="setDay" type="number" min="1" max="1000" style="width:100px;height:40px"></div>
     <div class="set-row" id="lockRow" hidden><div class="main"><div class="t" style="color:var(--warn)">Bloqueo de seguridad activo</div><div class="d" id="lockTxt"></div></div>
       <button class="btn text danger" id="unlockBtn">Quitar bloqueo</button></div>
     <div class="set-row"><div class="main"><div class="t">Al terminar una publicación</div><div class="d">Qué hacer con la URL, el texto y los archivos.</div></div>
@@ -1018,12 +1016,12 @@ function download(name,data,type='application/json'){const b=data instanceof Blo
 
 /* ---------- Estado ---------- */
 /* Límites de protección de la cuenta (no se pueden desactivar) */
-const SAFE={MIN_PAUSE:30,MAX_PAUSE:900,MAX_DAY:40,MAX_HOUR:15,RECENT_H:24,LOCK_H:24};
-const DEF_SETTINGS={mode:'side',pause:30,appendUrl:true,sound:true,dayCap:20,hourCap:8,clearAfter:'ask',autoMode:false,autoTest:true,autoClose:true};
+const SAFE={MIN_PAUSE:10,MAX_PAUSE:900,MAX_DAY:1000,RECENT_H:24,LOCK_H:24};
+const DEF_SETTINGS={mode:'side',pause:30,appendUrl:true,sound:true,dayCap:500,clearAfter:'ask',autoMode:false,autoTest:true,autoClose:true};
 const clamp=(v,a,b,d)=>{v=parseInt(v);return isNaN(v)?d:Math.max(a,Math.min(b,v))};
 function cleanSettings(o){o=Object.assign({},DEF_SETTINGS,o&&typeof o==='object'?o:{});
-  return {mode:['side','tab','share'].includes(o.mode)?o.mode:'side',pause:clamp(o.pause,SAFE.MIN_PAUSE,SAFE.MAX_PAUSE,30),appendUrl:o.appendUrl!==false,sound:o.sound!==false,
-    dayCap:clamp(o.dayCap,1,SAFE.MAX_DAY,20),hourCap:clamp(o.hourCap,1,SAFE.MAX_HOUR,8),clearAfter:['ask','always','never'].includes(o.clearAfter)?o.clearAfter:'ask',autoMode:o.autoMode===true,autoTest:o.autoTest!==false,autoClose:o.autoClose!==false}}
+  return {mode:['side','tab','share'].includes(o.mode)?o.mode:'side',pause:clamp(o.pause,SAFE.MIN_PAUSE,SAFE.MAX_PAUSE,30),v:2,appendUrl:o.appendUrl!==false,sound:o.sound!==false,
+    dayCap:o.v===2?clamp(o.dayCap,1,SAFE.MAX_DAY,500):500,clearAfter:['ask','always','never'].includes(o.clearAfter)?o.clearAfter:'ask',autoMode:o.autoMode===true,autoTest:o.autoTest!==false,autoClose:o.autoClose!==false}}
 /* Los datos guardados se validan al leerlos: en github.io el almacenamiento se comparte con otras apps del mismo dominio */
 const str=(v,max)=>typeof v==='string'?v.slice(0,max):'';
 const okId=v=>typeof v==='string'&&/^[\w-]{1,40}$/.test(v)?v:null;
@@ -1691,10 +1689,10 @@ $('#fbAcct').onclick=e=>{
 window.addEventListener('focus',()=>{if(Ext.ready)checkFb(false)});
 window.addEventListener('beforeunload',e=>{if(S.run&&S.run.autoRunning&&!S.run.stop){e.preventDefault();e.returnValue=''}});
 /* ---------- Pausa entre grupos, visible en la barra de publicación ---------- */
-const PACES=[30,45,60,90,120,180,300,600,900];
+const PACES=[10,15,20,30,45,60,90,120,180,300,600,900];
 function renderPace(){const sel=$('#paceSel');if(!sel)return;const cur=S.settings.pause;const opts=[...new Set([...PACES,cur])].sort((a,b)=>a-b);
   const lbl=v=>v<60?`${v} s`:v%60?`${Math.floor(v/60)} min ${v%60} s`:`${v/60} min`;
-  sel.innerHTML=opts.map(v=>`<option value="${v}" ${v===cur?'selected':''}>${lbl(v)}${v===SAFE.MIN_PAUSE?' (mínimo)':v===60?' (recomendado)':''}</option>`).join('')}
+  sel.innerHTML=opts.map(v=>`<option value="${v}" ${v===cur?'selected':''}>${lbl(v)}${v===SAFE.MIN_PAUSE?' (mínimo)':''}</option>`).join('')}
 $('#paceSel').onchange=e=>{S.settings.pause=clamp(e.target.value,SAFE.MIN_PAUSE,SAFE.MAX_PAUSE,60);persist.settings();renderSummary();snack(`Pausa entre grupos: ${e.target.selectedOptions[0].textContent.replace(/ \(.*\)/,'')}`)};
 function renderAutoChip(){const b=$('#autoChip');if(!b)return;const st=S.settings;
   if(st.autoMode&&Ext.ready){b.innerHTML=`${ic('smart_toy')}Automático${st.autoTest?' · prueba':''}`;b.title='Publicación automática activada. Pulsa para cambiarla.'}
@@ -1823,7 +1821,6 @@ function gate(){
   const now=Date.now(),st=S.settings,u=usage();
   if(S.lock&&S.lock>now)return {ok:false,reason:'lock',until:S.lock};
   if(u.day.length>=st.dayCap)return {ok:false,reason:'day',until:u.day[u.day.length-st.dayCap]+864e5};
-  if(u.hour.length>=st.hourCap)return {ok:false,reason:'hour',until:u.hour[u.hour.length-st.hourCap]+36e5};
   if(u.last&&now<u.last+st.pause*1000)return {ok:false,reason:'pause',until:u.last+st.pause*1000,total:st.pause};
   return {ok:true};
 }
@@ -1876,7 +1873,8 @@ async function openPreflight(){
   if(left===0)add('warn','event_busy','Límite diario alcanzado',`Ya has publicado en ${u.day.length} grupos en 24 h. Puedes preparar la cola: el asistente esperará hasta ${esc(hhmm(gate().until||now))}.`);
   else if(sel.length>left)add('warn','event_busy',`Hoy solo quedan ${left} de ${st.dayCap} publicaciones`,`Has seleccionado ${sel.length} grupos. El resto quedará pendiente y podrás reanudarlo desde el Historial.`);
   else add('ok','event_available','Dentro del límite diario',`${u.day.length+sel.length} de ${st.dayCap} grupos en 24 h.`);
-  add('ok','timer','Ritmo seguro',`Pausa de ${st.pause} s entre grupos y como máximo ${st.hourCap} por hora. Tiempo estimado ≈ ${Math.ceil(sel.length*(st.pause+25)/60)} min${sel.length>st.hourCap?' más las esperas por hora':''}.`);
+  if(st.pause<30||sel.length>40)add('warn','speed','Ritmo intenso',`Pausa de ${st.pause} s entre grupos y ${sel.length} grupos en esta publicación. Un ritmo así se parece al de las cuentas de spam y aumenta el riesgo de bloqueo temporal. Tiempo estimado ≈ ${Math.ceil(sel.length*(st.pause+25)/60)} min.`);
+  else add('ok','timer','Ritmo',`Pausa de ${st.pause} s entre grupos. Tiempo estimado ≈ ${Math.ceil(sel.length*(st.pause+25)/60)} min.`);
   const recentSel=activeGroups().filter(isRecent).length;
   if(recentSel)add('info','lock_clock',`${recentSel} grupo(s) excluidos`,`Ya publicaste en ellos en las últimas ${SAFE.RECENT_H} h.`);
   if(sel.length>3&&!/\{grupo\}/i.test(text))add('warn','content_copy','Mismo texto en todos los grupos','Facebook detecta mejor el texto repetido. Añade {grupo} o un saludo propio para personalizarlo.');
@@ -1891,7 +1889,7 @@ async function openPreflight(){
   const ov=$('#checkOverride');ov.hidden=!locked;
   if(locked)ov.innerHTML=`${ic('warning')}<div style="flex:1"><b>¿Fue una falsa alarma?</b> Si has comprobado en Facebook que tu cuenta no tiene avisos ni restricciones, puedes quitar el bloqueo y publicar.</div><button class="btn outlined sm danger" id="checkForce">Publicar de todas maneras</button>`;
   if(locked)$('#checkForce').onclick=async()=>{$('#checkDlg').close();
-    if(!await confirmBox('¿Quitar el bloqueo y publicar de todas maneras?','Si Facebook te mostró de verdad un aviso, seguir publicando ahora puede provocar restricciones o el bloqueo de tu cuenta. Hazlo solo si has comprobado que fue una falsa alarma. Las pausas y los límites por hora y por día siguen activos.','Publicar de todas maneras',true)){openPreflight();return}
+    if(!await confirmBox('¿Quitar el bloqueo y publicar de todas maneras?','Si Facebook te mostró de verdad un aviso, seguir publicando ahora puede provocar restricciones o el bloqueo de tu cuenta. Hazlo solo si has comprobado que fue una falsa alarma. La pausa entre grupos y el límite diario siguen activos.','Publicar de todas maneras',true)){openPreflight();return}
     setLock(null);renderLock();snack('Bloqueo quitado');openPreflight()};
   const go=$('#checkGo');go.disabled=!!locked;go.innerHTML=`${ic('play_arrow')}Empezar (${sel.length} grupo${sel.length>1?'s':''})`;
   go.onclick=()=>{$('#checkDlg').close();startRun()};
@@ -1980,7 +1978,6 @@ function renderRun(){
   const G=gate();
   if(!G.ok){
     const MSG={pause:['Pausa de seguridad','Espaciar las publicaciones evita que Facebook las considere spam. La pausa no se puede saltar.'],
-      hour:[`Límite por hora alcanzado (${S.settings.hourCap})`,'Has publicado el máximo recomendado en la última hora. El asistente continuará automáticamente.'],
       day:[`Límite diario alcanzado (${S.settings.dayCap})`,'Has llegado al máximo de grupos en 24 horas. Puedes cerrar: tu progreso queda guardado y podrás reanudar desde el Historial.'],
       lock:['Publicación bloqueada por seguridad','Indicaste que Facebook mostró un aviso. Deja descansar la cuenta antes de continuar.']}[G.reason];
     const C=2*Math.PI*62,total=G.total||Math.max(1,(G.until-Date.now())/1000);
@@ -2096,7 +2093,7 @@ function recomputeShared(gid,url){const g=S.groups.find(x=>x.id===gid)||S.groups
   const ts=S.history.flatMap(h=>h.items.filter(i=>i.status==='done'&&i.at&&(i.gid===g.id||groupKey(i.url)===groupKey(g.url))).map(i=>i.at));
   g.lastShared=ts.length?Math.max(...ts):null;save('fbp.groups',S.groups)}
 function unpublishItem(it){it.status='skipped';it.error='Marcado como no publicado';it.review=undefined;it.verify=undefined;persist.history();recomputeShared(it.gid,it.url);renderAllGroups()}
-function confirmUnpublish(name){return confirmBox(`¿No llegaste a publicar en «${name}»?`,'Se corregirá el registro: el grupo quedará disponible y dejará de contar para los límites por hora y por día. Si en realidad sí se publicó, volver a publicar antes de 24 h puede hacer que los administradores o Facebook lo consideren spam.','No se publicó, liberar')}
+function confirmUnpublish(name){return confirmBox(`¿No llegaste a publicar en «${name}»?`,'Se corregirá el registro: el grupo quedará disponible y dejará de contar para el límite diario. Si en realidad sí se publicó, volver a publicar antes de 24 h puede hacer que los administradores o Facebook lo consideren spam.','No se publicó, liberar')}
 async function unlockGroup(gid){
   const g=S.groups.find(x=>x.id===gid);if(!g)return;
   if(!await confirmUnpublish(g.name))return;
@@ -2337,11 +2334,11 @@ $('#histBox').addEventListener('click',e=>{const cb=e.target.closest('[data-hsel
 /* ============================================================
    AJUSTES
    ============================================================ */
-function openSettings(){const s=S.settings;$('#setAuto').checked=s.autoMode;$('#setAutoTest').checked=s.autoTest;$('#setAutoClose').checked=s.autoClose;renderExt();$('#setMode').value=s.mode;$('#setPause').value=s.pause;$('#setHour').value=s.hourCap;$('#setDay').value=s.dayCap;$('#setClear').value=s.clearAfter;$('#setAppend').checked=s.appendUrl;$('#setSound').checked=s.sound;
+function openSettings(){const s=S.settings;$('#setAuto').checked=s.autoMode;$('#setAutoTest').checked=s.autoTest;$('#setAutoClose').checked=s.autoClose;renderExt();$('#setMode').value=s.mode;$('#setPause').value=s.pause;$('#setDay').value=s.dayCap;$('#setClear').value=s.clearAfter;$('#setAppend').checked=s.appendUrl;$('#setSound').checked=s.sound;
   const locked=S.lock&&S.lock>Date.now();$('#lockRow').hidden=!locked;if(locked)$('#lockTxt').textContent=`Nuevas publicaciones bloqueadas hasta ${hhmm(S.lock)}.`;applyTheme();$('#settingsDlg').showModal()}
 function numSetting(id,key,min,max){$(id).onchange=e=>{S.settings[key]=clamp(e.target.value,min,max,DEF_SETTINGS[key]);e.target.value=S.settings[key];persist.settings();renderSummary();
   if(+e.target.value!==+e.target.dataset.prev)snack('Ajuste guardado')}}
-numSetting('#setHour','hourCap',1,SAFE.MAX_HOUR);numSetting('#setDay','dayCap',1,SAFE.MAX_DAY);
+numSetting('#setDay','dayCap',1,SAFE.MAX_DAY);
 $('#setClear').onchange=e=>{S.settings.clearAfter=e.target.value;persist.settings()};
 $('#unlockBtn').onclick=async()=>{if(!await confirmBox('¿Quitar el bloqueo de seguridad?','Si Facebook te mostró un aviso, publicar de nuevo antes de 24 horas aumenta el riesgo de restricciones en tu cuenta. Hazlo solo si estás seguro de que todo está bien.','Quitar bloqueo',true))return;setLock(null);openSettings();renderLock();snack('Bloqueo quitado')};
 $('#settingsBtn').onclick=openSettings;
@@ -2352,7 +2349,7 @@ $('#setAuto').onchange=async e=>{if(e.target.checked){
 $('#setAutoTest').onchange=e=>{S.settings.autoTest=e.target.checked;persist.settings();renderSummary()};
 $('#setAutoClose').onchange=e=>{S.settings.autoClose=e.target.checked;persist.settings()};
 $('#setMode').onchange=e=>{S.settings.mode=e.target.value;persist.settings()};
-$('#setPause').onchange=e=>{const v=parseInt(e.target.value);S.settings.pause=clamp(v,SAFE.MIN_PAUSE,SAFE.MAX_PAUSE,60);e.target.value=S.settings.pause;persist.settings();renderSummary();if(v<SAFE.MIN_PAUSE)snack(`La pausa mínima es de ${SAFE.MIN_PAUSE} segundos para proteger tu cuenta`)};
+$('#setPause').onchange=e=>{const v=parseInt(e.target.value);S.settings.pause=clamp(v,SAFE.MIN_PAUSE,SAFE.MAX_PAUSE,60);e.target.value=S.settings.pause;persist.settings();renderSummary();if(v<SAFE.MIN_PAUSE)snack(`La pausa mínima es de ${SAFE.MIN_PAUSE} segundos`)};
 $('#setAppend').onchange=e=>{S.settings.appendUrl=e.target.checked;persist.settings();renderPreview()};
 $('#setSound').onchange=e=>{S.settings.sound=e.target.checked;persist.settings()};
 $('#backupOut').onclick=()=>download(`facebook-publisher-copia-${new Date().toISOString().slice(0,10)}.json`,JSON.stringify({app:'Facebook Publisher',type:'backup',version:1,date:new Date().toISOString(),groups:S.groups,templates:S.templates,settings:S.settings,history:S.history,draft:S.draft,selection:[...(S.sel||[])]},null,2));
@@ -2436,7 +2433,7 @@ H('asistente','Publicar','Publicación asistida paso a paso','asistente publicar
 <ol><li><b>Copiar y abrir</b> (<kbd>Enter</kbd>): copia el texto personalizado para ese grupo y lo abre en Facebook (en ventana lateral, pestaña o diálogo Compartir, según tus <a data-help="modos-apertura">ajustes</a>).</li>
 <li><b>Pegar y publicar:</b> en Facebook, haz clic en «Escribe algo…», pega con <kbd>Ctrl</kbd>+<kbd>V</kbd>, añade las imágenes si las hay y pulsa «Publicar».</li>
 <li><b>Confirmar:</b> vuelve a la app y pulsa <b>Publicado</b> (<kbd>P</kbd>), <b>Enviado a aprobación</b> (<kbd>A</kbd>) si Facebook indica que está pendiente de revisión, u <b>Omitir</b> (<kbd>S</kbd>). <a data-help="no-aparece">¿No aparece tu publicación?</a></li></ol>
-<p>Tras cada publicación hay una <a data-help="buenas-practicas">pausa de seguridad</a> que no se puede saltar. Si llegas al límite por hora o por día, el asistente espera o te propone continuar más tarde.</p>
+<p>Tras cada publicación hay una <a data-help="buenas-practicas">pausa de seguridad</a> que no se puede saltar. Si llegas al límite por día, el asistente espera o te propone continuar más tarde.</p>
 <h3>Continuar otro día</h3><ul><li>El progreso se guarda al momento. Si cierras el asistente o el navegador, en <b>Publicar</b> verás el aviso <b>Reanudar</b>; también puedes reanudar desde el <a data-help="historial">Historial</a>.</li><li>Haz clic en un grupo pendiente u omitido de la cola para ir a él. <kbd>C</kbd> vuelve a copiar el texto.</li></ul>
 <h3>Al terminar</h3><p>Puedes <b>vaciar el formulario</b> (URL, texto y archivos) para empezar otra publicación. Tus grupos y la selección se conservan. Elige en Ajustes si quieres que se pregunte, se vacíe siempre o se conserve.</p>
 <div class="callout warn">Si Facebook muestra cualquier aviso, pulsa <b>Detener y proteger mi cuenta</b>. <a data-help="aviso-facebook">Qué hacer</a></div>`),
@@ -2471,7 +2468,7 @@ H('historial','Historial','Historial, reanudación y aprobaciones','historial re
 <ul><li><b>Reanudar:</b> continúa por los grupos que faltan.</li><li><b>Reutilizar contenido:</b> carga el texto y la URL en Publicar.</li><li><b>Informe diario:</b> marca publicaciones y genera un resumen profesional para copiar o exportar a PDF y Word. <a data-help="informe">Más información</a></li><li>Los grupos usados cuentan para los <a data-help="buenas-practicas">límites de seguridad</a> aunque estén en aprobación.</li></ul>`),
 H('automatico','Empezar','Publicación automática (extensión)','automatico automatizar extension chrome instalar publicar solo un clic comenzar bot',`
 <p>Con la extensión <b>Facebook Publisher · Publicación automática</b>, un clic en <b>Comenzar publicación automática</b> publica en todos los grupos seleccionados el texto, las imágenes o vídeos y la URL que preparaste.</p>
-<h3>Cómo funciona</h3><ol><li>La app decide <b>cuándo</b> publicar en cada grupo, con los mismos <a data-help="buenas-practicas">límites de seguridad</a>: pausa entre grupos, máximos por hora y día y 24 h por grupo.</li><li>La extensión abre el grupo en una ventana de Chrome <b>con tu sesión</b>, pulsa «Escribe algo…», pega el texto, adjunta los archivos y pulsa <b>Publicar</b>.</li><li>Comprueba el resultado: si Facebook dice que queda <b>pendiente de aprobación</b>, lo marca así. Si muestra un <b>aviso o bloqueo</b>, se detiene todo y se bloquea 24 h.</li></ol>
+<h3>Cómo funciona</h3><ol><li>La app decide <b>cuándo</b> publicar en cada grupo, con los mismos <a data-help="buenas-practicas">límites de seguridad</a>: pausa entre grupos, máximo por día y 24 h por grupo.</li><li>La extensión abre el grupo en una ventana de Chrome <b>con tu sesión</b>, pulsa «Escribe algo…», pega el texto, adjunta los archivos y pulsa <b>Publicar</b>.</li><li>Comprueba el resultado: si Facebook dice que queda <b>pendiente de aprobación</b>, lo marca así. Si muestra un <b>aviso o bloqueo</b>, se detiene todo y se bloquea 24 h.</li></ol>
 <p>Tus credenciales nunca pasan por la app ni por la extensión: se usa la sesión que ya tienes abierta en Chrome.</p>
 <h3>Instalación (una vez)</h3><ol><li><a href="facebook-publisher-extension.zip" download>Descarga la extensión</a> y descomprime el .zip en una carpeta que no vayas a borrar.</li><li>Abre <code>chrome://extensions</code> y activa el <b>Modo de desarrollador</b> (arriba a la derecha).</li><li>Pulsa <b>Cargar descomprimida</b> y elige la carpeta.</li><li>Recarga Facebook Publisher. En <b>Ajustes</b> verás «Extensión instalada».</li><li>Activa <b>Publicar automáticamente</b>. Si abres la app como archivo local, en los detalles de la extensión activa también «Permitir acceso a URLs de archivo».</li></ol>
 <h3>Primera vez: modo prueba</h3><p>Con el <b>Modo prueba</b> (activado por defecto), la extensión prepara la publicación en el primer grupo <b>sin pulsar «Publicar»</b>. Revisa en la ventana de Facebook que el texto, las imágenes y la vista previa del enlace están bien, cierra ese cuadro sin publicar, desactiva el modo prueba en Ajustes y empieza de nuevo.</p>
@@ -2508,9 +2505,8 @@ H('buenas-practicas','Protección de la cuenta','Protección de tu cuenta de Fac
 <p>Facebook vigila los patrones típicos del spam: publicar muy rápido, en muchos grupos, el mismo texto o en el mismo grupo repetidas veces. Facebook Publisher está diseñado para que <b>tu cuenta se comporte como la de una persona</b>:</p>
 <table><tr><th>Protección</th><th>Cómo funciona</th></tr>
 <tr><td><b>Tú publicas</b></td><td>La app nunca pulsa «Publicar» ni actúa dentro de Facebook. Solo copia el texto y abre el grupo.</td></tr>
-<tr><td><b>Pausa entre grupos</b></td><td>Mínimo 30 s (60 s por defecto). No se puede saltar, ni siquiera recargando la página: se calcula a partir del Historial.</td></tr>
-<tr><td><b>Máximo por hora</b></td><td>8 grupos por defecto (hasta 15). Al llegar al límite, el asistente espera.</td></tr>
-<tr><td><b>Máximo por día</b></td><td>20 grupos en 24 h por defecto (hasta 40). El resto queda pendiente para reanudar otro día.</td></tr>
+<tr><td><b>Pausa entre grupos</b></td><td>Mínimo 10 s (30 s por defecto). No se puede saltar, ni siquiera recargando la página: se calcula a partir del Historial.</td></tr>
+<tr><td><b>Máximo por día</b></td><td>500 grupos en 24 h por defecto (hasta 1000). El resto queda pendiente para reanudar otro día.</td></tr>
 <tr><td><b>Un grupo, una vez al día</b></td><td>Los grupos donde publicaste en las últimas 24 h no se pueden seleccionar; verás a qué hora vuelven a estar disponibles.</td></tr>
 <tr><td><b>Comprobación previa</b></td><td>Antes de empezar se revisan los límites, el texto repetido, el exceso de enlaces o hashtags y las normas de los grupos.</td></tr>
 <tr><td><b>Freno de emergencia</b></td><td>Si Facebook te avisa, pulsa <b>Facebook me mostró un aviso</b>: la app se detiene y bloquea nuevas publicaciones 24 h. <a data-help="aviso-facebook">Más información</a></td></tr></table>
@@ -2524,7 +2520,7 @@ H('aviso-facebook','Protección de la cuenta','Qué hacer si Facebook muestra un
 <p>Tu progreso queda en el <a data-help="historial">Historial</a> y podrás reanudar cuando pase el bloqueo. Puedes quitar el bloqueo antes desde <b>Ajustes</b>, aunque no es recomendable.</p>`),
 H('ajustes','Ajustes','Ajustes','ajustes configuracion tema oscuro claro pausa url sonido limite hora dia vaciar',`
 <ul><li><b>Tema:</b> claro, oscuro o según el sistema (también con el botón de la barra superior).</li><li><b>Cómo abrir cada grupo:</b> ver <a data-help="modos-apertura">modos de apertura</a>.</li>
-<li><b>Protección de la cuenta:</b> pausa entre grupos (mínimo 30 s), máximo por hora (hasta 15) y por día (hasta 40). Se pueden endurecer, no desactivar. <a data-help="buenas-practicas">Más información</a></li>
+<li><b>Protección de la cuenta:</b> pausa entre grupos (mínimo 10 s) y máximo por día (hasta 1000). <a data-help="buenas-practicas">Más información</a></li>
 <li><b>Bloqueo de seguridad:</b> si está activo, aparece aquí con la opción de quitarlo.</li>
 <li><b>Al terminar una publicación:</b> preguntar, vaciar el formulario o conservarlo.</li>
 <li><b>Añadir la URL al final:</b> si el texto no incluye ya el enlace, se añade al final para que Facebook genere la vista previa.</li><li><b>Sonido</b> al terminar la pausa.</li><li><b>Copia de seguridad</b> y <b>borrar datos</b>: ver <a data-help="privacidad">Tus datos</a>.</li></ul>`),

@@ -208,9 +208,9 @@ console.log('   (la vista previa con miniatura solo aparece sin archivos adjunto
 await ev(`(async()=>{const c=document.createElement('canvas');c.width=60;c.height=60;const x=c.getContext('2d');x.fillStyle='#1877f2';x.fillRect(0,0,60,60);
   const b=await new Promise(r=>c.toBlob(r,'image/png'));addFiles([new File([b],'oferta.png',{type:'image/png'})])})()`);
 await sleep(500);
-await t('el selector de pausa está en la barra y no baja de 30 s', async () => {
+await t('el selector de pausa está en la barra y no baja de 10 s', async () => {
   const r = await ev(`(()=>{const s=document.getElementById('paceSel');const v=[...s.options].map(o=>+o.value);s.value='120';s.dispatchEvent(new Event('change'));const p=S.settings.pause;S.settings.pause=60;persist.settings();renderSummary();return JSON.stringify({min:Math.min(...v),p})})()`);
-  const o = JSON.parse(r); return o.min === 30 && o.p === 120 ? `mínimo ${o.min} s; cambio a ${o.p} s aplicado` : (() => { throw new Error(r); })();
+  const o = JSON.parse(r); return o.min === 10 && o.p === 120 ? `mínimo ${o.min} s; cambio a ${o.p} s aplicado` : (() => { throw new Error(r); })();
 });
 
 console.log('2. Errores antes de publicar');
@@ -235,6 +235,11 @@ await t('sin sesión de Facebook: mensaje de error con «Abrir Facebook»', asyn
 });
 await login(); await ev(`checkFb(true)`);
 
+await t('límites: pausa mínima 10 s, máximo diario 500 por defecto y sin límite por hora', async () => {
+  const r = await ev(`JSON.stringify({min:SAFE.MIN_PAUSE,day:cleanSettings({}).dayCap,mig:cleanSettings({dayCap:20,pause:60}).dayCap,keep:cleanSettings({v:2,dayCap:120}).dayCap,hourUI:!!document.getElementById('setHour'),p5:cleanSettings({pause:5}).pause})`);
+  const o = JSON.parse(r);
+  return o.min === 10 && o.day === 500 && o.mig === 500 && o.keep === 120 && !o.hourUI && o.p5 === 10 ? 'mínimo 10 s; 500/día (se migra desde 20); sin límite por hora' : (() => { throw new Error(r); })();
+});
 await t('el botón cambia a «Probar publicación automática»', async () => /Probar publicación automática/.test(await ev(`document.getElementById('startBtn').textContent`)));
 
 console.log('3. Modo prueba');
