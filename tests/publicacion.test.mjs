@@ -191,6 +191,53 @@ await t('el grupo bloqueado 24 h se puede liberar desde Destinos', async () => {
   if (o.recent || o.status !== 'skipped' || o.disabled || !o.checked || o.day !== 0) throw new Error(r);
   return 'grupo disponible y seleccionado; ya no cuenta para los límites';
 });
+console.log('6. Informe diario');
+await go(APP + '#historial');
+await ev(`(()=>{const n=Date.now(),t=new Date();t.setHours(9,30,0,0);const b=t.getTime();
+  S.groups=cleanGroups([{id:'r1',name:'Ventas Santiago',url:'https://www.facebook.com/groups/501/',active:true,approval:true},{id:'r2',name:'Paneles solares Cuba',url:'https://www.facebook.com/groups/502/',active:true},{id:'r3',name:'MIPYMES Oriente',url:'https://www.facebook.com/groups/503/',active:true}]);persist.groups();
+  S.history=cleanHistory([
+   {id:'e1',date:b,url:${JSON.stringify(POST_URL)},text:'¡Hola, comunidad de {grupo}! 👋 Llegaron los paneles solares de 550 W',items:[
+     {gid:'r1',name:'Ventas Santiago',url:'https://www.facebook.com/groups/501/',status:'done',at:b+60e3,review:'awaiting'},
+     {gid:'r2',name:'Paneles solares Cuba',url:'https://www.facebook.com/groups/502/',status:'done',at:b+180e3,verify:{at:b+600e3,found:true}},
+     {gid:'r3',name:'MIPYMES Oriente',url:'https://www.facebook.com/groups/503/',status:'skipped',at:b+300e3,error:'No eres miembro de este grupo [composer]'}]},
+   {id:'e2',date:b+3600e3,url:'https://www.facebook.com/page/posts/777',text:'Oferta de fin de semana en baterías de litio',items:[
+     {gid:'r2',name:'Paneles solares Cuba',url:'https://www.facebook.com/groups/502/',status:'done',at:b+3700e3}]},
+   {id:'e3',date:b-3*864e5,url:'',text:'Publicación antigua',items:[{gid:'r2',name:'Paneles solares Cuba',url:'https://www.facebook.com/groups/502/',status:'done',at:b-3*864e5}]}]);persist.history()})()`);
+let report = '';
+await t('incluye por defecto todas las publicaciones del día (y solo esas)', async () => {
+  await ev(`document.getElementById('reportBtn').click()`); await sleep(300);
+  report = await ev(`document.getElementById('rpText').value`);
+  const n = await ev(`document.querySelectorAll('#rpList [data-rp]').length`);
+  return n === 2 && !report.includes('Publicación antigua') ? '2 publicaciones de hoy' : (() => { throw new Error(n + ' ' + report.slice(0, 200)); })();
+});
+await t('redacta el resumen con cifras correctas', async () => {
+  const need = ['Informe de difusión en grupos de Facebook', 'Hoy se compartieron 2 publicaciones en 3 grupos de Facebook.', 'Dos quedaron visibles al momento y 1 está a la espera de que la aprueben los administradores.', 'Se comprobó directamente en el grupo la visibilidad de una de ellas.', 'En 1 grupo no fue posible publicar (no somos miembros del grupo).'];
+  const miss = need.filter(x => !report.includes(x));
+  if (miss.length) throw new Error('falta: ' + miss.join(' | ') + '\n' + report);
+  return report.split('\n').find(l => l.startsWith('Hoy'));
+});
+await t('detalla cada publicación con sus grupos, estado y hora', async () => /1\. Reel «Llegaron los paneles solares de 550 W»/.test(report) && /2\. Publicación «Oferta de fin de semana en baterías de litio»/.test(report) && /- Ventas Santiago: en espera de aprobación, \d\d:\d\d/.test(report) && /- Paneles solares Cuba: publicada y comprobada/.test(report) && /Grupos: 3 \(1 publicada, 1 en aprobación, 1 sin publicar\)/.test(report));
+await t('añade observaciones y próximos pasos útiles', async () => /Próximos pasos\n- Comprobar si se aprobó la publicación en «Ventas Santiago»\.\n- Solicitar acceso a «MIPYMES Oriente»\./.test(report) && /revisa las publicaciones antes de mostrarlas/.test(report));
+await t('no usa emojis ni muletillas típicas de IA', async () => !/[\p{Extended_Pictographic}]/u.test(report) && !/(en resumen|en conclusión|cabe destacar|es importante destacar|¡|como modelo)/i.test(report));
+await t('se puede filtrar desde el Historial: solo las marcadas', async () => {
+  await ev(`document.getElementById('reportDlg').close();renderHistory()`);
+  await ev(`document.querySelector('[data-hsel="e2"]').click()`); await sleep(200);
+  const lbl = await ev(`document.getElementById('reportBtnTxt').textContent`);
+  await ev(`document.getElementById('reportBtn').click()`); await sleep(300);
+  const r = await ev(`document.getElementById('rpText').value`);
+  return /1 seleccionada/.test(lbl) && /Hoy se compartió 1 publicación en 1 grupo de Facebook\. La publicación quedó visible en el grupo\./.test(r) && !/Llegaron los paneles/.test(r) ? lbl : (() => { throw new Error(lbl + ' | ' + r.slice(0, 300)); })();
+});
+await ev(`S.hsel.clear();S.rpSel=null;renderRpList();rpRegen()`);
+await ev(`document.getElementById('rpText').value+='\\n\\nNota del equipo: buen alcance en grupos de paneles.';document.getElementById('rpText').dispatchEvent(new Event('input'))`);
+await ev(`window.__dls=[];download=(n,d,t)=>window.__dls.push({n,d})`);
+await ev(`document.getElementById('rpPdf').click();document.getElementById('rpDocx').click()`); await sleep(300);
+const files = JSON.parse(await ev(`Promise.all(window.__dls.map(x=>new Promise(r=>{const f=new FileReader();f.onload=()=>r({n:x.n,b:f.result.split(',')[1]});f.readAsDataURL(x.d)}))).then(JSON.stringify)`));
+const pdf = Buffer.from(files.find(f => f.n.endsWith('.pdf')).b, 'base64'), docx = Buffer.from(files.find(f => f.n.endsWith('.docx')).b, 'base64');
+if (process.env.TEST_OUT) { fs.writeFileSync(path.join(process.env.TEST_OUT, 'informe.pdf'), pdf); fs.writeFileSync(path.join(process.env.TEST_OUT, 'informe.docx'), docx); }
+await t('exporta un PDF válido que incluye las ediciones', async () => pdf.slice(0, 5).toString() === '%PDF-' && pdf.slice(-5).toString() === '%%EOF' && pdf.toString('latin1').includes('Nota del equipo') ? `${files[0].n} (${pdf.length} B)` : false);
+await t('exporta un Word (.docx) válido que incluye las ediciones', async () => docx.slice(0, 2).toString() === 'PK' && docx.toString('utf8').includes('word/document.xml') && docx.toString('utf8').includes('Nota del equipo') ? `${files[1].n} (${docx.length} B)` : false);
+await t('copia el texto al portapapeles', async () => { await ev(`window.__clip=[];navigator.clipboard.writeText=async t=>{window.__clip.push(t)};document.getElementById('rpCopy').click()`); await sleep(200); return /Nota del equipo/.test(await ev(`window.__clip.at(-1)||''`)); });
+
 await t('sin errores de JavaScript', async () => errors.length === 0 || (() => { throw new Error(errors.join(' | ')); })());
 
 console.log(`\n${passed} correctas, ${failed} fallidas\n`);

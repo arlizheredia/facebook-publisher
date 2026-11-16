@@ -9,6 +9,7 @@ Aplicación web de un solo archivo para compartir una publicación de Facebook e
 - **Publicar:** URL de origen con limpieza de parámetros de rastreo, editor con negrita y cursiva Unicode, emojis, hashtags, variables (`{grupo}`, `{fecha}`, `{enlace}`), plantillas, imágenes, vídeo y audio (con conversión de audio a vídeo) y vista previa.
 - **Grupos:** alta, edición, borrado, activación, etiquetas, notas o normas, acciones masivas, importación y exportación, y un marcador (*bookmarklet*) que captura todos tus grupos desde Facebook.
 - **Publicación asistida:** copia el texto y abre cada grupo en una ventana lateral; tú pegas y publicas. Incluye pausas entre grupos, atajos de teclado y reanudación.
+- **Informe diario** de difusión a partir del Historial: resumen profesional editable, con copia, PDF y Word.
 - **Historial**, **Centro de Ayuda** integrado, tema claro, oscuro o del sistema, y copia de seguridad.
 
 ## Publicación automática (extensión de Chrome)

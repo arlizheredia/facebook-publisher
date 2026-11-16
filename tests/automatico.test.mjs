@@ -26,7 +26,9 @@ const GROUPS = [
   {id: 'g1', slug: MAIN, name: 'Grupo principal', mode: 'ok'},
   {id: 'g2', slug: '2000000002', name: 'Grupo con aprobación', mode: 'pending'},
   {id: 'g3', slug: '2000000003', name: 'Grupo sin ser miembro', mode: 'notmember'},
-  {id: 'g4', slug: '2000000004', name: 'Grupo con aviso', mode: 'block'}
+  {id: 'g4', slug: '2000000004', name: 'Grupo con aviso', mode: 'block'},
+  {id: 'g5', slug: '2000000005', name: 'Grupo cinco', mode: 'ok'},
+  {id: 'g6', slug: '2000000006', name: 'Grupo seis', mode: 'ok'}
 ];
 
 /* ---------- Chrome por tubería (necesario para cargar extensiones) ---------- */
@@ -144,9 +146,12 @@ await sleep(1500);
 /* Reloj acelerable: permite saltar las pausas de seguridad en el test sin tocar el código de la app */
 await ev(`(()=>{const real=Date.now.bind(Date);window.__off=0;Date.now=()=>real()+window.__off})()`);
 const fastForward = async () => ev(`(()=>{const G=gate();if(!G.ok&&G.reason!=='lock'&&G.reason!=='day'){window.__off+=G.until-Date.now()+1000;return true}return false})()`);
+const pctSeen = [], statsSeen = [];
 async function waitAuto(maxMs = 120000) {
   const t0 = Date.now();
   while (Date.now() - t0 < maxMs) {
+    const p = await ev(`(()=>{const e=document.getElementById('apPct');return e?parseInt(e.textContent):null})()`); if (p != null) pctSeen.push(p);
+    const st = await ev(`(document.getElementById('apStats')||{}).textContent||''`); if (st) statsSeen.push(st.replace(/\s+/g,' ').trim());
     await fastForward();
     if (await ev(`!S.run||!S.run.autoRunning`)) return;
     await sleep(700);
@@ -250,8 +255,44 @@ await t('publica en el grupo principal el texto personalizado con la URL', async
 });
 await t('adjunta la imagen', async () => p1 && p1.files.length === 1 && p1.files[0].name === 'oferta.png' ? `${p1.files[0].name} (${p1.files[0].size} B)` : false);
 await t('marca «Publicado» en el Historial', async () => (await ev(`S.history[0].items[0].status==='done'&&!S.history[0].items[0].review`)) === true);
+await t('muestra la carga con porcentaje mientras publica', async () => {
+  const mid = pctSeen.filter(p => p > 0 && p < 100), fin = await ev(`document.getElementById('runCount').textContent`);
+  return mid.length && /100 %/.test(fin) ? `valores vistos: ${[...new Set(pctSeen)].join(' → ')} %; final «${fin}»` : (() => { throw new Error(JSON.stringify(pctSeen) + ' ' + fin); })();
+});
+await t('muestra los grupos publicados como X / Y', async () => {
+  const u = [...new Set(statsSeen)];
+  return u.some(x => /^0\/1grupos publicados$/.test(x.replace(/ /g,'').replace('grupospublicados','grupos publicados'))) ? u.join(' → ') : (() => { throw new Error(JSON.stringify(u)); })();
+});
 await t('al terminar, cierra la ventana de Facebook', async () => { await sleep(800); const n = await fbWindows(); return n === 0 ? 'ventana cerrada' : (() => { throw new Error(n + ' ventanas abiertas'); })(); });
 await ev(`closeRun(true)`);
+
+console.log('5. Interrupción y reanudación');
+const appReady = async () => { for (let i = 0; i < 60; i++) { await sleep(250); try { if (await ev(`typeof S==='object'&&typeof Ext==='object'&&Ext.ready`)) break; } catch {} } await sleep(800);
+  await ev(`(()=>{const real=Date.now.bind(Date);window.__off=window.__off||0;Date.now=()=>real()+window.__off})()`); };
+listeners.push(m => { if (m.method === 'Page.javascriptDialogOpening') send('Page.handleJavaScriptDialog', {accept: true}, m.sessionId); });
+await fastForward();
+await ev(`S.sel=new Set(['g5','g6']);renderDest();renderSummary();openPreflight()`);
+for (let i = 0; i < 30 && !(await ev(`document.getElementById('checkDlg').open`)); i++) await sleep(300);
+await ev(`document.getElementById('checkGo').click()`);
+for (let i = 0; i < 80 && !(await ev(`S.history[0].items[0].status==='done'`)); i++) await sleep(400);
+const off = await ev(`window.__off`);
+await ev(`S.history[0].items[1].inflight=Date.now();persist.history()`);
+await send('Page.navigate', {url: APP_URL}, app); await appReady(); await ev(`window.__off=${off}`);
+await t('tras cerrar o recargar a mitad, Publicar ofrece continuar con el progreso', async () => {
+  const r = await ev(`JSON.stringify({vis:!document.getElementById('resumeBanner').hidden,txt:document.getElementById('resumeBanner').textContent})`); const o = JSON.parse(r);
+  return o.vis && /1 de 2 grupos completados \(50 %\)/.test(o.txt) && /Continuar publicación automática/.test(o.txt) ? '1 de 2 grupos completados (50 %)' : (() => { throw new Error(r); })();
+});
+await fastForward();
+await ev(`document.getElementById('resumeGo').click()`); await sleep(500);
+await t('pregunta si el grupo que se estaba enviando llegó a publicarse (evita duplicados)', async () => {
+  const r = await ev(`JSON.stringify({open:document.getElementById('confirmDlg').open,t:document.getElementById('cfTitle').textContent,no:document.getElementById('cfNo').textContent})`); const o = JSON.parse(r);
+  if (!o.open || !/llegó a publicar/.test(o.t)) throw new Error(r);
+  await ev(`document.getElementById('cfNo').click()`); return o.no;
+});
+await waitAuto(240000);
+await t('continúa automáticamente y completa los grupos que faltaban', async () => (await ev(`S.history[0].items.every(i=>i.status==='done')`)) && posted.filter(p => /^200000000[56]$/.test(p.group)).length === 2);
+await ev(`closeRun(true)`); await sleep(300);
+await t('al completarse, desaparece el aviso de publicación a medias', async () => (await ev(`load('fbp.run',null)===null&&document.getElementById('resumeBanner').hidden`)) === true);
 
 await ev(`S.sel=new Set(['g2','g3','g4']);renderDest();renderSummary();openPreflight()`);
 for (let i = 0; i < 30 && !(await ev(`document.getElementById('checkDlg').open`)); i++) await sleep(300);
@@ -263,7 +304,7 @@ await t('omite el grupo donde no es miembro y sigue', async () => items[1].s ===
 await t('ante un aviso de Facebook se detiene y bloquea 24 h', async () => items[2].s === 'pending' && (await ev(`S.lock>Date.now()`)) && /demasiado rápido/.test(await ev(`S.run.stopMsg`)));
 await t('si se detiene por un aviso, deja abierta la ventana para revisarla', async () => (await fbWindows()) === 1);
 await t('respeta la pausa entre grupos (no publica dos seguidos sin esperar)', async () => (await ev(`(()=>{const t=S.history.flatMap(h=>h.items).filter(i=>i.status==='done').map(i=>i.at).sort((a,b)=>a-b);for(let i=1;i<t.length;i++)if(t[i]-t[i-1]<S.settings.pause*1000)return false;return true})()`)) === true);
-await t('solo se publicó en los grupos correctos', async () => posted.length === 2 && posted.map(p => p.group).join() === `${MAIN},2000000002` ? posted.map(p => p.group).join(', ') : false);
+await t('solo se publicó en los grupos correctos', async () => posted.length === 4 && posted.map(p => p.group).join() === `${MAIN},2000000005,2000000006,2000000002` ? posted.map(p => p.group).join(', ') : false);
 await t('sin errores de JavaScript en la app', async () => errors.length === 0 || (() => { throw new Error(errors.slice(0, 3).join(' | ')); })());
 
 console.log(`\n${passed} correctas, ${failed} fallidas\n`);

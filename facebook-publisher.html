@@ -66,7 +66,23 @@ kbd{border:1px solid var(--outline-2);border-bottom-width:2px;color:var(--text-2
 .inl>.ms{font-size:18px}
 .vf-steps{margin:0 0 8px;padding-left:20px}.vf-steps li{margin:6px 0;line-height:22px}
 .auto-box{display:flex;gap:16px;align-items:flex-start;background:var(--surface-2);border-radius:16px;padding:16px 20px;margin-top:8px}
-.auto-box h4{margin:2px 0 6px;font:500 16px/22px var(--font)}
+.auto-box h4{margin:2px 0 8px;font:500 16px/22px var(--font)}
+.auto-box{align-items:center}
+#runCount{white-space:nowrap}
+.pring{position:relative;width:88px;height:88px;flex:none}
+@media (max-width:720px){.auto-box{flex-direction:column;align-items:stretch}.auto-box .pring{align-self:center}.run-top h2{font-size:18px;line-height:24px}}
+.pring svg{width:88px;height:88px;transform:rotate(-90deg)}
+.pring circle{fill:none;stroke-width:7}
+.pring .bg{stroke:var(--primary-container)}
+.pring .fg{stroke:var(--primary);stroke-linecap:round;transition:stroke-dashoffset .6s ease}
+.pring b{position:absolute;inset:0;display:grid;place-items:center;font:500 18px/1 var(--font-display);font-variant-numeric:tabular-nums}
+.ap-count{display:flex;align-items:baseline;gap:6px;margin:0 0 6px;font-variant-numeric:tabular-nums}
+.cool .ap-count{justify-content:center}
+.ap-count b{font:500 26px/1 var(--font-display);color:var(--text)}
+.ap-count .sl{font:400 22px/1 var(--font-display);color:var(--text-3)}
+.ap-count .lbl{font-size:13px;color:var(--text-2);margin-left:4px}
+.ap-track{height:6px;border-radius:3px;background:var(--primary-container);overflow:hidden;margin-bottom:8px}
+.ap-track i{display:block;height:100%;background:var(--primary);border-radius:3px;transition:width .6s ease}
 .spin{width:28px;height:28px;border-radius:50%;border:3px solid var(--primary-container);border-top-color:var(--primary);animation:spin 1s linear infinite;flex:none;margin-top:2px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .dest-foot{margin-top:12px;display:flex;gap:4px 16px;flex-wrap:wrap;align-items:center}
@@ -251,6 +267,8 @@ input[type=checkbox].cb{accent-color:var(--primary);width:18px;height:18px;margi
 .lk-shot.vid img{object-fit:contain}
 .lk-shot .play{position:absolute;width:56px;height:56px;border-radius:50%;background:rgba(0,0,0,.55);display:grid;place-items:center;color:#fff}
 .lk-shot .play .ms{font-size:36px}
+.resume-acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+#resumeBanner{align-items:center;flex-wrap:wrap}
 .pv-hint{display:flex;align-items:center;gap:8px;margin:0 14px 12px;padding:8px 10px;border-radius:10px;background:var(--surface-2);font-size:12px;line-height:16px;color:var(--text-2)}
 .pv-hint>.ms{font-size:18px;color:var(--text-3)}
 .pv-hint>span{flex:1}
@@ -346,6 +364,15 @@ input[type=checkbox].cb{accent-color:var(--primary);width:18px;height:18px;margi
 .pace .ms{font-size:18px}
 .pace select{height:32px;border-radius:16px;border:1px solid var(--outline);background:var(--surface);color:var(--text);padding:0 10px;font:500 13px var(--font);cursor:pointer}
 @media (max-width:720px){.fb-acct .nm{display:none}.fb-acct{padding:0 4px}}
+#reportDlg{width:min(880px,calc(100vw - 32px))}
+.rp-fields{display:grid;grid-template-columns:170px 1fr 1fr;gap:12px}
+.rp-fields .field{margin-bottom:8px}
+.rp-label{font-size:12px;font-weight:500;color:var(--text-2);margin:8px 0 6px}
+.rp-list{max-height:180px;overflow:auto;margin-bottom:8px}
+.rp-list .row{min-height:48px}
+.rp-text{min-height:300px;font:400 13px/20px var(--font)!important;white-space:pre-wrap}
+.hist summary>.cb{margin-right:2px}
+@media (max-width:720px){.rp-fields{grid-template-columns:1fr}#reportDlg .dlg-f .spacer{display:none}}
 .empty-actions{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap}
 .empty.compact{padding:24px 16px}
 .empty.compact .ill{width:88px;height:88px;margin-bottom:16px}
@@ -756,6 +783,7 @@ details.adv[open] summary .ms{transform:rotate(180deg)}
           <div class="head-links"><a class="hlp" href="#ayuda/historial" data-help="historial"><span class="ms" aria-hidden="true">help</span>Historial y reanudación</a></div>
         </div>
         <div class="actions">
+          <button class="btn filled" id="reportBtn"><span class="ms" aria-hidden="true">summarize</span><span id="reportBtnTxt">Informe diario</span></button>
           <button class="btn outlined danger" id="clearHist"><span class="ms" aria-hidden="true">delete</span>Borrar historial</button>
         </div>
       </div>
@@ -860,6 +888,23 @@ details.adv[open] summary .ms{transform:rotate(180deg)}
   <div class="dlg-f"><button class="btn filled" data-close>Listo</button></div>
 </dialog>
 
+<!-- Report dialog -->
+<dialog id="reportDlg">
+  <div class="dlg-h"><span class="ms" aria-hidden="true" style="color:var(--primary);font-size:28px">summarize</span><h2>Informe de difusión</h2><button class="help-link" data-help="informe" aria-label="Ayuda"><span class="ms" aria-hidden="true">help</span></button></div>
+  <div class="dlg-b">
+    <div class="rp-fields">
+      <div class="field"><label for="rpDate">Fecha</label><input class="input" type="date" id="rpDate"></div>
+      <div class="field"><label for="rpAuthor">Elaborado por</label><input class="input" id="rpAuthor" maxlength="80" placeholder="Tu nombre"></div>
+      <div class="field"><label for="rpBrand">Cliente o marca</label><input class="input" id="rpBrand" maxlength="80" placeholder="Opcional"></div>
+    </div>
+    <div class="rp-label">Publicaciones incluidas</div>
+    <div class="list rp-list" id="rpList"></div>
+    <div class="rp-label">Texto del informe <span class="small muted" style="font-weight:400">· puedes editarlo antes de copiarlo o exportarlo</span></div>
+    <textarea class="input textarea rp-text" id="rpText" spellcheck="true"></textarea>
+  </div>
+  <div class="dlg-f"><button class="btn text" id="rpRegen"><span class="ms" aria-hidden="true">refresh</span>Regenerar</button><span class="spacer"></span><button class="btn text" data-close>Cerrar</button><button class="btn outlined" id="rpCopy"><span class="ms" aria-hidden="true">content_copy</span>Copiar</button><button class="btn outlined" id="rpDocx"><span class="ms" aria-hidden="true">description</span>Word</button><button class="btn filled" id="rpPdf"><span class="ms" aria-hidden="true">picture_as_pdf</span>PDF</button></div>
+</dialog>
+
 <!-- Auto setup wizard -->
 <dialog id="autoDlg">
   <div class="dlg-h"><span class="ms" aria-hidden="true" style="color:var(--primary);font-size:28px">smart_toy</span><h2>Publicar automáticamente</h2><button class="help-link" data-help="automatico" aria-label="Ayuda"><span class="ms" aria-hidden="true">help</span></button></div>
@@ -913,7 +958,7 @@ details.adv[open] summary .ms{transform:rotate(180deg)}
 <!-- Run dialog -->
 <dialog id="runDlg" aria-label="Publicación asistida">
   <div class="run-top">
-    <h2>Publicación asistida</h2>
+    <h2 id="runTitle">Publicación asistida</h2>
     <div class="bar"><i id="runBar"></i></div>
     <span id="runCount" class="muted"></span>
     <span class="spacer"></span>
@@ -954,7 +999,7 @@ function ago(ts){if(!ts)return '';const d=(ts-Date.now())/1000;const a=Math.abs(
   if(a<60)return 'ahora mismo';if(a<3600)return rtf.format(Math.round(d/60),'minute');if(a<86400)return rtf.format(Math.round(d/3600),'hour');
   if(a<2592000)return rtf.format(Math.round(d/86400),'day');return new Date(ts).toLocaleDateString('es',{day:'numeric',month:'short',year:'numeric'})}
 const fmtDate=ts=>new Date(ts).toLocaleString('es',{dateStyle:'medium',timeStyle:'short'});
-function download(name,data,type='application/json'){const b=new Blob([data],{type});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+function download(name,data,type='application/json'){const b=data instanceof Blob?data:new Blob([data],{type});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
 
 /* ---------- Estado ---------- */
 /* Límites de protección de la cuenta (no se pueden desactivar) */
@@ -974,7 +1019,7 @@ function cleanGroups(list){const seen=new Set();return (Array.isArray(list)?list
     notes:str(g.notes,500),active:g.active!==false,approval:g.approval===true,lastShared:okTs(g.lastShared),created:okTs(g.created)||Date.now()}}).filter(Boolean)}
 function cleanHistory(list){return (Array.isArray(list)?list:[]).map(h=>{if(!h||typeof h!=='object')return null;
   const items=(Array.isArray(h.items)?h.items:[]).map(i=>{const url=i&&normGroupUrl(str(i.url,300));if(!url)return null;
-    return {gid:okId(i.gid)||'',name:str(i.name,140),url,notes:str(i.notes,500),status:['pending','done','skipped'].includes(i.status)?i.status:'pending',at:okTs(i.at),review:i.status==='done'&&['awaiting','approved','rejected'].includes(i.review)?i.review:undefined,rat:okTs(i.rat),error:i.error?str(i.error,240):undefined,verify:i.verify&&typeof i.verify==='object'&&okTs(i.verify.at)?{at:i.verify.at,found:i.verify.found===true}:undefined}}).filter(Boolean);
+    return {gid:okId(i.gid)||'',name:str(i.name,140),url,notes:str(i.notes,500),status:['pending','done','skipped'].includes(i.status)?i.status:'pending',at:okTs(i.at),review:i.status==='done'&&['awaiting','approved','rejected'].includes(i.review)?i.review:undefined,rat:okTs(i.rat),error:i.error?str(i.error,240):undefined,inflight:i.status==='pending'?okTs(i.inflight)||undefined:undefined,verify:i.verify&&typeof i.verify==='object'&&okTs(i.verify.at)?{at:i.verify.at,found:i.verify.found===true}:undefined}}).filter(Boolean);
   if(!items.length)return null;const u=parseFbUrl(str(h.url,2000));
   return {id:okId(h.id)||uid(),date:okTs(h.date)||Date.now(),url:u.url||'',text:str(h.text,63206),mediaCount:clamp(h.mediaCount,0,999,0),appendUrl:h.appendUrl!==false,items}}).filter(Boolean).slice(0,300)}
 function cleanTemplates(list){return (Array.isArray(list)?list:[]).map(t=>t&&typeof t==='object'&&typeof t.text==='string'?{id:okId(t.id)||uid(),name:str(t.name,80)||'Plantilla',text:str(t.text,63206)}:null).filter(Boolean)}
@@ -985,7 +1030,7 @@ const S={
   theme:load('fbp.theme','system'),
   media:[],
   sel:null,           // Set de ids de grupos seleccionados como destino
-  gFilter:'all',gTag:null,gChecked:new Set(),
+  gFilter:'all',gTag:null,gChecked:new Set(),hsel:new Set(),rpSel:null,
   run:null
 };
 const persist={
@@ -1572,7 +1617,7 @@ const Ext={ready:false,version:null,_id:0,_p:{},onStep:null,
     const id=++this._id;return new Promise(res=>{const t=setTimeout(()=>{delete this._p[id];res({ok:false,step:'timeout',error:'La extensión no respondió a tiempo'})},timeout);
       this._p[id]=r=>{clearTimeout(t);res(r&&typeof r==='object'?r:{ok:false,step:'ext',error:'Respuesta no válida'})};window.postMessage({src:'fbp-app',id,cmd,job},'*')})}};
 window.addEventListener('message',e=>{if(e.source!==window)return;const d=e.data;if(!d||d.src!=='fbp-ext')return;
-  if(d.type==='hello'){const was=Ext.ready;Ext.ready=true;Ext.version=str(d.version,20);if(!was){renderExt();renderSummary();if($('#autoDlg').open)renderWizard();checkFb(true);loadPreview()}}
+  if(d.type==='hello'){const was=Ext.ready;Ext.ready=true;Ext.version=str(d.version,20);if(!was){renderExt();renderSummary();renderResume();if($('#autoDlg').open)renderWizard();checkFb(true);loadPreview()}}
   else if(d.reply&&Ext._p[d.reply]){Ext._p[d.reply](d.res);delete Ext._p[d.reply]}
   else if(d.type==='progress'&&Ext.onStep)Ext.onStep(str(d.step,200))});
 const autoActive=()=>S.settings.autoMode&&Ext.ready;
@@ -1629,6 +1674,7 @@ $('#fbAcct').onclick=e=>{
   const r=e.currentTarget.getBoundingClientRect();if(popEl)popEl.style.left=Math.max(8,Math.min(innerWidth-popEl.offsetWidth-8,r.right-popEl.offsetWidth))+'px';
 };
 window.addEventListener('focus',()=>{if(Ext.ready)checkFb(false)});
+window.addEventListener('beforeunload',e=>{if(S.run&&S.run.autoRunning&&!S.run.stop){e.preventDefault();e.returnValue=''}});
 /* ---------- Pausa entre grupos, visible en la barra de publicación ---------- */
 const PACES=[30,45,60,90,120,180,300,600,900];
 function renderPace(){const sel=$('#paceSel');if(!sel)return;const cur=S.settings.pause;const opts=[...new Set([...PACES,cur])].sort((a,b)=>a-b);
@@ -1670,7 +1716,7 @@ async function runAuto(){
   const total=media.reduce((a,m)=>a+(m.file.size||0),0);
   if(total>60*1024*1024){R.stop=true;R.stopMsg='Los archivos superan 60 MB: reduce su tamaño o usa el modo asistido.'}
   const files=R.stop?[]:await Promise.all(media.map(async m=>({name:m.name,type:m.file.type||(m.type==='image'?'image/png':'video/mp4'),data:await fileToB64(m.file)})));
-  Ext.onStep=st=>{R.step=st;R.log.push(st);const el=$('#autoStep');if(el)el.textContent=st;const lg=$('#autoLog');if(lg)lg.innerHTML=R.log.slice(-6).map(x=>`<li>${esc(x)}</li>`).join('')};
+  Ext.onStep=st=>{R.step=st;R.log.push(st);updAutoProgress();const el=$('#autoStep');if(el)el.textContent=st;const lg=$('#autoLog');if(lg)lg.innerHTML=R.log.slice(-6).map(x=>`<li>${esc(x)}</li>`).join('')};
   while(!R.stop&&S.run===R){
     const idx=R.entry.items.findIndex(i=>i.status==='pending');if(idx<0)break;
     R.idx=idx;const it=R.entry.items[idx];
@@ -1685,7 +1731,9 @@ async function runAuto(){
     if(f.state==='offline'){R.stop=true;R.stopMsg='No hay conexión con Facebook. Comprueba tu conexión a Internet y pulsa «Continuar».';break}
     if(f.state==='out'){R.stop=true;R.stopMsg='No hay ninguna sesión de Facebook iniciada en este navegador. Inicia sesión en Facebook y pulsa «Continuar».';break}
     R.step='Preparando…';renderRun();
+    if(!test){it.inflight=Date.now();persist.history()}
     const res=await Ext.call('post',{url:it.url,text:runText(it),files,test});
+    delete it.inflight;persist.history();
     if(S.run!==R)break;
     if(res.ok&&res.test){R.stop=true;R.testDone=true;R.stopMsg='Mira la ventana de Facebook: el texto, las imágenes y el enlace deberían estar listos en el cuadro de publicación, sin publicar. Ciérralo sin publicar y, si todo estaba bien, pulsa «Todo bien: publicar de verdad».';break}
     if(res.ok){it.error=undefined;mark('done',res.review||undefined)}
@@ -1699,20 +1747,33 @@ async function runAuto(){
   if(S.run===R&&!R.stop&&!R.testDone&&S.settings.autoClose&&!R.entry.items.some(i=>i.status==='pending')){await Ext.call('closeFb',{},5000);snack('Publicación terminada: se cerró la ventana de Facebook')}
   R.autoRunning=false;R.phase='';Ext.onStep=null;if(S.run===R){if(R.idx>=R.entry.items.length||!R.entry.items.some(i=>i.status==='pending'))R.idx=R.entry.items.length;renderRun()}
 }
+const STEP_P=[[/Comprobando/,0.03],[/Preparando/,0.05],[/Abriendo el grupo/,0.1],[/Esperando a que cargue/,0.2],[/cuadro de publicación/,0.35],[/Escribiendo/,0.5],[/Adjuntando/,0.62],[/vista previa/,0.72],[/«Publicar» esté/,0.8],[/Publicando/,0.9]];
+function autoPct(R){const items=R.entry.items,n=items.length||1,done=items.filter(i=>i.status!=='pending').length;
+  let f=0;if(R.autoRunning&&!R.stop&&R.phase==='posting')for(const [rx,v] of STEP_P)if(rx.test(R.step||''))f=v;
+  return Math.min(100,Math.round((done+f)/n*100))}
+const RING_C=2*Math.PI*34;
+function autoCounts(R){const it=R.entry.items;return {pub:it.filter(i=>i.status==='done'&&i.review!=='awaiting').length,aw:it.filter(i=>i.status==='done'&&i.review==='awaiting').length,sk:it.filter(i=>i.status==='skipped').length,rest:it.filter(i=>i.status==='pending').length,total:it.length}}
+function apStatsHtml(R){const c=autoCounts(R),n=c.pub+c.aw;return `<div class="ap-count" id="apStats" aria-label="${n} de ${c.total} grupos publicados"><b>${n}</b><span class="sl">/</span><b>${c.total}</b><span class="lbl">grupos publicados</span></div>`}
+function updAutoProgress(){const R=S.run;if(!R||!R.auto)return;const p=autoPct(R),items=R.entry.items,done=items.filter(i=>i.status!=='pending').length;
+  const fg=$('#apFg');if(fg)fg.style.strokeDashoffset=RING_C*(1-p/100);const t=$('#apPct');if(t)t.textContent=p+' %';
+  const pb=$('#apBar');if(pb)pb.style.width=p+'%';$('#runBar').style.width=p+'%';$('#runCount').textContent=`${done} de ${items.length} · ${p} %`;
+  const st=$('#apStats');if(st)st.outerHTML=apStatsHtml(R);
+  if(R.autoRunning&&!R.stop)document.title=`${p} % · Publicando · Facebook Publisher`}
 function renderAuto(main,it){
   const R=S.run,items=R.entry.items;
   const errs=items.filter(i=>i.error).map(i=>`<li><b>${esc(i.name)}:</b> ${esc(i.error)}</li>`).join('');
   if(!R.autoRunning||R.stop){
     main.innerHTML=`<div class="cool" style="padding:24px 0"><div class="empty" style="padding:0"><div class="ill" style="${R.testDone?'':'background:var(--warn-container);color:var(--warn)'}">${ic(R.testDone?'science':'pause_circle')}</div></div>
       <h3 style="font-size:22px;line-height:28px;margin:0">${R.testDone?'Modo prueba completado':'Publicación automática detenida'}</h3>
-      <p class="muted" style="margin:0;max-width:520px">${esc(R.stopMsg||'La has detenido. Tu progreso está guardado.')}</p>
+      <p class="muted" style="margin:0;max-width:520px">${esc(R.stopMsg||'La has detenido. Tu progreso está guardado.')}</p>${R.testDone?'':apStatsHtml(R)}
       ${errs?`<details class="adv" style="max-width:520px;text-align:left"><summary>Ver incidencias${ic('chevron')}</summary><ul class="small" style="margin:8px 0">${errs}</ul></details>`:''}
-      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">${R.testDone?`<button class="btn filled" id="aReal">${ic('bolt')}Todo bien: publicar de verdad</button><button class="btn text" id="aBad">${ic('help')}Algo salió mal</button>`:gate().reason==='lock'||gate().reason==='day'?'':`<button class="btn filled" id="aGo">${ic('play_arrow')}Continuar</button>`}<button class="btn outlined" id="aClose">Cerrar</button></div></div>`;
-    const g=$('#aGo');if(g)g.onclick=()=>{R.stop=false;R.testDone=false;runAuto()};$('#aClose').onclick=()=>closeRun(true);const rl=$('#aReal');if(rl)rl.onclick=async()=>{S.settings.autoTest=false;persist.settings();await closeRun(true);renderSummary();snack('Modo prueba desactivado. Cierra el cuadro de prueba en Facebook y pulsa «Comenzar publicación automática».',null,null,9000)};
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">${R.testDone?`<button class="btn filled" id="aReal">${ic('bolt')}Todo bien: publicar de verdad</button><button class="btn text" id="aBad">${ic('help')}Algo salió mal</button>`:gate().reason==='lock'||gate().reason==='day'?'':`<button class="btn filled" id="aGo">${ic('play_arrow')}Continuar</button>`}<button class="btn outlined" id="aClose">${R.testDone||!R.entry.items.some(i=>i.status==='pending')?'Cerrar':'Continuar más tarde'}</button></div></div>`;
+    const g=$('#aGo');if(g)g.onclick=()=>{R.stop=false;R.testDone=false;runAuto()};$('#aClose').onclick=async()=>{const pend=R.entry.items.some(i=>i.status==='pending');await closeRun(true);if(pend&&!R.testDone)snack('Progreso guardado. Pulsa «Continuar» en Publicar o «Reanudar» en el Historial cuando quieras.',null,null,8000)};const rl=$('#aReal');if(rl)rl.onclick=async()=>{S.settings.autoTest=false;persist.settings();await closeRun(true);renderSummary();snack('Modo prueba desactivado. Cierra el cuadro de prueba en Facebook y pulsa «Comenzar publicación automática».',null,null,9000)};
     const bd=$('#aBad');if(bd)bd.onclick=()=>{closeRun(true);openHelp('automatico')};return;
   }
   main.innerHTML=`<div class="run-group"><div class="gav">${esc(initials(it.name))}</div><div style="min-width:0"><div class="muted small">Grupo ${R.idx+1} de ${items.length} · ${S.settings.autoTest?'<b>modo prueba</b>':'publicación automática'}</div><h3>${esc(it.name)}</h3><a class="small" href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.url.replace('https://www.',''))}</a></div></div>
-    <div class="auto-box"><span class="spin" aria-hidden="true"></span><div style="min-width:0"><h4 id="autoStep" aria-live="polite">${esc(R.step||'Preparando…')}</h4>
+    <div class="auto-box"><div class="pring" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${autoPct(R)}" aria-label="Progreso de la publicación"><svg viewBox="0 0 80 80"><circle class="bg" cx="40" cy="40" r="34"/><circle class="fg" id="apFg" cx="40" cy="40" r="34" stroke-dasharray="${RING_C}" stroke-dashoffset="${RING_C*(1-autoPct(R)/100)}"/></svg><b id="apPct">${autoPct(R)} %</b></div>
+      <div style="min-width:0;flex:1"><h4 id="autoStep" aria-live="polite">${esc(R.step||'Preparando…')}</h4><div class="ap-track"><i id="apBar" style="width:${autoPct(R)}%"></i></div>${apStatsHtml(R)}
       <p class="muted small" style="margin:0">La extensión trabaja en la ventana de Facebook. No la cierres ni cierres esta pestaña; puedes seguir usando otras aplicaciones.</p>
       <ol class="small muted" id="autoLog" style="margin:8px 0 0;padding-left:18px">${(R.log||[]).slice(-6).map(x=>`<li>${esc(x)}</li>`).join('')}</ol></div></div>
     ${errs?`<details class="adv"><summary>Incidencias${ic('chevron')}</summary><ul class="small" style="margin:8px 0">${errs}</ul></details>`:''}
@@ -1732,8 +1793,17 @@ function gate(){
   return {ok:true};
 }
 function setLock(ts){S.lock=ts;save('fbp.lock',ts)}
-function saveRunState(){if(S.run)save('fbp.run',{id:S.run.entry.id});else{try{localStorage.removeItem('fbp.run')}catch(e){}}}
-function startRun(fromHist){
+function saveRunState(id){const rid=S.run?S.run.entry.id:id;const h=rid&&S.history.find(x=>x.id===rid);
+  if(h&&h.items.some(i=>i.status==='pending')){save('fbp.run',{id:rid});try{sessionStorage.removeItem('fbp.resumeHidden')}catch(e){}}else{try{localStorage.removeItem('fbp.run')}catch(e){}}}
+async function resolveInflight(entry){
+  for(const it of entry.items.filter(i=>i.status==='pending'&&i.inflight)){
+    const r=await alertBox('help','¿Se llegó a publicar en este grupo?',`La publicación en «${it.name}» se interrumpió mientras se estaba enviando (${fmtDate(it.inflight)}). Para no publicar dos veces, revisa el grupo en Facebook. ¿Aparece tu publicación?`,{ok:'Sí, ya está publicada',cancel:'No, volver a intentarlo'});
+    if(r==='ok'){it.status='done';it.at=it.inflight;const g=S.groups.find(x=>x.id===it.gid);if(g){g.lastShared=it.at;save('fbp.groups',S.groups)}}
+    delete it.inflight}
+  persist.history();
+}
+async function startRun(fromHist){
+  if(fromHist&&fromHist.items.some(i=>i.status==='pending'&&i.inflight))await resolveInflight(fromHist);
   let entry;
   if(fromHist){entry=fromHist}else{
     const r=validateUrl();if(r.error){snack('La URL de origen no es válida');srcEl.focus();return}
@@ -1789,11 +1859,16 @@ async function openPreflight(){
 function renderResume(){
   const b=$('#resumeBanner');const sv=load('fbp.run',null);const h=sv&&!S.run&&S.history.find(x=>x.id===sv.id);
   const pend=h?h.items.filter(i=>i.status==='pending').length:0;
-  if(!h||!pend){b.hidden=true;return}
-  const done=h.items.length-pend;
-  b.hidden=false;b.innerHTML=`${ic('pending_actions')}<div style="flex:1"><b>Tienes una publicación asistida a medias</b><div class="small muted">${done} de ${h.items.length} grupos completados · ${esc(((h.text||'').trim().split('\n')[0]||h.url||'').slice(0,80))}</div></div>
-    <button class="btn filled sm" id="resumeGo">${ic('play_arrow')}Reanudar</button><button class="btn text sm" id="resumeNo">Más tarde</button>`;
-  $('#resumeGo').onclick=()=>startRun(h);$('#resumeNo').onclick=()=>{try{localStorage.removeItem('fbp.run')}catch(e){}b.hidden=true;snack('Podrás reanudarla desde el Historial')};
+  let hidden=false;try{hidden=sessionStorage.getItem('fbp.resumeHidden')===(h&&h.id)}catch(e){}
+  if(!h||!pend||hidden){b.hidden=true;return}
+  const done=h.items.length-pend,pct=Math.round(done/h.items.length*100),auto=autoActive();
+  b.hidden=false;b.innerHTML=`${ic('pending_actions')}<div style="flex:1;min-width:0"><b>Tienes una publicación a medias</b><div class="small muted">${done} de ${h.items.length} grupos completados (${pct} %) · ${esc(postLabel(h))}</div>
+    <div class="ap-track" style="margin:8px 0 0;max-width:360px"><i style="width:${pct}%"></i></div></div>
+    <div class="resume-acts"><button class="btn filled sm" id="resumeGo">${ic(auto?'smart_toy':'play_arrow')}${auto?'Continuar publicación automática':'Reanudar'}</button><button class="btn text sm" id="resumeNo">Más tarde</button><button class="btn text sm danger" id="resumeDrop">Descartar</button></div>`;
+  $('#resumeGo').onclick=()=>startRun(h);
+  $('#resumeNo').onclick=()=>{try{sessionStorage.setItem('fbp.resumeHidden',h.id)}catch(e){}b.hidden=true;snack('Te lo recordaremos la próxima vez. También puedes reanudarla desde el Historial.')};
+  $('#resumeDrop').onclick=async()=>{if(!await confirmBox('¿Descartar los grupos que faltan?',`Los ${pend} grupo(s) pendientes se marcarán como no publicados. Lo ya publicado no cambia.`,'Descartar',true))return;
+    h.items.forEach(i=>{if(i.status==='pending'){i.status='skipped';i.error='Descartado';i.at=Date.now();delete i.inflight}});persist.history();saveRunState(h.id);renderResume();snack('Publicación cerrada')};
 }
 function renderLock(){const b=$('#lockBanner');const on=S.lock&&S.lock>Date.now();b.hidden=!on;
   if(on)b.innerHTML=`${ic('shield')}<div style="flex:1"><b>Publicación en pausa para proteger tu cuenta</b><div class="small">Indicaste que Facebook mostró un aviso. Podrás volver a publicar a partir de ${esc(hhmm(S.lock))}. <a href="#ayuda/aviso-facebook" data-help="aviso-facebook">Qué hacer mientras tanto</a></div></div>`}
@@ -1832,8 +1907,8 @@ async function panicStop(){
 }
 function beep(){if(!S.settings.sound)return;try{const a=new (window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.frequency.value=880;g.gain.setValueAtTime(.08,a.currentTime);g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+.35);o.connect(g).connect(a.destination);o.start();o.stop(a.currentTime+.36);setTimeout(()=>a.close(),600)}catch(e){}}
 function renderRun(){
-  const R=S.run;if(!R)return;const items=R.entry.items;const done=items.filter(i=>i.status!=='pending').length;
-  $('#runBar').style.width=(done/items.length*100)+'%';$('#runCount').textContent=`${done} de ${items.length}`;
+  const R=S.run;if(!R)return;const items=R.entry.items;const done=items.filter(i=>i.status!=='pending').length;$('#runTitle').textContent=R.auto?'Publicación automática':'Publicación asistida';
+  $('#runBar').style.width=(done/items.length*100)+'%';$('#runCount').textContent=R.auto?`${done} de ${items.length} · ${Math.round(done/items.length*100)} %`:`${done} de ${items.length}`;
   $('#runQueue').innerHTML=items.map((it,i)=>`<div class="q ${i===R.idx?'cur':''}" data-q="${i}"><span class="dot ${it.status}">${it.status==='done'?ic('check'):it.status==='skipped'?ic('close'):''}</span><span class="n" title="${esc(it.error||'')}">${esc(it.name)}</span>${it.error?ic('error','sm'):''}</div>`).join('');
   const main=$('#runMain');clearInterval(runTick);
   if(R.idx>=items.length){
@@ -1865,13 +1940,13 @@ function renderRun(){
     main.innerHTML=`<div class="cool"><div class="ring"><svg viewBox="0 0 140 140"><circle class="bg" cx="70" cy="70" r="62"/><circle class="fg" id="coolFg" cx="70" cy="70" r="62" stroke-dasharray="${C}" stroke-dashoffset="0"/></svg><b id="coolN"></b></div>
       <h3 style="font-size:22px;line-height:28px;margin:0">${MSG[0]}</h3><p class="muted" style="margin:0;max-width:440px">${MSG[1]} <a href="#ayuda/buenas-practicas" data-help="buenas-practicas">Más información</a></p>
       ${G.reason!=='pause'?`<p style="margin:0">Podrás continuar: <b>${esc(hhmm(G.until))}</b></p>`:''}
-      <p style="margin:0">Siguiente: <b>${esc(it.name)}</b></p>
+      <p style="margin:0">Siguiente: <b>${esc(it.name)}</b></p>${R.auto?apStatsHtml(R):''}
       <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">${G.reason==='pause'?'':`<button class="btn outlined" id="coolLater">${ic('schedule')}Continuar más tarde</button>`}
       <button class="btn text danger" id="rPanic2">${ic('report')}Facebook me mostró un aviso</button></div></div>`;
     const cl=$('#coolLater');if(cl)cl.onclick=()=>{R.stop=true;closeRun(true)};$('#rPanic2').onclick=panicStop;
-    upd();runTick=setInterval(upd,1000);return;
+    upd();runTick=setInterval(upd,1000);if(R.auto)updAutoProgress();return;
   }
-  if(R.auto){document.title=`${R.autoRunning&&!R.stop?'⏳':'⏸'} ${it.name} · Facebook Publisher`;renderAuto(main,it);return}
+  if(R.auto){document.title=`${R.autoRunning&&!R.stop?'⏳':'⏸'} ${it.name} · Facebook Publisher`;renderAuto(main,it);updAutoProgress();return}
   document.title=`▶ ${it.name} · Facebook Publisher`;
   const mode=S.settings.mode;const imgs=S.media.filter(m=>m.type==='image'),vids=S.media.filter(m=>m.type==='video');
   const txt=runText(it);
@@ -1909,7 +1984,7 @@ async function closeRun(force){
   const pending=R.entry.items.filter(i=>i.status==='pending').length;
   if(!force&&pending&&!await confirmBox(R.autoRunning?'¿Detener la publicación automática?':'¿Salir de la publicación asistida?',`Quedan ${pending} grupo(s) pendientes. ${R.autoRunning?'Si hay un grupo en curso, puede que termine de publicarse. ':''}Podrás reanudar desde el Historial.`,'Salir'))return;
   R.stop=true;
-  clearInterval(runTick);S.run=null;saveRunState();$('#runDlg').close();document.title='Facebook Publisher';renderAllGroups();renderHistory();renderResume();
+  clearInterval(runTick);const rid=R.entry.id;S.run=null;saveRunState(rid);$('#runDlg').close();document.title='Facebook Publisher';renderAllGroups();renderHistory();renderResume();
 }
 $('#runClose').onclick=()=>closeRun();
 $('#runDlg').addEventListener('cancel',e=>{e.preventDefault();closeRun()});
@@ -1986,7 +2061,7 @@ function setReview(hid,idx,val){const h=S.history.find(x=>x.id===hid);const i=h&
 function reviewBtns(hid,idx){return `<button class="btn tonal sm" data-rv="approved" data-h="${hid}" data-i="${idx}">${ic('check')}Aprobada</button><button class="btn text sm danger" data-rv="rejected" data-h="${hid}" data-i="${idx}">${ic('close')}Rechazada</button>`}
 function reviewPill(i){return i.review==='awaiting'?`<span class="pill info">${ic('pending')}En aprobación</span>`:i.review==='approved'?`<span class="pill ok">${ic('check')}Aprobada</span>`:i.review==='rejected'?`<span class="pill err">${ic('block')}Rechazada</span>`:''}
 function renderHistory(){
-  renderBadges();const box=$('#histBox');
+  renderBadges();[...S.hsel].forEach(id=>{if(!S.history.some(h=>h.id===id))S.hsel.delete(id)});if($('#reportBtnTxt'))renderReportBtn();const box=$('#histBox');
   if(!S.history.length){box.innerHTML=`<div class="card empty"><div class="ill">${ic('history')}</div><h3>Aún no hay actividad</h3><p>Cuando inicies una publicación asistida aparecerá aquí, con el estado de cada grupo.</p><button class="btn filled" data-nav="publicar">${ic('send')}Ir a Publicar</button></div>`;return}
   const aw=awaitingItems();
   const panel=aw.length?`<div class="card filled"><div class="card-head" style="margin-bottom:8px">${ic('pending')}<div><h2>Pendientes de aprobación (${aw.length})</h2><div class="sub">Comprueba en cada grupo (menú «Tu contenido») si los administradores las aprobaron.</div></div><a class="hlp ml-auto" href="#ayuda/no-aparece" data-help="no-aparece">${ic('help')}¿Por qué no aparece?</a></div>
@@ -1994,7 +2069,7 @@ function renderHistory(){
       <div class="h-acts"><button class="btn text sm" data-vf="${h.id}" data-i="${h.items.indexOf(i)}">${ic('fact_check')}Verificar</button>${reviewBtns(h.id,h.items.indexOf(i))}</div></div>`).join('')}</div></div>`:'';
   box.innerHTML=panel+S.history.map(h=>{const a=h.items.filter(i=>i.review==='awaiting').length,d=h.items.filter(i=>i.status==='done').length,s=h.items.filter(i=>i.status==='skipped').length,p=h.items.length-d-s;
     const title=(h.text||'').trim().split('\n')[0]||h.url||'Publicación sin texto';
-    return `<details class="hist"><summary><div class="main"><div class="title">${esc(title.slice(0,90))}</div><div class="small muted">${esc(fmtDate(h.date))} · ${h.items.length} grupo(s)${h.url?' · '+esc(parseFbUrl(h.url).kind||''):''}</div></div>
+    return `<details class="hist"><summary><input type="checkbox" class="cb" data-hsel="${h.id}" ${S.hsel.has(h.id)?'checked':''} aria-label="Incluir en el informe" title="Incluir en el informe"><div class="main"><div class="title">${esc(title.slice(0,90))}</div><div class="small muted">${esc(fmtDate(h.date))} · ${h.items.length} grupo(s)${h.url?' · '+esc(parseFbUrl(h.url).kind||''):''}</div></div>
       <span class="pill ok">${d-a} publicados</span>${a?`<span class="pill info">${a} en aprobación</span>`:''}${s?`<span class="pill">${s} omitidos</span>`:''}${p?`<span class="pill warn">${p} pendientes</span>`:''}
       <div class="prog hide-sm" aria-hidden="true"><i style="width:${(d+s)/h.items.length*100}%"></i></div>${ic('chevron','exp')}</summary>
       <div class="det">${h.url?`<p class="inl" style="margin:0 0 10px;word-break:break-all">${ic('link')}<a href="${esc(h.url)}" target="_blank" rel="noopener">${esc(h.url)}</a></p>`:''}${h.text?`<pre>${esc(h.text)}</pre>`:''}
@@ -2015,6 +2090,192 @@ $('#histBox').addEventListener('click',e=>{
   if(d){const before=S.history.slice();S.history=S.history.filter(x=>x.id!==d.dataset.hdel);persist.history();snack('Entrada eliminada','Deshacer',()=>{S.history=before;persist.history()})}
 });
 $('#clearHist').onclick=async()=>{if(!S.history.length)return;if(await confirmBox('¿Borrar todo el historial?','Esta acción no afecta a lo publicado en Facebook ni a tus grupos.','Borrar',true)){S.history=[];persist.history();snack('Historial borrado')}};
+
+/* ============================================================
+   INFORME DIARIO DE DIFUSIÓN (texto, PDF y Word, sin servicios externos)
+   ============================================================ */
+const ymd=ts=>{const d=new Date(ts);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+const itemDay=(h,i)=>ymd(i.at||h.date);
+const pl=(n,s,p)=>`${n} ${n===1?s:p}`;
+const hm=ts=>new Date(ts).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
+function longDate(d){const [y,m,dd]=d.split('-').map(Number);return new Date(y,m-1,dd).toLocaleDateString('es',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
+const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
+const NUMW=['Ninguna','Una','Dos','Tres','Cuatro','Cinco','Seis','Siete','Ocho','Nueve','Diez'];
+const startNum=n=>n<=10?NUMW[n]:String(n);
+const listNames=a=>{a=[...new Set(a)].map(n=>`«${n}»`);return a.length<2?a.join(''):a.slice(0,-1).join(', ')+' y '+a[a.length-1]};
+function postLabel(h){
+  const k=parseFbUrl(h.url||'').kind||'Publicación';
+  const sents=(h.text||'').replace(/https?:\/\/\S+/g,' ').replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu,' ').split(/[\n.!?¡¿]+/).map(x=>x.replace(/\s+/g,' ').trim()).filter(x=>x.replace(/[^\p{L}\p{N}]/gu,'').length>=4);
+  let t=(sents.find(x=>!/\{(grupo|fecha|enlace)\}/i.test(x)&&!/^(hola|buen[oa]s|saludos|hey)\b/i.test(x))||'');
+  t=t.replace(/^[¡!,.;:\s-]+|[,;:\s-]+$/g,'');
+  if(t.length>80)t=t.slice(0,80).replace(/\s+\S*$/,'')+'…';
+  return t?`${h.url?k:'Publicación'} «${t}»`:(h.url?`${k} ${(contentIds(h.url).values().next().value)||''}`.trim():'Publicación sin texto');
+}
+function reasonOf(e){e=String(e||'');
+  if(/miembro/i.test(e))return 'no somos miembros del grupo';
+  if(/no permite publicar|Escribe algo/i.test(e))return 'el grupo no permite publicar';
+  if(/24 h/i.test(e))return 'ya se había publicado en las últimas 24 horas';
+  if(/no publicado/i.test(e))return 'finalmente no se publicó';
+  if(/sesi[oó]n/i.test(e))return 'no había sesión iniciada en Facebook';
+  return 'incidencia técnica al publicar'}
+function itemState(i){
+  if(i.status==='pending')return 'pendiente';
+  if(i.status==='skipped')return `no publicada (${reasonOf(i.error)})`;
+  if(i.review==='awaiting')return 'en espera de aprobación';
+  if(i.review==='rejected')return 'rechazada por el grupo';
+  return i.review==='approved'?'aprobada y visible':i.verify&&i.verify.found?'publicada y comprobada':'publicada'}
+function buildReport(date,ids,meta){
+  const E=S.history.filter(h=>ids.includes(h.id)).map(h=>({h,its:h.items.filter(i=>itemDay(h,i)===date)})).filter(x=>x.its.length);
+  const L=['Informe de difusión en grupos de Facebook',`Fecha: ${cap(longDate(date))}`];
+  if(meta.author)L.push(`Elaborado por: ${meta.author}`);if(meta.brand)L.push(`Cliente / marca: ${meta.brand}`);
+  L.push('','Resumen');
+  if(!E.length){L.push('No hay publicaciones compartidas en esta fecha.');return L.join('\n')}
+  const all=E.flatMap(x=>x.its),is=f=>all.filter(f);
+  const pub=is(i=>i.status==='done'&&i.review!=='awaiting'&&i.review!=='rejected'),aw=is(i=>i.review==='awaiting'),rej=is(i=>i.review==='rejected'),sk=is(i=>i.status==='skipped'),pe=is(i=>i.status==='pending');
+  const shared=pub.length+aw.length+rej.length,ver=is(i=>i.verify&&i.verify.found).length;
+  const today=ymd(Date.now()),yest=ymd(Date.now()-864e5);
+  const when=date===today?'Hoy':date===yest?'Ayer':`El ${new Date(date+'T12:00').toLocaleDateString('es',{day:'numeric',month:'long'})}`;
+  const P=[];
+  P.push(shared?`${when} se ${E.length===1?'compartió':'compartieron'} ${pl(E.length,'publicación','publicaciones')} en ${pl(shared,'grupo','grupos')} de Facebook.`:`${when} se preparó la difusión de ${pl(E.length,'publicación','publicaciones')}, pero no llegó a publicarse en ningún grupo.`);
+  if(shared){
+    if(pub.length===shared)P.push(shared===1?'La publicación quedó visible en el grupo.':'Todas quedaron visibles en sus grupos.');
+    else{let t=pub.length?`${startNum(pub.length)} ${pub.length===1?'quedó visible':'quedaron visibles'} al momento`:'Ninguna quedó visible al momento';
+      const extra=[];if(aw.length)extra.push(`${aw.length} ${aw.length===1?'está':'están'} a la espera de que la${aw.length===1?'':'s'} aprueben los administradores`);if(rej.length)extra.push(`${rej.length} ${rej.length===1?'fue rechazada':'fueron rechazadas'}`);
+      P.push(t+(extra.length?(extra.length===1?' y ':', ')+extra.join(' y '):'')+'.')}
+    if(ver)P.push(`Se comprobó directamente en el grupo la visibilidad de ${ver===shared?(ver===1?'la publicación':'todas ellas'):ver===1?'una de ellas':`${ver} de ellas`}.`);
+  }
+  if(sk.length){const rs=[...new Set(sk.map(i=>reasonOf(i.error)))];P.push(`En ${pl(sk.length,'grupo','grupos')} no fue posible publicar (${rs.join('; ')}).`)}
+  if(pe.length)P.push(`Quedan ${pl(pe.length,'grupo','grupos')} por completar.`);
+  L.push(P.join(' '),'','Detalle por publicación');
+  E.forEach(({h,its},k)=>{
+    const c=f=>its.filter(f).length,p1=c(i=>i.status==='done'&&i.review!=='awaiting'&&i.review!=='rejected'),a1=c(i=>i.review==='awaiting'),r1=c(i=>i.review==='rejected'),s1=c(i=>i.status==='skipped'),e1=c(i=>i.status==='pending');
+    const parts=[p1&&`${p1} ${p1===1?'publicada':'publicadas'}`,a1&&`${a1} en aprobación`,r1&&`${r1} ${r1===1?'rechazada':'rechazadas'}`,s1&&`${s1} sin publicar`,e1&&`${e1} ${e1===1?'pendiente':'pendientes'}`].filter(Boolean);
+    L.push(`${k+1}. ${postLabel(h)}`);if(h.url)L.push(`Enlace: ${h.url}`);
+    L.push(`Grupos: ${its.length}${parts.length?` (${parts.join(', ')})`:''}`);
+    its.forEach(i=>L.push(`- ${i.name}: ${itemState(i)}${i.at&&i.status!=='pending'?`, ${hm(i.at)}`:''}`));
+    L.push('')});
+  const O=[];
+  const apr=S.groups.filter(g=>g.approval&&all.some(i=>i.gid===g.id||groupKey(i.url)===groupKey(g.url))).map(g=>g.name);
+  if(apr.length)O.push(`${apr.length===1?'El grupo':'Los grupos'} ${listNames(apr)} ${apr.length===1?'revisa':'revisan'} las publicaciones antes de mostrarlas, así que su visibilidad depende de la aprobación de los administradores.`);
+  if(rej.length)O.push(`Conviene revisar las normas de ${listNames(rej.map(i=>i.name))} antes de volver a publicar allí.`);
+  if(shared>1){const ps=S.settings.pause,pt=ps<60?`${ps} segundos`:ps%60?`${Math.floor(ps/60)} min ${ps%60} s`:`${ps/60} ${ps===60?'minuto':'minutos'}`;O.push(`La difusión se hizo de forma escalonada, con pausas de ${pt} entre grupos y sin repetir ningún grupo en 24 horas, para cuidar la reputación de la cuenta.`)}
+  if(O.length){L.push('Observaciones');O.forEach(o=>L.push('- '+o));L.push('')}
+  const N=[];
+  if(aw.length)N.push(aw.length===1?`Comprobar si se aprobó la publicación en ${listNames(aw.map(i=>i.name))}.`:`Comprobar si se aprobaron las publicaciones en ${listNames(aw.map(i=>i.name))}.`);
+  const nm=sk.filter(i=>/miembro/i.test(i.error||''));if(nm.length)N.push(`Solicitar acceso a ${listNames(nm.map(i=>i.name))}.`);
+  if(pe.length)N.push(`Completar la difusión en ${pl(pe.length,'grupo pendiente','grupos pendientes')}.`);
+  L.push('Próximos pasos');if(N.length)N.forEach(n=>L.push('- '+n));else L.push('Sin tareas pendientes de esta jornada.');
+  return L.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+/* Texto → bloques (respeta las ediciones del usuario) */
+function reportBlocks(t){
+  const H2=/^(Resumen|Detalle por publicación|Observaciones|Próximos pasos|Conclusiones|Notas|Recomendaciones)\s*:?$/i;const B=[];let first=true;
+  String(t).replace(/\r/g,'').split('\n').forEach(raw=>{const s=raw.replace(/\s+$/,'');const x=s.trim();
+    if(!x){B.push({t:'sp'});return}
+    if(first){B.push({t:'h1',x});first=false;return}
+    if(H2.test(x))B.push({t:'h2',x:x.replace(/:$/,'')});
+    else if(/^\d+\.\s+/.test(x))B.push({t:'h3',x});
+    else if(/^[-•·]\s+/.test(x))B.push({t:'li',x:x.replace(/^[-•·]\s+/,'')});
+    else if(/^(Fecha|Elaborado por|Cliente \/ marca|Enlace|Grupos)\s*:/.test(x)){const k=x.slice(0,x.indexOf(':'));B.push({t:'kv',k,x:x.slice(x.indexOf(':')+1).trim()})}
+    else B.push({t:'p',x})});
+  return B}
+/* ---- PDF (Helvetica estándar, WinAnsiEncoding) ---- */
+const HR=[278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584];
+const HB=[278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584];
+const WIN={'€':128,'‚':130,'„':132,'…':133,'‘':145,'’':146,'“':147,'”':148,'•':149,'–':150,'—':151};
+const WSPEC={'«':556,'»':556,'·':278,'¿':611,'¡':333,'º':365,'ª':370,'…':1000,'‘':222,'’':222,'“':333,'”':333,'•':350,'–':556,'—':1000,'€':556,'°':400};
+function pdfText(s){return [...String(s).replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu,'')].map(ch=>{const c=ch.codePointAt(0);if(c<128||(c>=160&&c<=255))return ch;if(WIN[ch])return String.fromCharCode(WIN[ch]);const b=ch.normalize('NFD')[0];return b.charCodeAt(0)<128?b:'?'}).join('')}
+function textW(s,bold,size){let w=0;for(const ch of s){const c=ch.charCodeAt(0),t=bold?HB:HR;let cw;
+  if(c>=32&&c<=126)cw=t[c-32];else{const u=Object.keys(WIN).find(k=>WIN[k]===c)||ch;cw=WSPEC[u];if(cw==null){const b=u.normalize('NFD')[0].charCodeAt(0);cw=b>=32&&b<=126?t[b-32]:556}if(bold)cw*=1.05}
+  w+=cw}return w*size/1000}
+function wrapPdf(s,bold,size,maxW){const out=[];let line='';
+  for(const word of s.split(/ +/)){let w=word;
+    while(textW(w,bold,size)>maxW){let k=w.length;while(k>1&&textW(w.slice(0,k),bold,size)>maxW)k--;if(line){out.push(line);line=''}out.push(w.slice(0,k));w=w.slice(k)}
+    const cand=line?line+' '+w:w;if(textW(cand,bold,size)<=maxW)line=cand;else{out.push(line);line=w}}
+  if(line)out.push(line);return out.length?out:['']}
+function buildPdf(text,title){
+  const B=reportBlocks(text),W=595.28,H=841.89,M=56,MW=W-2*M,pages=[];let ops=[],y=H-M;
+  const esc=s=>s.replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
+  const brk=need=>{if(y-need<M+20){pages.push(ops);ops=[];y=H-M}};
+  const write=(lines,font,size,lh,x,color)=>lines.forEach(l=>{brk(lh);y-=lh;ops.push(`BT ${color||'0.12 0.12 0.12'} rg /${font} ${size} Tf ${x.toFixed(2)} ${y.toFixed(2)} Td (${esc(l)}) Tj ET`)});
+  B.forEach((b,ix)=>{const x=pdfText(b.x||'');
+    if(b.t==='sp'){y-=5;return}
+    if(b.t==='h1'){write(wrapPdf(x,true,17,MW),'F2',17,22,M,'0.04 0.34 0.82');y-=4;ops.push(`0.04 0.34 0.82 RG 1.2 w ${M} ${y.toFixed(2)} m ${(W-M).toFixed(2)} ${y.toFixed(2)} l S`);y-=10;return}
+    if(b.t==='h2'){y-=8;brk(40);write([x],'F2',12.5,18,M,'0.04 0.34 0.82');y-=3;return}
+    if(b.t==='h3'){y-=4;brk(36);write(wrapPdf(x,true,11,MW),'F2',11,16,M);return}
+    if(b.t==='kv'){const k=pdfText(b.k)+': ',kw=textW(k,true,10);const ls=wrapPdf(x,false,10,MW-kw);
+      ls.forEach((l,i)=>{brk(15);y-=15;ops.push(i===0?`BT 0.3 0.3 0.3 rg /F2 10 Tf ${M} ${y.toFixed(2)} Td (${esc(k)}) Tj /F1 10 Tf 0.12 0.12 0.12 rg (${esc(l)}) Tj ET`:`BT 0.12 0.12 0.12 rg /F1 10 Tf ${(M+kw).toFixed(2)} ${y.toFixed(2)} Td (${esc(l)}) Tj ET`)});return}
+    if(b.t==='li'){const ls=wrapPdf(x,false,10.5,MW-16);ls.forEach((l,i)=>{brk(15);y-=15;ops.push(`BT 0.12 0.12 0.12 rg /F1 10.5 Tf ${(M+16).toFixed(2)} ${y.toFixed(2)} Td (${esc(l)}) Tj ET`);if(i===0)ops.push(`BT 0.04 0.34 0.82 rg /F1 10.5 Tf ${(M+4).toFixed(2)} ${y.toFixed(2)} Td (${esc(String.fromCharCode(149))}) Tj ET`)});return}
+    write(wrapPdf(x,false,10.5,MW),'F1',10.5,15.5,M)});
+  pages.push(ops);
+  const objs=[];const add=s=>{objs.push(s);return objs.length};
+  const cat=add(''),pg=add(''),f1=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>'),f2=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+  const kids=pages.map((o,i)=>{const foot=`BT 0.45 0.45 0.45 rg /F1 8.5 Tf ${M} 30 Td (${esc(pdfText(title))}) Tj ET BT 0.45 0.45 0.45 rg /F1 8.5 Tf ${(W-M-textW(`Página ${i+1} de ${pages.length}`,false,8.5)).toFixed(2)} 30 Td (${esc(pdfText(`Página ${i+1} de ${pages.length}`))}) Tj ET`;
+    const stream=o.concat(foot).join('\n');const c=add(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
+    return add(`<< /Type /Page /Parent ${pg} 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /Font << /F1 ${f1} 0 R /F2 ${f2} 0 R >> >> /Contents ${c} 0 R >>`)});
+  objs[cat-1]=`<< /Type /Catalog /Pages ${pg} 0 R >>`;objs[pg-1]=`<< /Type /Pages /Kids [${kids.map(k=>k+' 0 R').join(' ')}] /Count ${kids.length} >>`;
+  const info=add(`<< /Title (${esc(pdfText(title))}) /CreationDate (D:${new Date().toISOString().replace(/[-:T]/g,'').slice(0,14)}) >>`);
+  let out='%PDF-1.4\n%\xE2\xE3\xCF\xD3\n';const off=[];
+  objs.forEach((o,i)=>{off.push(out.length);out+=`${i+1} 0 obj\n${o}\nendobj\n`});
+  const xref=out.length;out+=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`+off.map(o=>String(o).padStart(10,'0')+' 00000 n \n').join('')+`trailer\n<< /Size ${objs.length+1} /Root ${cat} 0 R /Info ${info} 0 R >>\nstartxref\n${xref}\n%%EOF`;
+  const u8=new Uint8Array(out.length);for(let i=0;i<out.length;i++)u8[i]=out.charCodeAt(i)&255;return new Blob([u8],{type:'application/pdf'})}
+/* ---- Word (.docx mínimo, ZIP sin compresión) ---- */
+const CRC_T=(()=>{const t=new Uint32Array(256);for(let i=0;i<256;i++){let c=i;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[i]=c>>>0}return t})();
+const crc32=b=>{let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=CRC_T[(c^b[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0};
+function zipStore(files){const enc=new TextEncoder(),parts=[],cen=[];let off=0;
+  const u16=n=>[n&255,(n>>>8)&255],u32=n=>[n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255];
+  for(const [name,data] of files){const nb=enc.encode(name),db=typeof data==='string'?enc.encode(data):data,crc=crc32(db);
+    const loc=new Uint8Array([...u32(0x04034b50),...u16(20),...u16(0x0800),...u16(0),...u16(0),...u16(0x21),...u32(crc),...u32(db.length),...u32(db.length),...u16(nb.length),...u16(0)]);
+    parts.push(loc,nb,db);
+    cen.push(new Uint8Array([...u32(0x02014b50),...u16(20),...u16(20),...u16(0x0800),...u16(0),...u16(0),...u16(0x21),...u32(crc),...u32(db.length),...u32(db.length),...u16(nb.length),...u16(0),...u16(0),...u16(0),...u16(0),...u32(0),...u32(off)]),nb);
+    off+=loc.length+nb.length+db.length}
+  const cs=cen.reduce((a,b)=>a+b.length,0);
+  return new Blob([...parts,...cen,new Uint8Array([...u32(0x06054b50),...u16(0),...u16(0),...u16(files.length),...u16(files.length),...u32(cs),...u32(off),...u16(0)])],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'})}
+function buildDocx(text){
+  const x=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'');
+  const run=(t,o={})=>`<w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/>${o.b?'<w:b/>':''}${o.c?`<w:color w:val="${o.c}"/>`:''}<w:sz w:val="${o.sz||22}"/></w:rPr><w:t xml:space="preserve">${x(t)}</w:t></w:r>`;
+  const para=(runs,ppr='')=>`<w:p><w:pPr>${ppr}</w:pPr>${runs}</w:p>`;
+  const body=reportBlocks(text).map(b=>{
+    if(b.t==='sp')return '';
+    if(b.t==='h1')return para(run(b.x,{b:1,sz:34,c:'0B57D0'}),'<w:pBdr><w:bottom w:val="single" w:sz="8" w:space="4" w:color="0B57D0"/></w:pBdr><w:spacing w:after="160"/>');
+    if(b.t==='h2')return para(run(b.x,{b:1,sz:26,c:'0B57D0'}),'<w:keepNext/><w:spacing w:before="280" w:after="80"/>');
+    if(b.t==='h3')return para(run(b.x,{b:1,sz:23}),'<w:keepNext/><w:spacing w:before="160" w:after="40"/>');
+    if(b.t==='kv')return para(run(b.k+': ',{b:1,c:'444746',sz:21})+run(b.x,{sz:21}),'<w:spacing w:after="20"/>');
+    if(b.t==='li')return para(run('•\t',{c:'0B57D0'})+run(b.x),'<w:tabs><w:tab w:val="left" w:pos="360"/></w:tabs><w:ind w:left="360" w:hanging="360"/><w:spacing w:after="40"/>');
+    return para(run(b.x),'<w:spacing w:after="120" w:line="300" w:lineRule="auto"/>')}).join('');
+  const doc=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+  return zipStore([
+    ['[Content_Types].xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'],
+    ['_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'],
+    ['word/document.xml',doc]])}
+/* ---- Diálogo ---- */
+let rpEdited=false;
+function rpEntries(date){return S.history.filter(h=>h.items.some(i=>itemDay(h,i)===date))}
+function renderReportBtn(){const n=S.hsel.size;$('#reportBtnTxt').textContent=n?`Informe (${n} ${n===1?'seleccionada':'seleccionadas'})`:'Informe diario'}
+function renderRpList(){
+  const date=$('#rpDate').value,E=rpEntries(date);
+  if(!S.rpSel){const pre=E.filter(h=>S.hsel.has(h.id));S.rpSel=new Set((pre.length?pre:E).map(h=>h.id))}
+  $('#rpList').innerHTML=E.length?E.map(h=>{const n=h.items.filter(i=>itemDay(h,i)===date).length;return `<label class="row" style="cursor:pointer"><input type="checkbox" class="cb" data-rp="${h.id}" ${S.rpSel.has(h.id)?'checked':''}><div class="main"><div class="title">${esc(postLabel(h))}</div><div class="meta">${pl(n,'grupo','grupos')} · ${esc(hm(h.date))}${h.url?' · '+esc(h.url.replace('https://www.','')):''}</div></div></label>`}).join('')
+    :`<div class="row"><div class="main muted">No hay publicaciones compartidas el ${esc(longDate(date))}.</div></div>`;
+  ['#rpCopy','#rpDocx','#rpPdf'].forEach(b=>$(b).disabled=!E.length);
+}
+function rpRegen(){const meta={author:$('#rpAuthor').value.trim(),brand:$('#rpBrand').value.trim()};save('fbp.report',meta);$('#rpText').value=buildReport($('#rpDate').value,[...S.rpSel],meta);rpEdited=false}
+async function rpMaybeRegen(){if(rpEdited&&!await confirmBox('¿Regenerar el informe?','Se perderán los cambios que hayas hecho en el texto.','Regenerar'))return false;rpRegen();return true}
+function openReport(){const meta=load('fbp.report',{})||{};$('#rpAuthor').value=str(meta.author,80);$('#rpBrand').value=str(meta.brand,80);
+  $('#rpDate').value=ymd(Date.now());$('#rpDate').max=ymd(Date.now());S.rpSel=null;renderRpList();rpRegen();$('#reportDlg').showModal()}
+$('#reportBtn').onclick=openReport;
+$('#rpDate').addEventListener('change',async()=>{if(!$('#rpDate').value)$('#rpDate').value=ymd(Date.now());S.rpSel=null;renderRpList();await rpMaybeRegen()});
+$('#rpList').addEventListener('change',async e=>{const id=e.target.dataset.rp;if(!id)return;e.target.checked?S.rpSel.add(id):S.rpSel.delete(id);if(!await rpMaybeRegen())e.target.checked=!e.target.checked});
+$('#rpAuthor').addEventListener('change',()=>rpMaybeRegen());$('#rpBrand').addEventListener('change',()=>rpMaybeRegen());
+$('#rpText').addEventListener('input',()=>{rpEdited=true});
+$('#rpRegen').onclick=()=>rpMaybeRegen();
+const rpName=ext=>`informe-difusion-${$('#rpDate').value}.${ext}`;
+$('#rpCopy').onclick=async()=>snack(await copyText($('#rpText').value)?'Informe copiado':'No se pudo copiar');
+$('#rpPdf').onclick=()=>{download(rpName('pdf'),buildPdf($('#rpText').value,`Informe de difusión · ${cap(longDate($('#rpDate').value))}`),'application/pdf');snack('PDF descargado')};
+$('#rpDocx').onclick=()=>{download(rpName('docx'),buildDocx($('#rpText').value),'application/vnd.openxmlformats-officedocument.wordprocessingml.document');snack('Documento de Word descargado')};
+/* Selección desde el Historial (la casilla está dentro del resumen desplegable) */
+$('#histBox').addEventListener('click',e=>{const cb=e.target.closest('[data-hsel]');if(!cb)return;e.preventDefault();const id=cb.dataset.hsel;
+  S.hsel.has(id)?S.hsel.delete(id):S.hsel.add(id);setTimeout(()=>{cb.checked=S.hsel.has(id);renderReportBtn()},0)},true);
 
 /* ============================================================
    AJUSTES
@@ -2150,7 +2411,7 @@ H('historial','Historial','Historial, reanudación y aprobaciones','historial re
 <p>Cada publicación asistida se guarda con la fecha, el texto, la URL y el estado de cada grupo:</p>
 <table><tr><th>Estado</th><th>Significado</th></tr><tr><td><b>Publicado</b></td><td>La publicación ya es visible en el grupo.</td></tr><tr><td><b>En aprobación</b></td><td>Facebook indicó que está pendiente de que la aprueben los administradores.</td></tr><tr><td><b>Aprobada / Rechazada</b></td><td>Lo que marcaste al revisarla más tarde.</td></tr><tr><td><b>Omitido</b></td><td>No publicaste en ese grupo.</td></tr><tr><td><b>Por hacer</b></td><td>Aún no has llegado a ese grupo; usa <b>Reanudar</b>.</td></tr></table>
 <h3>Revisar las publicaciones en aprobación</h3><p>En la parte superior del Historial aparece el panel <b>Pendientes de aprobación</b>, y el número en el icono de Historial te avisa de cuántas quedan. Para cada una, pulsa <b>Abrir grupo</b>, entra en <b>Tu contenido</b> y marca <b>Aprobada</b> o <b>Rechazada</b>. <a data-help="no-aparece">Más información</a></p>
-<ul><li><b>Reanudar:</b> continúa por los grupos que faltan.</li><li><b>Reutilizar contenido:</b> carga el texto y la URL en Publicar.</li><li>Los grupos usados cuentan para los <a data-help="buenas-practicas">límites de seguridad</a> aunque estén en aprobación.</li></ul>`),
+<ul><li><b>Reanudar:</b> continúa por los grupos que faltan.</li><li><b>Reutilizar contenido:</b> carga el texto y la URL en Publicar.</li><li><b>Informe diario:</b> marca publicaciones y genera un resumen profesional para copiar o exportar a PDF y Word. <a data-help="informe">Más información</a></li><li>Los grupos usados cuentan para los <a data-help="buenas-practicas">límites de seguridad</a> aunque estén en aprobación.</li></ul>`),
 H('automatico','Empezar','Publicación automática (extensión)','automatico automatizar extension chrome instalar publicar solo un clic comenzar bot',`
 <p>Con la extensión <b>Facebook Publisher · Publicación automática</b>, un clic en <b>Comenzar publicación automática</b> publica en todos los grupos seleccionados el texto, las imágenes o vídeos y la URL que preparaste.</p>
 <h3>Cómo funciona</h3><ol><li>La app decide <b>cuándo</b> publicar en cada grupo, con los mismos <a data-help="buenas-practicas">límites de seguridad</a>: pausa entre grupos, máximos por hora y día y 24 h por grupo.</li><li>La extensión abre el grupo en una ventana de Chrome <b>con tu sesión</b>, pulsa «Escribe algo…», pega el texto, adjunta los archivos y pulsa <b>Publicar</b>.</li><li>Comprueba el resultado: si Facebook dice que queda <b>pendiente de aprobación</b>, lo marca así. Si muestra un <b>aviso o bloqueo</b>, se detiene todo y se bloquea 24 h.</li></ol>
@@ -2160,6 +2421,11 @@ H('automatico','Empezar','Publicación automática (extensión)','automatico aut
 <h3>Cuenta, conexión y vista previa</h3><ul><li>Arriba a la derecha verás la <b>cuenta de Facebook detectada</b> (foto, nombre y una marca de verificación). Púlsala para ver los detalles o volver a comprobar. Se publicará con esa cuenta.</li><li>Antes de empezar y antes de cada grupo se comprueba que hay <b>conexión a Internet</b> y una <b>sesión de Facebook</b>. Si falta alguna, verás un mensaje de error y no se publicará nada.</li><li>En la <b>vista previa</b> aparece la miniatura real de la publicación o reel de origen.</li><li>La extensión solo lee tu identificador de usuario y tu propio perfil para mostrarlos; nunca lee tu contraseña ni tu token de sesión, y nada sale de tu navegador.</li></ul>
 <h3>Mientras publica</h3><ul><li>Deja abiertas la pestaña de la app y la ventana de Facebook. Puedes usar otras aplicaciones. Al terminar todos los grupos, la ventana de Facebook <b>se cierra sola</b> (lo puedes cambiar en Ajustes).</li><li>La <b>pausa entre grupos</b> se elige en la barra de publicación, junto al botón de inicio: mínimo 30 s, recomendado 60 s o más. Facebook no publica un mínimo oficial; cuanto más larga, menos riesgo.</li><li><b>Detener después de este grupo</b> para pausar; <b>Continuar</b> para seguir. El progreso queda en el Historial.</li><li>Si un grupo falla (no eres miembro, no permite publicar…), se omite con el motivo y se pasa al siguiente.</li></ul>
 <div class="callout warn"><b>Riesgos:</b> las condiciones de Facebook no permiten publicar de forma automatizada. Aunque los límites reducen mucho el riesgo, puede haber bloqueos temporales o restricciones de la cuenta. Empieza con pocos grupos y límites bajos. Facebook cambia su interfaz con frecuencia: si la extensión deja de encontrar algún botón, se detendrá y podrás seguir con el modo asistido.</div>`),
+H('informe','Historial','Informe diario de difusión','informe reporte resumen diario pdf word docx copiar exportar cliente marca',`
+<p>Genera un resumen profesional de lo que se ha compartido en un día, listo para enviar a un cliente o incluir en tu informe diario.</p>
+<ol><li>En <a href="#historial" data-nav="historial">Historial</a>, marca las publicaciones que quieras incluir con la casilla de cada una. Si no marcas ninguna, se incluyen todas las del día.</li><li>Pulsa <b>Informe diario</b>. La fecha es hoy por defecto; puedes cambiarla.</li><li>Opcionalmente indica quién lo elabora y el cliente o marca (se recuerdan para la próxima vez).</li><li>Revisa el texto: puedes editarlo libremente. Después pulsa <b>Copiar</b>, <b>Word</b> o <b>PDF</b>.</li></ol>
+<h3>Qué incluye</h3><ul><li><b>Resumen</b>: publicaciones compartidas, grupos alcanzados, cuántas quedaron visibles, en aprobación o sin publicar y por qué.</li><li><b>Detalle por publicación</b>: enlace, número de grupos y estado de cada grupo con la hora.</li><li><b>Observaciones</b> y <b>próximos pasos</b>: grupos con aprobación previa, accesos que pedir, grupos pendientes.</li></ul>
+<div class="callout">El texto se redacta con plantillas a partir de tus datos, sin inteligencia artificial y sin enviar nada fuera de tu navegador. Los cambios que hagas en el texto se respetan en el PDF y en el Word. Para mantener los títulos de sección, deja en su propia línea «Resumen», «Detalle por publicación», «Observaciones» y «Próximos pasos».</div>`),
 H('verificar','Historial','Verificar que una publicación aparece en el grupo','verificar comprobar test validar aparece reel grupo marcador',`
 <p>Facebook no permite que otras webs consulten los grupos, y la app nunca usa tu cuenta. Por eso la verificación se hace <b>en tu navegador, con tu sesión</b>, usando el <a data-help="marcador">marcador</a>, que solo lee lo que ves en pantalla.</p>
 <ol><li>En <a href="#historial" data-nav="historial">Historial</a>, junto al grupo, pulsa <b>Verificar</b>.</li><li>Pulsa <b>Abrir grupo</b> y, en esa pestaña, el marcador <b>FB Publisher</b>. Recorrerá unas pocas pantallas del grupo y leerá los enlaces de las publicaciones.</li><li>Pulsa <b>Copiar verificación</b>, vuelve a la app y pulsa <b>Pegar verificación</b>.</li></ol>
@@ -2226,7 +2492,7 @@ H('problemas','Ajustes','Solución de problemas','problemas error ventana bloque
 <h3>El marcador no hace nada</h3><p>Asegúrate de usarlo en una pestaña de facebook.com. En Firefox, comprueba que los marcadores <code>javascript:</code> están permitidos.</p>`),
 ];
 const HELP_CATS=['Empezar','Protección de la cuenta','Publicar','Grupos','Historial','Ajustes'];
-const HELP_ICON={'primeros-pasos':'rocket_launch','como-funciona':'lightbulb','url-origen':'link','editor':'edit_note','variables':'data_object','plantillas':'description','multimedia':'perm_media','destinos':'checklist','vista-previa':'preview','asistente':'touch_app','modos-apertura':'open_in_new','grupos':'groups','marcador':'bookmark_add','importar':'swap_vert','historial':'history','no-aparece':'visibility_off','verificar':'fact_check','automatico':'smart_toy','buenas-practicas':'verified_user','aviso-facebook':'report','ajustes':'settings','privacidad':'shield','atajos':'keyboard','problemas':'build'};
+const HELP_ICON={'primeros-pasos':'rocket_launch','como-funciona':'lightbulb','url-origen':'link','editor':'edit_note','variables':'data_object','plantillas':'description','multimedia':'perm_media','destinos':'checklist','vista-previa':'preview','asistente':'touch_app','modos-apertura':'open_in_new','grupos':'groups','marcador':'bookmark_add','importar':'swap_vert','historial':'history','no-aparece':'visibility_off','verificar':'fact_check','informe':'summarize','automatico':'smart_toy','buenas-practicas':'verified_user','aviso-facebook':'report','ajustes':'settings','privacidad':'shield','atajos':'keyboard','problemas':'build'};
 const normTxt=t=>t.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
 let helpQuery=null;
 function renderHelp(q){
@@ -2271,7 +2537,7 @@ document.addEventListener('keydown',e=>{
   const typing=/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)||e.target.isContentEditable;
   if(e.key==='F1'){e.preventDefault();openHelp();return}
   if(e.altKey&&['1','2','3','4'].includes(e.key)){e.preventDefault();location.hash=VIEWS[+e.key-1];return}
-  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();if(!$('#startBtn').disabled){location.hash='publicar';startRun()}return}
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();if(!$('#startBtn').disabled){location.hash='publicar';openPreflight()}return}
   if(typing)return;
   if(e.key==='?'){e.preventDefault();openHelp('atajos')}
   if(e.key==='/'){e.preventDefault();location.hash='grupos';setTimeout(()=>$('#gSearch').focus(),30)}
