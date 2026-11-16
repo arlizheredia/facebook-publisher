@@ -365,6 +365,14 @@ input[type=checkbox].cb{accent-color:var(--primary);width:18px;height:18px;margi
 .pace select{height:32px;border-radius:16px;border:1px solid var(--outline);background:var(--surface);color:var(--text);padding:0 10px;font:500 13px var(--font);cursor:pointer}
 @media (max-width:720px){.fb-acct .nm{display:none}.fb-acct{padding:0 4px}}
 #reportDlg{width:min(880px,calc(100vw - 32px))}
+#reportDlg .dlg-h .icon-btn{margin-right:-4px}
+#reportDlg textarea.rp-text{min-height:260px}
+#reportDlg .tip[data-tip]:hover::before{top:auto;bottom:calc(100% + 6px)}
+#reportDlg.max{width:calc(100vw - 16px);max-width:none;height:calc(100vh - 16px);height:calc(100dvh - 16px);max-height:none;border-radius:20px}
+#reportDlg.max[open]{display:flex;flex-direction:column}
+#reportDlg.max .dlg-b{flex:1;max-height:none;display:flex;flex-direction:column;min-height:0}
+#reportDlg.max .rp-list{max-height:22vh;flex:none}
+#reportDlg.max .rp-text{flex:1;min-height:200px;resize:none;font-size:14px!important;line-height:22px!important}
 .rp-fields{display:grid;grid-template-columns:170px 1fr 1fr;gap:12px}
 .rp-fields .field{margin-bottom:8px}
 .rp-label{font-size:12px;font-weight:500;color:var(--text-2);margin:8px 0 6px}
@@ -890,7 +898,7 @@ details.adv[open] summary .ms{transform:rotate(180deg)}
 
 <!-- Report dialog -->
 <dialog id="reportDlg">
-  <div class="dlg-h"><span class="ms" aria-hidden="true" style="color:var(--primary);font-size:28px">summarize</span><h2>Informe de difusión</h2><button class="help-link" data-help="informe" aria-label="Ayuda"><span class="ms" aria-hidden="true">help</span></button></div>
+  <div class="dlg-h"><span class="ms" aria-hidden="true" style="color:var(--primary);font-size:28px">summarize</span><h2>Informe de difusión</h2><button class="icon-btn tip" id="rpMax" data-tip="Maximizar" aria-label="Maximizar" aria-pressed="false"><span class="ms" aria-hidden="true">open_in_full</span></button><button class="help-link" data-help="informe" aria-label="Ayuda"><span class="ms" aria-hidden="true">help</span></button></div>
   <div class="dlg-b">
     <div class="rp-fields">
       <div class="field"><label for="rpDate">Fecha</label><input class="input" type="date" id="rpDate"></div>
@@ -2145,7 +2153,7 @@ function buildReport(date,ids,meta){
     if(ver)P.push(`Se comprobó directamente en el grupo la visibilidad de ${ver===shared?(ver===1?'la publicación':'todas ellas'):ver===1?'una de ellas':`${ver} de ellas`}.`);
   }
   if(sk.length){const rs=[...new Set(sk.map(i=>reasonOf(i.error)))];P.push(`En ${pl(sk.length,'grupo','grupos')} no fue posible publicar (${rs.join('; ')}).`)}
-  if(pe.length)P.push(`Quedan ${pl(pe.length,'grupo','grupos')} por completar.`);
+  if(pe.length)P.push(`${pe.length===1?'Queda':'Quedan'} ${pl(pe.length,'grupo','grupos')} por completar.`);
   L.push(P.join(' '),'','Detalle por publicación');
   E.forEach(({h,its},k)=>{
     const c=f=>its.filter(f).length,p1=c(i=>i.status==='done'&&i.review!=='awaiting'&&i.review!=='rejected'),a1=c(i=>i.review==='awaiting'),r1=c(i=>i.review==='rejected'),s1=c(i=>i.status==='skipped'),e1=c(i=>i.status==='pending');
@@ -2264,6 +2272,9 @@ async function rpMaybeRegen(){if(rpEdited&&!await confirmBox('¿Regenerar el inf
 function openReport(){const meta=load('fbp.report',{})||{};$('#rpAuthor').value=str(meta.author,80);$('#rpBrand').value=str(meta.brand,80);
   $('#rpDate').value=ymd(Date.now());$('#rpDate').max=ymd(Date.now());S.rpSel=null;renderRpList();rpRegen();$('#reportDlg').showModal()}
 $('#reportBtn').onclick=openReport;
+function setRpMax(on){const d=$('#reportDlg'),b=$('#rpMax');d.classList.toggle('max',on);b.setAttribute('aria-pressed',on);b.dataset.tip=on?'Restaurar':'Maximizar';b.setAttribute('aria-label',b.dataset.tip);b.innerHTML=ic(on?'close_fullscreen':'open_in_full');save('fbp.rpMax',on)}
+$('#rpMax').onclick=()=>{setRpMax(!$('#reportDlg').classList.contains('max'));$('#rpText').focus()};
+setRpMax(load('fbp.rpMax',false)===true);
 $('#rpDate').addEventListener('change',async()=>{if(!$('#rpDate').value)$('#rpDate').value=ymd(Date.now());S.rpSel=null;renderRpList();await rpMaybeRegen()});
 $('#rpList').addEventListener('change',async e=>{const id=e.target.dataset.rp;if(!id)return;e.target.checked?S.rpSel.add(id):S.rpSel.delete(id);if(!await rpMaybeRegen())e.target.checked=!e.target.checked});
 $('#rpAuthor').addEventListener('change',()=>rpMaybeRegen());$('#rpBrand').addEventListener('change',()=>rpMaybeRegen());
