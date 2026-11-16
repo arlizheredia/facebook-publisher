@@ -10,8 +10,8 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%232d88ff'/%3E%3Cstop offset='1' stop-color='%230b57d0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='48' height='48' rx='12' fill='url(%23g)'/%3E%3Cpath d='M10 36.5L40 24 10 11.5v9.7l21.4 2.8L10 26.8z' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0..1,0&display=block">
+<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono&display=swap">
+<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0..1,0&display=block">
 <style>
 /* ================== TOKENS (Material 3) ================== */
 :root{
@@ -65,6 +65,10 @@ kbd{border:1px solid var(--outline-2);border-bottom-width:2px;color:var(--text-2
 .inl{display:inline-flex;align-items:center;gap:6px;font-size:12px;line-height:16px;color:var(--text-2)}
 .inl>.ms{font-size:18px}
 .vf-steps{margin:0 0 8px;padding-left:20px}.vf-steps li{margin:6px 0;line-height:22px}
+.auto-box{display:flex;gap:16px;align-items:flex-start;background:var(--surface-2);border-radius:16px;padding:16px 20px;margin-top:8px}
+.auto-box h4{margin:2px 0 6px;font:500 16px/22px var(--font)}
+.spin{width:28px;height:28px;border-radius:50%;border:3px solid var(--primary-container);border-top-color:var(--primary);animation:spin 1s linear infinite;flex:none;margin-top:2px}
+@keyframes spin{to{transform:rotate(360deg)}}
 .dest-foot{margin-top:12px;display:flex;gap:4px 16px;flex-wrap:wrap;align-items:center}
 .dest-foot .btn.text{margin-left:-12px}
 .ms.fill{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
@@ -750,7 +754,12 @@ details.adv[open] summary .ms{transform:rotate(180deg)}
   <div class="dlg-b">
     <div class="set-row"><div class="main"><div class="t">Tema</div><div class="d">Claro, oscuro o según el sistema</div></div>
       <div class="seg" id="themeSeg"><button data-t="light"><span class="ms" aria-hidden="true">light_mode</span>Claro</button><button data-t="dark"><span class="ms" aria-hidden="true">dark_mode</span>Oscuro</button><button data-t="system"><span class="ms" aria-hidden="true">brightness_auto</span>Sistema</button></div></div>
-    <div class="set-row"><div class="main"><div class="t">Cómo abrir cada grupo</div><div class="d"><a href="#" data-help="modos-apertura">¿Qué opción elijo?</a></div></div>
+    <div class="set-row" style="border:0;padding-bottom:0"><div class="main"><div class="t" style="color:var(--primary);display:flex;align-items:center;gap:8px"><span class="ms" aria-hidden="true">smart_toy</span>Publicación automática</div><div class="d" id="extStatus"></div></div></div>
+    <div class="set-row"><div class="main"><div class="t">Publicar automáticamente</div><div class="d">Con un clic, la extensión publica en cada grupo seleccionado respetando los límites de seguridad. <a href="#" data-help="automatico">Cómo funciona y riesgos</a></div></div>
+      <label class="switch"><input type="checkbox" id="setAuto"><span></span></label></div>
+    <div class="set-row"><div class="main"><div class="t">Modo prueba</div><div class="d">Prepara la publicación en el primer grupo pero <b>no pulsa «Publicar»</b>, para que compruebes que todo está bien. Desactívalo cuando hayas comprobado que funciona.</div></div>
+      <label class="switch"><input type="checkbox" id="setAutoTest"><span></span></label></div>
+    <div class="set-row"><div class="main"><div class="t">Cómo abrir cada grupo</div><div class="d">Solo en el modo asistido (manual). <a href="#" data-help="modos-apertura">¿Qué opción elijo?</a></div></div>
       <select class="input" id="setMode" style="width:220px;height:40px"><option value="side">Ventana lateral</option><option value="tab">Pestaña nueva</option><option value="share">Diálogo «Compartir» de Facebook</option></select></div>
     <div class="set-row" style="border:0;padding-bottom:0"><div class="main"><div class="t" style="color:var(--primary);display:flex;align-items:center;gap:8px"><span class="ms" aria-hidden="true">verified_user</span>Protección de la cuenta</div><div class="d">Límites que reducen el riesgo de bloqueos. Puedes hacerlos más estrictos, pero no desactivarlos. <a href="#" data-help="buenas-practicas">Más información</a></div></div></div>
     <div class="set-row"><div class="main"><div class="t">Pausa entre grupos</div><div class="d">Segundos tras cada publicación (mínimo 30, recomendado 60 o más).</div></div>
@@ -858,11 +867,11 @@ function download(name,data,type='application/json'){const b=new Blob([data],{ty
 /* ---------- Estado ---------- */
 /* Límites de protección de la cuenta (no se pueden desactivar) */
 const SAFE={MIN_PAUSE:30,MAX_PAUSE:900,MAX_DAY:40,MAX_HOUR:15,RECENT_H:24,LOCK_H:24};
-const DEF_SETTINGS={mode:'side',pause:60,appendUrl:true,sound:true,dayCap:20,hourCap:8,clearAfter:'ask'};
+const DEF_SETTINGS={mode:'side',pause:60,appendUrl:true,sound:true,dayCap:20,hourCap:8,clearAfter:'ask',autoMode:false,autoTest:true};
 const clamp=(v,a,b,d)=>{v=parseInt(v);return isNaN(v)?d:Math.max(a,Math.min(b,v))};
 function cleanSettings(o){o=Object.assign({},DEF_SETTINGS,o&&typeof o==='object'?o:{});
   return {mode:['side','tab','share'].includes(o.mode)?o.mode:'side',pause:clamp(o.pause,SAFE.MIN_PAUSE,SAFE.MAX_PAUSE,60),appendUrl:o.appendUrl!==false,sound:o.sound!==false,
-    dayCap:clamp(o.dayCap,1,SAFE.MAX_DAY,20),hourCap:clamp(o.hourCap,1,SAFE.MAX_HOUR,8),clearAfter:['ask','always','never'].includes(o.clearAfter)?o.clearAfter:'ask'}}
+    dayCap:clamp(o.dayCap,1,SAFE.MAX_DAY,20),hourCap:clamp(o.hourCap,1,SAFE.MAX_HOUR,8),clearAfter:['ask','always','never'].includes(o.clearAfter)?o.clearAfter:'ask',autoMode:o.autoMode===true,autoTest:o.autoTest!==false}}
 /* Los datos guardados se validan al leerlos: en github.io el almacenamiento se comparte con otras apps del mismo dominio */
 const str=(v,max)=>typeof v==='string'?v.slice(0,max):'';
 const okId=v=>typeof v==='string'&&/^[\w-]{1,40}$/.test(v)?v:null;
@@ -873,7 +882,7 @@ function cleanGroups(list){const seen=new Set();return (Array.isArray(list)?list
     notes:str(g.notes,500),active:g.active!==false,approval:g.approval===true,lastShared:okTs(g.lastShared),created:okTs(g.created)||Date.now()}}).filter(Boolean)}
 function cleanHistory(list){return (Array.isArray(list)?list:[]).map(h=>{if(!h||typeof h!=='object')return null;
   const items=(Array.isArray(h.items)?h.items:[]).map(i=>{const url=i&&normGroupUrl(str(i.url,300));if(!url)return null;
-    return {gid:okId(i.gid)||'',name:str(i.name,140),url,notes:str(i.notes,500),status:['pending','done','skipped'].includes(i.status)?i.status:'pending',at:okTs(i.at),review:i.status==='done'&&['awaiting','approved','rejected'].includes(i.review)?i.review:undefined,rat:okTs(i.rat),verify:i.verify&&typeof i.verify==='object'&&okTs(i.verify.at)?{at:i.verify.at,found:i.verify.found===true}:undefined}}).filter(Boolean);
+    return {gid:okId(i.gid)||'',name:str(i.name,140),url,notes:str(i.notes,500),status:['pending','done','skipped'].includes(i.status)?i.status:'pending',at:okTs(i.at),review:i.status==='done'&&['awaiting','approved','rejected'].includes(i.review)?i.review:undefined,rat:okTs(i.rat),error:i.error?str(i.error,240):undefined,verify:i.verify&&typeof i.verify==='object'&&okTs(i.verify.at)?{at:i.verify.at,found:i.verify.found===true}:undefined}}).filter(Boolean);
   if(!items.length)return null;const u=parseFbUrl(str(h.url,2000));
   return {id:okId(h.id)||uid(),date:okTs(h.date)||Date.now(),url:u.url||'',text:str(h.text,63206),mediaCount:clamp(h.mediaCount,0,999,0),appendUrl:h.appendUrl!==false,items}}).filter(Boolean).slice(0,300)}
 function cleanTemplates(list){return (Array.isArray(list)?list:[]).map(t=>t&&typeof t==='object'&&typeof t.text==='string'?{id:okId(t.id)||uid(),name:str(t.name,80)||'Plantilla',text:str(t.text,63206)}:null).filter(Boolean)}
@@ -1218,6 +1227,7 @@ function renderSummary(){
   const est=Math.ceil(n*(25+(+S.settings.pause||0))/60),used=usage().day.length;
   $('#pubSum').innerHTML=n?`<b>${n} grupo${n>1?'s':''}</b> seleccionado${n>1?'s':''} · ≈ ${est} min · <span title="Grupos publicados en las últimas 24 h">${ic('verified_user','sm')} hoy ${used}/${S.settings.dayCap}</span> ${!hasContent?'<br><span class="small" style="color:var(--error)">Añade una URL, texto o archivos para empezar</span>':r.error?'<br><span class="small" style="color:var(--error)">Revisa la URL de origen</span>':''}`:'<span class="muted">Selecciona al menos un grupo de destino</span>';
   $('#startBtn').disabled=!n||!hasContent||!!r.error;
+  $('#startBtn').innerHTML=autoActive()?`${ic('smart_toy')}${S.settings.autoTest?'Probar publicación automática':'Comenzar publicación automática'}`:`${ic('play_arrow')}Iniciar publicación asistida`;
 }
 
 /* ============================================================
@@ -1430,6 +1440,68 @@ $('#bookmarklet').addEventListener('click',e=>{e.preventDefault();snack('Arrastr
 /* ============================================================
    PUBLICACIÓN ASISTIDA
    ============================================================ */
+/* ---------- Extensión de publicación automática (comunicación vía bridge.js) ---------- */
+const Ext={ready:false,version:null,_id:0,_p:{},onStep:null,
+  call(cmd,job,timeout=300000){if(!this.ready)return Promise.resolve({ok:false,step:'ext',error:'La extensión no está instalada o no está activa'});
+    const id=++this._id;return new Promise(res=>{const t=setTimeout(()=>{delete this._p[id];res({ok:false,step:'timeout',error:'La extensión no respondió a tiempo'})},timeout);
+      this._p[id]=r=>{clearTimeout(t);res(r&&typeof r==='object'?r:{ok:false,step:'ext',error:'Respuesta no válida'})};window.postMessage({src:'fbp-app',id,cmd,job},'*')})}};
+window.addEventListener('message',e=>{if(e.source!==window)return;const d=e.data;if(!d||d.src!=='fbp-ext')return;
+  if(d.type==='hello'){const was=Ext.ready;Ext.ready=true;Ext.version=str(d.version,20);if(!was){renderExt();renderSummary()}}
+  else if(d.reply&&Ext._p[d.reply]){Ext._p[d.reply](d.res);delete Ext._p[d.reply]}
+  else if(d.type==='progress'&&Ext.onStep)Ext.onStep(str(d.step,200))});
+const autoActive=()=>S.settings.autoMode&&Ext.ready;
+function renderExt(){const el=$('#extStatus');if(!el)return;
+  el.innerHTML=Ext.ready?`<span style="color:var(--success)">${ic('check_circle','sm')} Extensión instalada (v${esc(Ext.version)})</span>`
+    :`${ic('extension_off','sm')} Extensión no detectada. <a href="facebook-publisher-extension.zip" download>Descargar extensión</a> · <a href="#" data-help="automatico">Cómo instalarla</a>`}
+const fileToB64=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(r.error);r.readAsDataURL(f)});
+async function runAuto(){
+  const R=S.run;if(!R||R.autoRunning)return;R.auto=true;R.autoRunning=true;R.stop=false;R.stopMsg='';R.log=[];
+  const test=S.settings.autoTest;
+  const media=S.media.filter(m=>m.type==='image'||m.type==='video');
+  const total=media.reduce((a,m)=>a+(m.file.size||0),0);
+  if(total>60*1024*1024){R.stop=true;R.stopMsg='Los archivos superan 60 MB: reduce su tamaño o usa el modo asistido.'}
+  const files=R.stop?[]:await Promise.all(media.map(async m=>({name:m.name,type:m.file.type||(m.type==='image'?'image/png':'video/mp4'),data:await fileToB64(m.file)})));
+  Ext.onStep=st=>{R.step=st;R.log.push(st);const el=$('#autoStep');if(el)el.textContent=st;const lg=$('#autoLog');if(lg)lg.innerHTML=R.log.slice(-6).map(x=>`<li>${esc(x)}</li>`).join('')};
+  while(!R.stop&&S.run===R){
+    const idx=R.entry.items.findIndex(i=>i.status==='pending');if(idx<0)break;
+    R.idx=idx;const it=R.entry.items[idx];
+    let G=gate();
+    while(!G.ok&&!R.stop&&S.run===R){if(G.reason==='lock'||G.reason==='day'){R.stop=true;R.stopMsg=G.reason==='day'?`Límite diario alcanzado. Podrás continuar a partir de ${hhmm(G.until)}.`:'Publicación bloqueada por seguridad.';break}
+      R.phase='wait';renderRun();await new Promise(r=>setTimeout(r,Math.min(5000,Math.max(500,G.until-Date.now()+300))));G=gate()}
+    if(R.stop||S.run!==R)break;
+    if(isRecentId(it.gid)){it.status='skipped';it.error='Ya publicaste aquí hace menos de 24 h';it.at=Date.now();persist.history();continue}
+    R.phase='posting';R.step='Preparando…';R.log=[];renderRun();
+    const res=await Ext.call('post',{url:it.url,text:runText(it),files,test});
+    if(S.run!==R)break;
+    if(res.ok&&res.test){R.stop=true;R.testDone=true;R.stopMsg='Modo prueba completado: revisa la ventana de Facebook. El texto y los archivos deberían estar listos en el cuadro de publicación, sin publicar. Si todo está bien, desactiva el modo prueba en Ajustes y vuelve a empezar (cierra ese cuadro sin publicar).';break}
+    if(res.ok){it.error=undefined;mark('done',res.review||undefined)}
+    else if(res.blocked){setLock(Date.now()+SAFE.LOCK_H*3600e3);renderLock();R.stop=true;R.stopMsg='Facebook mostró un aviso: «'+str(res.error,200)+'». Se ha detenido todo y bloqueado 24 h para proteger tu cuenta.';it.error=str(res.error,200);persist.history();break}
+    else{it.status='skipped';it.at=Date.now();it.error=str(res.error,200)+(res.step?` [${res.step}]`:'');persist.history();
+      R.fails=(R.fails||0)+1;if(R.fails>=2&&!R.entry.items.some(i=>i.status==='done')){R.stop=true;R.stopMsg='Dos grupos seguidos han fallado. Puede que Facebook haya cambiado su interfaz o que haya que iniciar sesión. Último error: '+it.error}}
+    if(res.ok)R.fails=0;
+    renderRun();
+  }
+  R.autoRunning=false;R.phase='';Ext.onStep=null;if(S.run===R){if(R.idx>=R.entry.items.length||!R.entry.items.some(i=>i.status==='pending'))R.idx=R.entry.items.length;renderRun()}
+}
+function renderAuto(main,it){
+  const R=S.run,items=R.entry.items;
+  const errs=items.filter(i=>i.error).map(i=>`<li><b>${esc(i.name)}:</b> ${esc(i.error)}</li>`).join('');
+  if(!R.autoRunning||R.stop){
+    main.innerHTML=`<div class="cool" style="padding:24px 0"><div class="empty" style="padding:0"><div class="ill" style="${R.testDone?'':'background:var(--warn-container);color:var(--warn)'}">${ic(R.testDone?'science':'pause_circle')}</div></div>
+      <h3 style="font-size:22px;line-height:28px;margin:0">${R.testDone?'Modo prueba completado':'Publicación automática detenida'}</h3>
+      <p class="muted" style="margin:0;max-width:520px">${esc(R.stopMsg||'La has detenido. Tu progreso está guardado.')}</p>
+      ${errs?`<details class="adv" style="max-width:520px;text-align:left"><summary>Ver incidencias${ic('chevron')}</summary><ul class="small" style="margin:8px 0">${errs}</ul></details>`:''}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">${R.testDone?`<button class="btn tonal" id="aSettings">${ic('settings')}Abrir ajustes</button>`:gate().reason==='lock'||gate().reason==='day'?'':`<button class="btn filled" id="aGo">${ic('play_arrow')}Continuar</button>`}<button class="btn outlined" id="aClose">Cerrar</button></div></div>`;
+    const g=$('#aGo');if(g)g.onclick=()=>{R.stop=false;R.testDone=false;runAuto()};$('#aClose').onclick=()=>closeRun(true);const st=$('#aSettings');if(st)st.onclick=()=>{closeRun(true);openSettings()};return;
+  }
+  main.innerHTML=`<div class="run-group"><div class="gav">${esc(initials(it.name))}</div><div style="min-width:0"><div class="muted small">Grupo ${R.idx+1} de ${items.length} · ${S.settings.autoTest?'<b>modo prueba</b>':'publicación automática'}</div><h3>${esc(it.name)}</h3><a class="small" href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.url.replace('https://www.',''))}</a></div></div>
+    <div class="auto-box"><span class="spin" aria-hidden="true"></span><div style="min-width:0"><h4 id="autoStep" aria-live="polite">${esc(R.step||'Preparando…')}</h4>
+      <p class="muted small" style="margin:0">La extensión trabaja en la ventana de Facebook. No la cierres ni cierres esta pestaña; puedes seguir usando otras aplicaciones.</p>
+      <ol class="small muted" id="autoLog" style="margin:8px 0 0;padding-left:18px">${(R.log||[]).slice(-6).map(x=>`<li>${esc(x)}</li>`).join('')}</ol></div></div>
+    ${errs?`<details class="adv"><summary>Incidencias${ic('chevron')}</summary><ul class="small" style="margin:8px 0">${errs}</ul></details>`:''}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px"><button class="btn outlined" id="aStop">${ic('stop_circle')}Detener después de este grupo</button><button class="btn text danger" id="aPanic">${ic('report')}Facebook me mostró un aviso</button></div>`;
+  $('#aStop').onclick=()=>{R.stop=true;R.stopMsg='La has detenido. Tu progreso está guardado; pulsa Continuar cuando quieras.';snack('Se detendrá al terminar el grupo actual')};$('#aPanic').onclick=()=>{R.stop=true;panicStop()};
+}
 let fbWin=null,runTick=null;
 /* ---------- Protección de la cuenta: ritmo y límites persistentes ---------- */
 function doneTimes(){return S.history.flatMap(h=>h.items.filter(i=>i.status==='done'&&i.at).map(i=>i.at)).sort((a,b)=>a-b)}
@@ -1455,8 +1527,8 @@ function startRun(fromHist){
     S.history.unshift(entry);persist.history();
   }
   const idx=entry.items.findIndex(i=>i.status==='pending');
-  S.run={entry,idx:idx<0?entry.items.length:idx,opened:false};saveRunState();renderResume();
-  $('#runDlg').showModal();renderRun();
+  S.run={entry,idx:idx<0?entry.items.length:idx,opened:false,auto:autoActive()};saveRunState();renderResume();
+  $('#runDlg').showModal();renderRun();if(S.run.auto)runAuto();
 }
 $('#startBtn').onclick=()=>openPreflight();
 function openPreflight(){
@@ -1466,6 +1538,8 @@ function openPreflight(){
   const st=S.settings,u=usage(),now=Date.now(),left=Math.max(0,st.dayCap-u.day.length);
   const text=txtEl.value,checks=[];const add=(lvl,icon,t,d)=>checks.push({lvl,icon,t,d});
   const locked=S.lock&&S.lock>now;
+  if(S.settings.autoMode)add(Ext.ready?'info':'warn',Ext.ready?'smart_toy':'extension_off',Ext.ready?(S.settings.autoTest?'Publicación automática · modo prueba':'Publicación automática'):'Extensión no detectada',
+    Ext.ready?(S.settings.autoTest?'Se preparará la publicación en el primer grupo sin pulsar «Publicar», para que la revises.':'La extensión publicará en cada grupo con tu sesión. Mantén abiertas esta pestaña y la ventana de Facebook.'):'Se usará el modo asistido. Instala o activa la extensión para publicar automáticamente.');
   if(locked)add('err','block','Bloqueo de seguridad activo',`Indicaste que Facebook mostró un aviso. Podrás publicar a partir de ${esc(hhmm(S.lock))}.`);
   if(left===0)add('warn','event_busy','Límite diario alcanzado',`Ya has publicado en ${u.day.length} grupos en 24 h. Puedes preparar la cola: el asistente esperará hasta ${esc(hhmm(gate().until||now))}.`);
   else if(sel.length>left)add('warn','event_busy',`Hoy solo quedan ${left} de ${st.dayCap} publicaciones`,`Has seleccionado ${sel.length} grupos. El resto quedará pendiente y podrás reanudarlo desde el Historial.`);
@@ -1534,7 +1608,7 @@ function beep(){if(!S.settings.sound)return;try{const a=new (window.AudioContext
 function renderRun(){
   const R=S.run;if(!R)return;const items=R.entry.items;const done=items.filter(i=>i.status!=='pending').length;
   $('#runBar').style.width=(done/items.length*100)+'%';$('#runCount').textContent=`${done} de ${items.length}`;
-  $('#runQueue').innerHTML=items.map((it,i)=>`<div class="q ${i===R.idx?'cur':''}" data-q="${i}"><span class="dot ${it.status}">${it.status==='done'?ic('check'):it.status==='skipped'?ic('close'):''}</span><span class="n">${esc(it.name)}</span></div>`).join('');
+  $('#runQueue').innerHTML=items.map((it,i)=>`<div class="q ${i===R.idx?'cur':''}" data-q="${i}"><span class="dot ${it.status}">${it.status==='done'?ic('check'):it.status==='skipped'?ic('close'):''}</span><span class="n" title="${esc(it.error||'')}">${esc(it.name)}</span>${it.error?ic('error','sm'):''}</div>`).join('');
   const main=$('#runMain');clearInterval(runTick);
   if(R.idx>=items.length){
     const a=items.filter(i=>i.status==='done'&&i.review==='awaiting').length,d=items.filter(i=>i.status==='done').length-a,s=items.filter(i=>i.status==='skipped').length;
@@ -1568,9 +1642,10 @@ function renderRun(){
       <p style="margin:0">Siguiente: <b>${esc(it.name)}</b></p>
       <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">${G.reason==='pause'?'':`<button class="btn outlined" id="coolLater">${ic('schedule')}Continuar más tarde</button>`}
       <button class="btn text danger" id="rPanic2">${ic('report')}Facebook me mostró un aviso</button></div></div>`;
-    const cl=$('#coolLater');if(cl)cl.onclick=()=>closeRun(true);$('#rPanic2').onclick=panicStop;
+    const cl=$('#coolLater');if(cl)cl.onclick=()=>{R.stop=true;closeRun(true)};$('#rPanic2').onclick=panicStop;
     upd();runTick=setInterval(upd,1000);return;
   }
+  if(R.auto){document.title=`${R.autoRunning&&!R.stop?'⏳':'⏸'} ${it.name} · Facebook Publisher`;renderAuto(main,it);return}
   document.title=`▶ ${it.name} · Facebook Publisher`;
   const mode=S.settings.mode;const imgs=S.media.filter(m=>m.type==='image'),vids=S.media.filter(m=>m.type==='video');
   const txt=runText(it);
@@ -1606,13 +1681,14 @@ $('#runQueue').addEventListener('click',e=>{const q=e.target.closest('[data-q]')
 async function closeRun(force){
   const R=S.run;if(!R){$('#runDlg').close();return}
   const pending=R.entry.items.filter(i=>i.status==='pending').length;
-  if(!force&&pending&&!await confirmBox('¿Salir de la publicación asistida?',`Quedan ${pending} grupo(s) pendientes. Podrás reanudar desde el Historial.`,'Salir'))return;
+  if(!force&&pending&&!await confirmBox(R.autoRunning?'¿Detener la publicación automática?':'¿Salir de la publicación asistida?',`Quedan ${pending} grupo(s) pendientes. ${R.autoRunning?'Si hay un grupo en curso, puede que termine de publicarse. ':''}Podrás reanudar desde el Historial.`,'Salir'))return;
+  R.stop=true;
   clearInterval(runTick);S.run=null;saveRunState();$('#runDlg').close();document.title='Facebook Publisher';renderAllGroups();renderHistory();renderResume();
 }
 $('#runClose').onclick=()=>closeRun();
 $('#runDlg').addEventListener('cancel',e=>{e.preventDefault();closeRun()});
 $('#runDlg').addEventListener('keydown',e=>{
-  if(!S.run||e.ctrlKey||e.metaKey||e.altKey||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)||$('#confirmDlg').open)return;
+  if(!S.run||S.run.auto||e.ctrlKey||e.metaKey||e.altKey||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)||$('#confirmDlg').open)return;
   const R=S.run;if(R.idx>=R.entry.items.length)return;
   if(!gate().ok)return;
   const k=e.key.toLowerCase();
@@ -1699,7 +1775,7 @@ $('#clearHist').onclick=async()=>{if(!S.history.length)return;if(await confirmBo
 /* ============================================================
    AJUSTES
    ============================================================ */
-function openSettings(){const s=S.settings;$('#setMode').value=s.mode;$('#setPause').value=s.pause;$('#setHour').value=s.hourCap;$('#setDay').value=s.dayCap;$('#setClear').value=s.clearAfter;$('#setAppend').checked=s.appendUrl;$('#setSound').checked=s.sound;
+function openSettings(){const s=S.settings;$('#setAuto').checked=s.autoMode;$('#setAutoTest').checked=s.autoTest;renderExt();$('#setMode').value=s.mode;$('#setPause').value=s.pause;$('#setHour').value=s.hourCap;$('#setDay').value=s.dayCap;$('#setClear').value=s.clearAfter;$('#setAppend').checked=s.appendUrl;$('#setSound').checked=s.sound;
   const locked=S.lock&&S.lock>Date.now();$('#lockRow').hidden=!locked;if(locked)$('#lockTxt').textContent=`Nuevas publicaciones bloqueadas hasta ${hhmm(S.lock)}.`;applyTheme();$('#settingsDlg').showModal()}
 function numSetting(id,key,min,max){$(id).onchange=e=>{S.settings[key]=clamp(e.target.value,min,max,DEF_SETTINGS[key]);e.target.value=S.settings[key];persist.settings();renderSummary();
   if(+e.target.value!==+e.target.dataset.prev)snack('Ajuste guardado')}}
@@ -1707,6 +1783,11 @@ numSetting('#setHour','hourCap',1,SAFE.MAX_HOUR);numSetting('#setDay','dayCap',1
 $('#setClear').onchange=e=>{S.settings.clearAfter=e.target.value;persist.settings()};
 $('#unlockBtn').onclick=async()=>{if(!await confirmBox('¿Quitar el bloqueo de seguridad?','Si Facebook te mostró un aviso, publicar de nuevo antes de 24 horas aumenta el riesgo de restricciones en tu cuenta. Hazlo solo si estás seguro de que todo está bien.','Quitar bloqueo',true))return;setLock(null);openSettings();renderLock();snack('Bloqueo quitado')};
 $('#settingsBtn').onclick=openSettings;
+$('#setAuto').onchange=async e=>{if(e.target.checked){
+    const ok=await confirmBox('¿Activar la publicación automática?','La extensión publicará por ti en cada grupo. Las condiciones de Facebook no permiten publicar de forma automatizada: puede haber bloqueos temporales o restricciones de la cuenta. Los límites de seguridad siguen activos y todo se detiene si Facebook muestra un aviso. Empieza en modo prueba y con pocos grupos.','Activar, asumo el riesgo',true);
+    if(!ok){e.target.checked=false;return}}
+  S.settings.autoMode=e.target.checked;persist.settings();renderSummary();if(e.target.checked&&!Ext.ready)snack('Instala la extensión para usar la publicación automática','Cómo',()=>openHelp('automatico'),8000)};
+$('#setAutoTest').onchange=e=>{S.settings.autoTest=e.target.checked;persist.settings();renderSummary()};
 $('#setMode').onchange=e=>{S.settings.mode=e.target.value;persist.settings()};
 $('#setPause').onchange=e=>{const v=parseInt(e.target.value);S.settings.pause=clamp(v,SAFE.MIN_PAUSE,SAFE.MAX_PAUSE,60);e.target.value=S.settings.pause;persist.settings();renderSummary();if(v<SAFE.MIN_PAUSE)snack(`La pausa mínima es de ${SAFE.MIN_PAUSE} segundos para proteger tu cuenta`)};
 $('#setAppend').onchange=e=>{S.settings.appendUrl=e.target.checked;persist.settings();renderPreview()};
@@ -1733,6 +1814,7 @@ H('primeros-pasos','Empezar','Primeros pasos','inicio empezar tutorial guía',`
 <h3>2. Prepara la publicación</h3><p>En <b>Publicar</b>, pega la <a data-help="url-origen">URL de la publicación</a> que quieres difundir y, si quieres, escribe un <a data-help="editor">texto</a> y añade <a data-help="multimedia">imágenes, vídeo o audio</a>.</p>
 <h3>3. Elige los destinos</h3><p>Marca los <a data-help="destinos">grupos de destino</a>. Puedes seleccionarlos rápidamente por etiqueta.</p>
 <h3>4. Publicación asistida</h3><p>Pulsa <b>Iniciar publicación asistida</b>. Para cada grupo, la app copia el texto y abre el grupo; tú pegas, publicas y confirmas. <a data-help="asistente">Más información</a>.</p>
+<p>¿Prefieres que se publique solo? Instala la <a data-help="automatico">extensión de publicación automática</a>.</p>
 <div class="callout">Consejo: guarda tus textos habituales como <a data-help="plantillas">plantillas</a> y usa <a data-help="variables">{grupo}</a> para personalizar cada publicación.</div>`),
 H('como-funciona','Empezar','Cómo funciona (y por qué no publica sola)','api bookmarklet automatico automatizar bot seguridad bloqueo meta graph',`
 <p>Hemos diseñado Facebook Publisher para que <b>ahorres tiempo sin arriesgar tu cuenta</b>. Estas son las decisiones clave:</p>
@@ -1824,6 +1906,14 @@ H('historial','Historial','Historial, reanudación y aprobaciones','historial re
 <table><tr><th>Estado</th><th>Significado</th></tr><tr><td><b>Publicado</b></td><td>La publicación ya es visible en el grupo.</td></tr><tr><td><b>En aprobación</b></td><td>Facebook indicó que está pendiente de que la aprueben los administradores.</td></tr><tr><td><b>Aprobada / Rechazada</b></td><td>Lo que marcaste al revisarla más tarde.</td></tr><tr><td><b>Omitido</b></td><td>No publicaste en ese grupo.</td></tr><tr><td><b>Por hacer</b></td><td>Aún no has llegado a ese grupo; usa <b>Reanudar</b>.</td></tr></table>
 <h3>Revisar las publicaciones en aprobación</h3><p>En la parte superior del Historial aparece el panel <b>Pendientes de aprobación</b>, y el número en el icono de Historial te avisa de cuántas quedan. Para cada una, pulsa <b>Abrir grupo</b>, entra en <b>Tu contenido</b> y marca <b>Aprobada</b> o <b>Rechazada</b>. <a data-help="no-aparece">Más información</a></p>
 <ul><li><b>Reanudar:</b> continúa por los grupos que faltan.</li><li><b>Reutilizar contenido:</b> carga el texto y la URL en Publicar.</li><li>Los grupos usados cuentan para los <a data-help="buenas-practicas">límites de seguridad</a> aunque estén en aprobación.</li></ul>`),
+H('automatico','Empezar','Publicación automática (extensión)','automatico automatizar extension chrome instalar publicar solo un clic comenzar bot',`
+<p>Con la extensión <b>Facebook Publisher · Publicación automática</b>, un clic en <b>Comenzar publicación automática</b> publica en todos los grupos seleccionados el texto, las imágenes o vídeos y la URL que preparaste.</p>
+<h3>Cómo funciona</h3><ol><li>La app decide <b>cuándo</b> publicar en cada grupo, con los mismos <a data-help="buenas-practicas">límites de seguridad</a>: pausa entre grupos, máximos por hora y día y 24 h por grupo.</li><li>La extensión abre el grupo en una ventana de Chrome <b>con tu sesión</b>, pulsa «Escribe algo…», pega el texto, adjunta los archivos y pulsa <b>Publicar</b>.</li><li>Comprueba el resultado: si Facebook dice que queda <b>pendiente de aprobación</b>, lo marca así. Si muestra un <b>aviso o bloqueo</b>, se detiene todo y se bloquea 24 h.</li></ol>
+<p>Tus credenciales nunca pasan por la app ni por la extensión: se usa la sesión que ya tienes abierta en Chrome.</p>
+<h3>Instalación (una vez)</h3><ol><li><a href="facebook-publisher-extension.zip" download>Descarga la extensión</a> y descomprime el .zip en una carpeta que no vayas a borrar.</li><li>Abre <code>chrome://extensions</code> y activa el <b>Modo de desarrollador</b> (arriba a la derecha).</li><li>Pulsa <b>Cargar descomprimida</b> y elige la carpeta.</li><li>Recarga Facebook Publisher. En <b>Ajustes</b> verás «Extensión instalada».</li><li>Activa <b>Publicar automáticamente</b>. Si abres la app como archivo local, en los detalles de la extensión activa también «Permitir acceso a URLs de archivo».</li></ol>
+<h3>Primera vez: modo prueba</h3><p>Con el <b>Modo prueba</b> (activado por defecto), la extensión prepara la publicación en el primer grupo <b>sin pulsar «Publicar»</b>. Revisa en la ventana de Facebook que el texto, las imágenes y la vista previa del enlace están bien, cierra ese cuadro sin publicar, desactiva el modo prueba en Ajustes y empieza de nuevo.</p>
+<h3>Mientras publica</h3><ul><li>Deja abiertas la pestaña de la app y la ventana de Facebook. Puedes usar otras aplicaciones.</li><li><b>Detener después de este grupo</b> para pausar; <b>Continuar</b> para seguir. El progreso queda en el Historial.</li><li>Si un grupo falla (no eres miembro, no permite publicar…), se omite con el motivo y se pasa al siguiente.</li></ul>
+<div class="callout warn"><b>Riesgos:</b> las condiciones de Facebook no permiten publicar de forma automatizada. Aunque los límites reducen mucho el riesgo, puede haber bloqueos temporales o restricciones de la cuenta. Empieza con pocos grupos y límites bajos. Facebook cambia su interfaz con frecuencia: si la extensión deja de encontrar algún botón, se detendrá y podrás seguir con el modo asistido.</div>`),
 H('verificar','Historial','Verificar que una publicación aparece en el grupo','verificar comprobar test validar aparece reel grupo marcador',`
 <p>Facebook no permite que otras webs consulten los grupos, y la app nunca usa tu cuenta. Por eso la verificación se hace <b>en tu navegador, con tu sesión</b>, usando el <a data-help="marcador">marcador</a>, que solo lee lo que ves en pantalla.</p>
 <ol><li>En <a href="#historial" data-nav="historial">Historial</a>, junto al grupo, pulsa <b>Verificar</b>.</li><li>Pulsa <b>Abrir grupo</b> y, en esa pestaña, el marcador <b>FB Publisher</b>. Recorrerá unas pocas pantallas del grupo y leerá los enlaces de las publicaciones.</li><li>Pulsa <b>Copiar verificación</b>, vuelve a la app y pulsa <b>Pegar verificación</b>.</li></ol>
@@ -1890,7 +1980,7 @@ H('problemas','Ajustes','Solución de problemas','problemas error ventana bloque
 <h3>El marcador no hace nada</h3><p>Asegúrate de usarlo en una pestaña de facebook.com. En Firefox, comprueba que los marcadores <code>javascript:</code> están permitidos.</p>`),
 ];
 const HELP_CATS=['Empezar','Protección de la cuenta','Publicar','Grupos','Historial','Ajustes'];
-const HELP_ICON={'primeros-pasos':'rocket_launch','como-funciona':'lightbulb','url-origen':'link','editor':'edit_note','variables':'data_object','plantillas':'description','multimedia':'perm_media','destinos':'checklist','vista-previa':'preview','asistente':'touch_app','modos-apertura':'open_in_new','grupos':'groups','marcador':'bookmark_add','importar':'swap_vert','historial':'history','no-aparece':'visibility_off','verificar':'fact_check','buenas-practicas':'verified_user','aviso-facebook':'report','ajustes':'settings','privacidad':'shield','atajos':'keyboard','problemas':'build'};
+const HELP_ICON={'primeros-pasos':'rocket_launch','como-funciona':'lightbulb','url-origen':'link','editor':'edit_note','variables':'data_object','plantillas':'description','multimedia':'perm_media','destinos':'checklist','vista-previa':'preview','asistente':'touch_app','modos-apertura':'open_in_new','grupos':'groups','marcador':'bookmark_add','importar':'swap_vert','historial':'history','no-aparece':'visibility_off','verificar':'fact_check','automatico':'smart_toy','buenas-practicas':'verified_user','aviso-facebook':'report','ajustes':'settings','privacidad':'shield','atajos':'keyboard','problemas':'build'};
 const normTxt=t=>t.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
 let helpQuery=null;
 function renderHelp(q){
@@ -1957,6 +2047,7 @@ window.addEventListener('storage',e=>{if(e.key==='fbp.groups'){S.groups=cleanGro
 hydrateIcons();applyTheme();route();validateUrl();updateCount();renderMedia();renderAllGroups();renderHistory();renderResume();renderLock();
 MediaDB.all().then(rows=>{(rows||[]).sort((a,b)=>(a.order||0)-(b.order||0)).forEach(r=>{if(r&&r.blob&&['image','video','audio'].includes(r.type)&&!S.media.some(m=>m.id===r.id))S.media.push({id:r.id,file:r.blob,url:URL.createObjectURL(r.blob),type:r.type,name:str(r.name,200)||'archivo',order:r.order})});
   if(S.media.length){renderMedia();renderPreview();updateCount();renderSummary()}});
+[300,1500,4000].forEach(t=>setTimeout(()=>{if(!Ext.ready)window.postMessage({src:'fbp-app',cmd:'hello'},'*')},t));
 setInterval(()=>{renderLock();if($('#view-publicar').classList.contains('active')&&!S.run)renderDest()},60000);
 </script>
 </body>

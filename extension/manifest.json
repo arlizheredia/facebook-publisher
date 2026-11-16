@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "Facebook Publisher · Publicación automática",
+  "short_name": "FB Publisher",
+  "version": "1.0.0",
+  "description": "Publica en tus grupos de Facebook lo que preparas en Facebook Publisher, usando tu propia sesión y respetando los límites de seguridad.",
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://www.facebook.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://arlizheredia.github.io/facebook-publisher/*",
+        "http://localhost/*",
+        "http://127.0.0.1/*",
+        "file:///*"
+      ],
+      "include_globs": [
+        "*facebook-publisher*"
+      ],
+      "js": [
+        "bridge.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://www.facebook.com/*"
+      ],
+      "js": [
+        "fb.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}

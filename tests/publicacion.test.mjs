@@ -56,7 +56,11 @@ const ev = async expr => {
   if (r.result?.exceptionDetails) throw new Error(r.result.exceptionDetails.exception?.description || 'error');
   return r.result?.result?.value;
 };
-const go = async url => { await send('Page.navigate', {url}); await sleep(1500); };
+const go = async url => {
+  await send('Page.navigate', {url}); await sleep(400);
+  for (let i = 0; i < 60; i++) { try { if (await ev(`document.readyState!=='loading'&&(typeof S==='object'||!location.href.includes('facebook-publisher'))`)) break; } catch {} await sleep(250); }
+  await sleep(300);
+};
 
 /* ---------- Facebook simulado ---------- */
 let mockHasPost = true;
