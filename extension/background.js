@@ -10,20 +10,23 @@ const APP_URL = [
 const GROUP_URL = /^https:\/\/www\.facebook\.com\/groups\/[\w.\-]+\/$/;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-let fbTabId = null, fbWinId = null, appTabId = null, busy = false, wins = [];
+let fbTabId = null, fbWinId = null, appTabId = null, busy = false, wins = [], ownTabs = [];
 /* El service worker se apaga tras unos segundos sin actividad (p. ej. durante la pausa entre grupos).
    Las ventanas abiertas se guardan en storage.session para reutilizarlas y cerrarlas tras un reinicio. */
 const ST = chrome.storage.session;
-const ready = ST.get(['fbWinId', 'fbTabId', 'appTabId', 'wins']).then(v => {
+const ready = ST.get(['fbWinId', 'fbTabId', 'appTabId', 'wins', 'ownTabs']).then(v => {
+  ownTabs = Array.isArray(v.ownTabs) ? v.ownTabs : [];
   fbWinId = v.fbWinId ?? null; fbTabId = v.fbTabId ?? null; appTabId = v.appTabId ?? null; wins = Array.isArray(v.wins) ? v.wins : [];
 }).catch(() => {});
-const saveState = () => ST.set({fbWinId, fbTabId, appTabId, wins}).catch(() => {});
+const saveState = () => ST.set({fbWinId, fbTabId, appTabId, wins, ownTabs}).catch(() => {});
+chrome.tabs.onRemoved.addListener(id => { ready.then(() => { if (!ownTabs.includes(id) && id !== fbTabId) return; ownTabs = ownTabs.filter(t => t !== id); if (id === fbTabId) { fbTabId = null; fbWinId = null; } saveState(); }); });
 chrome.windows.onRemoved.addListener(id => { ready.then(() => { if (!wins.includes(id) && id !== fbWinId) return; wins = wins.filter(w => w !== id); if (id === fbWinId) { fbWinId = null; fbTabId = null; } saveState(); }); });
 async function closeAll() {
   await ready;
   const ids = [...new Set([...wins, fbWinId].filter(x => x != null))];
   await Promise.all(ids.map(id => chrome.windows.remove(id).catch(() => {})));
-  wins = []; fbWinId = null; fbTabId = null; saveState();
+  await Promise.all(ownTabs.map(id => chrome.tabs.remove(id).catch(() => {})));
+  wins = []; ownTabs = []; fbWinId = null; fbTabId = null; saveState(); setBadge('');
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, send) => {
@@ -38,10 +41,11 @@ chrome.runtime.onMessage.addListener((msg, sender, send) => {
     handlePost(msg.job).then(r => { notifyResult(msg.job, r); return r; }).then(send, e => send({ok: false, step: 'ext', error: String((e && e.message) || e)})).finally(() => { busy = false; });
     return true;
   }
+  if (msg.cmd === 'badge') { setBadge(typeof msg.job?.text === 'string' ? msg.job.text.slice(0, 4) : ''); send({ok: true}); return; }
   if (msg.cmd === 'notify') {
     const j = msg.job || {};
     if (chrome.notifications && typeof j.title === 'string' && typeof j.message === 'string')
-      chrome.notifications.create('', {type: 'basic', iconUrl: 'icon128.png', title: j.title.slice(0, 120), message: j.message.slice(0, 300), priority: 2}, () => void chrome.runtime.lastError);
+      osNotify({title: j.title.slice(0, 120), message: j.message.slice(0, 300)});
     send({ok: true}); return;
   }
   if (msg.cmd === 'preview') { preview(msg.job && msg.job.url).then(send, () => send({ok: false})); return true; }
@@ -138,13 +142,13 @@ async function checkStatus(details) {
 
 /* Notificación del sistema cuando Facebook muestra un mensaje */
 function notifyResult(job, r) {
-  if (!r || job.test || !chrome.notifications) return;
+  if (!r || job.test || !job.notify || !chrome.notifications) return;
   const msgs = Array.isArray(r.messages) ? r.messages : [];
   if (!msgs.length && !r.blocked) return;
   const group = typeof job.groupName === 'string' ? job.groupName.slice(0, 80) : 'un grupo';
   const title = r.blocked ? `Facebook mostró un aviso en «${group}»` : `Facebook mostró un mensaje en «${group}»`;
   const text = (r.blocked ? r.error : msgs[0]) || '';
-  chrome.notifications.create('', {type: 'basic', iconUrl: 'icon128.png', title, message: String(text).slice(0, 250) + (r.blocked ? '\nSe ha detenido la publicación para proteger tu cuenta.' : ''), priority: 2, requireInteraction: !!r.blocked}, () => void chrome.runtime.lastError);
+  osNotify({title, message: String(text).slice(0, 250) + (r.blocked ? '\nSe ha detenido la publicación para proteger tu cuenta.' : ''), requireInteraction: !!r.blocked});
 }
 if (chrome.notifications) chrome.notifications.onClicked.addListener(async id => {
   await ready;
@@ -152,30 +156,70 @@ if (chrome.notifications) chrome.notifications.onClicked.addListener(async id =>
   chrome.notifications.clear(id);
 });
 
+/* Porcentaje en el icono de la extensión: se ve aunque trabajes en otra cosa. Al pulsarlo vuelves a la app. */
+/* Notificación del sistema. Con storage.session.dryNotify (lo activan los tests) se registra sin mostrarse. */
+async function osNotify(opts) {
+  if (!chrome.notifications) return;
+  const v = await ST.get(['dryNotify', 'dryLog']).catch(() => ({}));
+  if (v.dryNotify) { await ST.set({dryLog: [...(v.dryLog || []), {title: opts.title, message: opts.message}].slice(-50)}).catch(() => {}); return; }
+  chrome.notifications.create('', {type: 'basic', iconUrl: 'icon128.png', priority: 2, ...opts}, () => void chrome.runtime.lastError);
+}
+function setBadge(text) { try { chrome.action.setBadgeBackgroundColor({color: '#0b57d0'}); chrome.action.setBadgeText({text}); } catch {} }
+function focusApp() { ready.then(() => { if (appTabId != null) chrome.tabs.get(appTabId).then(t => { chrome.windows.update(t.windowId, {focused: true}); chrome.tabs.update(appTabId, {active: true}); }).catch(() => {}); }); }
+if (chrome.action) chrome.action.onClicked.addListener(focusApp);
+
 function progress(step) {
   ready.then(() => { if (appTabId != null) chrome.tabs.sendMessage(appTabId, {to: 'bridge', type: 'progress', step}).catch(() => {}); });
 }
 
 function validJob(j) {
   return j && typeof j === 'object' && typeof j.url === 'string' && GROUP_URL.test(j.url) &&
-    typeof j.text === 'string' && j.text.length <= 63206 && (!j.link || (typeof j.link === 'string' && /^https:\/\/(www\.facebook\.com|fb\.watch)\//.test(j.link))) && Array.isArray(j.files) && j.files.length <= 20 &&
+    typeof j.text === 'string' && j.text.length <= 63206 && (j.notify == null || typeof j.notify === 'boolean') && (j.win == null || ['nofocus', 'tab', 'minimized', 'focused'].includes(j.win)) && (!j.link || (typeof j.link === 'string' && /^https:\/\/(www\.facebook\.com|fb\.watch)\//.test(j.link))) && Array.isArray(j.files) && j.files.length <= 20 &&
     j.files.every(f => f && typeof f.name === 'string' && /^(image|video)\//.test(f.type) && typeof f.data === 'string');
 }
 
-async function openGroup(url) {
+/* Dónde trabaja la extensión (para no interrumpir al usuario):
+   nofocus  = ventana aparte, pequeña, en una esquina y sin quitar el foco (por defecto)
+   tab      = pestaña en segundo plano en la ventana de la app
+   minimized= ventana minimizada
+   focused  = ventana en primer plano (lo más fiable si Facebook no responde en segundo plano) */
+/* Ventana pequeña pegada al borde derecho de la ventana de la app (posición válida en cualquier pantalla) */
+async function noFocusBounds(url) {
+  const o = {url, type: 'normal', focused: false, width: 560, height: 820};
+  try {
+    if (appTabId != null) { const w = await chrome.windows.get((await chrome.tabs.get(appTabId)).windowId);
+      if (w && w.width) { o.height = Math.max(600, Math.min(900, w.height || 820)); o.left = Math.max(0, (w.left || 0) + w.width - o.width); o.top = Math.max(0, w.top || 0); } }
+  } catch {}
+  return o;
+}
+async function openGroup(url, mode) {
   await ready;
+  mode = ['nofocus', 'tab', 'minimized', 'focused'].includes(mode) ? mode : 'nofocus';
   let tabId = null;
-  if (fbTabId != null) { try { await chrome.tabs.get(fbTabId); tabId = fbTabId; } catch { fbTabId = null; } }
+  if (fbTabId != null) { try { const t = await chrome.tabs.get(fbTabId); if ((mode === 'tab') === (fbWinId == null)) tabId = fbTabId; else { await closeAll(); } void t; } catch { fbTabId = null; } }
   const loaded = new Promise(res => {
     const t = setTimeout(() => { chrome.tabs.onUpdated.removeListener(l); res(false); }, 45000);
     const l = (id, info) => { if (id === (tabId ?? fbTabId) && info.status === 'complete') { clearTimeout(t); chrome.tabs.onUpdated.removeListener(l); res(true); } };
     chrome.tabs.onUpdated.addListener(l);
   });
   if (tabId != null) {
-    await chrome.tabs.update(tabId, {url, active: true});
-    if (fbWinId != null) chrome.windows.update(fbWinId, {focused: true}).catch(() => {});
+    await chrome.tabs.update(tabId, mode === 'focused' ? {url, active: true} : {url});
+    if (mode === 'focused' && fbWinId != null) chrome.windows.update(fbWinId, {focused: true}).catch(() => {});
+  } else if (mode === 'tab') {
+    let windowId;
+    try { if (appTabId != null) windowId = (await chrome.tabs.get(appTabId)).windowId; } catch {}
+    const t = await chrome.tabs.create({url, active: false, ...(windowId != null ? {windowId} : {})});
+    fbTabId = tabId = t.id; fbWinId = null; ownTabs = [...new Set([...ownTabs, t.id])]; saveState();
   } else {
-    const w = await chrome.windows.create({url, type: 'normal', focused: true, width: 1100, height: 900});
+    const opts = mode === 'minimized' ? {url, type: 'normal', state: 'minimized'}
+      : mode === 'focused' ? {url, type: 'normal', focused: true, width: 1100, height: 900}
+      : await noFocusBounds(url);
+    let w;
+    try { w = await chrome.windows.create(opts); }
+    catch {
+      const {left, top, ...noPos} = opts; void left; void top;       // posición rechazada (fuera de pantalla): se conserva el tamaño
+      try { w = await chrome.windows.create(noPos); } catch { w = await chrome.windows.create({url, type: 'normal', focused: mode === 'focused'}); }
+    }
     fbWinId = w.id; fbTabId = tabId = w.tabs[0].id; wins = [...new Set([...wins, w.id])]; saveState();
   }
   const ok = await loaded;
@@ -188,7 +232,7 @@ async function handlePost(job) {
   if (!st.online) return {ok: false, step: 'network', error: 'Sin conexión con Facebook. Comprueba tu conexión a Internet.'};
   if (st.loggedIn === false) return {ok: false, step: 'login', error: 'No has iniciado sesión en Facebook en este navegador.'};
   progress('Abriendo el grupo…');
-  const tabId = await openGroup(job.url);
+  const tabId = await openGroup(job.url, job.win);
   if (tabId == null) return {ok: false, step: 'load', error: 'El grupo no terminó de cargar'};
   for (let i = 0; i < 30; i++) {
     try {

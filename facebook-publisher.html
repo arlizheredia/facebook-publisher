@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data: blob:; media-src blob:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data: blob:; media-src blob:; connect-src 'none'; worker-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Facebook Publisher</title>
 <meta name="description" content="Comparte publicaciones de Facebook en tus grupos de forma rápida, ordenada y segura.">
@@ -874,6 +874,12 @@ details.adv[open] summary .ms{transform:rotate(180deg)}
       <label class="switch"><input type="checkbox" id="setAutoTest"><span></span></label></div>
     <div class="set-row"><div class="main"><div class="t">Cerrar la ventana de Facebook al terminar</div><div class="d">Al acabar todos los grupos. Si se detiene por un error, la ventana se queda abierta para que veas qué pasó.</div></div>
       <label class="switch"><input type="checkbox" id="setAutoClose"><span></span></label></div>
+    <div class="set-row"><div class="main"><div class="t">Dónde trabaja la publicación automática</div><div class="d">Para que puedas seguir usando el ordenador mientras publica. Si Facebook no responde bien en segundo plano, elige «Ventana en primer plano». <a href="#" data-help="automatico">Más información</a></div></div>
+      <select class="input" id="setAutoWin" style="width:250px;height:40px"><option value="nofocus">Ventana pequeña sin quitarte el foco (recomendado)</option><option value="tab">Pestaña en segundo plano</option><option value="minimized">Ventana minimizada</option><option value="focused">Ventana en primer plano</option></select></div>
+    <div class="set-row"><div class="main"><div class="t">Reintentos automáticos</div><div class="d">Si se detiene por falta de conexión, de sesión en Facebook, porque la extensión no responde o porque un grupo no carga, vuelve a intentarlo solo. Al agotarlos, se detiene por completo.</div></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><input class="input" id="setRetries" type="number" min="0" max="50" style="width:80px;height:40px" aria-label="Número de reintentos"><span class="small muted">veces, cada</span><input class="input" id="setRetryEvery" type="number" min="5" max="600" step="5" style="width:80px;height:40px" aria-label="Segundos entre reintentos"><span class="small muted">s</span></div></div>
+    <div class="set-row"><div class="main"><div class="t">Notificaciones del sistema</div><div class="d">Avisos de tu ordenador cuando Facebook muestra un mensaje, al terminar o si se detiene la publicación automática. Dentro de la app los verás siempre.</div></div>
+      <label class="switch"><input type="checkbox" id="setSysNotify"><span></span></label></div>
     <div class="set-row"><div class="main"><div class="t">Cómo abrir cada grupo</div><div class="d">Solo en el modo asistido (manual). <a href="#" data-help="modos-apertura">¿Qué opción elijo?</a></div></div>
       <select class="input" id="setMode" style="width:220px;height:40px"><option value="side">Ventana lateral</option><option value="tab">Pestaña nueva</option><option value="share">Diálogo «Compartir» de Facebook</option></select></div>
     <div class="set-row" style="border:0;padding-bottom:0"><div class="main"><div class="t" style="color:var(--primary);display:flex;align-items:center;gap:8px"><span class="ms" aria-hidden="true">verified_user</span>Protección de la cuenta</div><div class="d">Límites que reducen el riesgo de bloqueos. Puedes hacerlos más estrictos, pero no desactivarlos. <a href="#" data-help="buenas-practicas">Más información</a></div></div></div>
@@ -1017,11 +1023,11 @@ function download(name,data,type='application/json'){const b=data instanceof Blo
 /* ---------- Estado ---------- */
 /* Límites de protección de la cuenta (no se pueden desactivar) */
 const SAFE={MIN_PAUSE:10,MAX_PAUSE:900,MAX_DAY:1000,RECENT_H:24,LOCK_H:24};
-const DEF_SETTINGS={mode:'side',pause:30,appendUrl:false,sound:true,dayCap:500,clearAfter:'ask',autoMode:false,autoTest:true,autoClose:true};
+const DEF_SETTINGS={mode:'side',pause:30,appendUrl:false,sound:true,dayCap:500,clearAfter:'ask',autoMode:false,autoTest:true,autoClose:true,autoWin:'nofocus',retries:10,retryEvery:20,sysNotify:false};
 const clamp=(v,a,b,d)=>{v=parseInt(v);return isNaN(v)?d:Math.max(a,Math.min(b,v))};
 function cleanSettings(o){o=Object.assign({},DEF_SETTINGS,o&&typeof o==='object'?o:{});
   return {mode:['side','tab','share'].includes(o.mode)?o.mode:'side',pause:clamp(o.pause,SAFE.MIN_PAUSE,SAFE.MAX_PAUSE,30),v:3,appendUrl:o.v>=3?o.appendUrl===true:false,sound:o.sound!==false,
-    dayCap:o.v>=2?clamp(o.dayCap,1,SAFE.MAX_DAY,500):500,clearAfter:['ask','always','never'].includes(o.clearAfter)?o.clearAfter:'ask',autoMode:o.autoMode===true,autoTest:o.autoTest!==false,autoClose:o.autoClose!==false}}
+    dayCap:o.v>=2?clamp(o.dayCap,1,SAFE.MAX_DAY,500):500,clearAfter:['ask','always','never'].includes(o.clearAfter)?o.clearAfter:'ask',autoMode:o.autoMode===true,autoTest:o.autoTest!==false,autoClose:o.autoClose!==false,autoWin:['nofocus','tab','minimized','focused'].includes(o.autoWin)?o.autoWin:'nofocus',retries:clamp(o.retries,0,50,10),retryEvery:clamp(o.retryEvery,5,600,20),sysNotify:o.sysNotify===true}}
 /* Los datos guardados se validan al leerlos: en github.io el almacenamiento se comparte con otras apps del mismo dominio */
 const str=(v,max)=>typeof v==='string'?v.slice(0,max):'';
 const okId=v=>typeof v==='string'&&/^[\w-]{1,40}$/.test(v)?v:null;
@@ -1723,9 +1729,22 @@ function renderExt(){const el=$('#extStatus');if(!el)return;
   el.innerHTML=Ext.ready&&verLt(Ext.version,MIN_EXT)?`<span style="color:var(--warn)">${ic('warning','sm')} Tienes la v${esc(Ext.version)}: <a href="facebook-publisher-extension.zip" download>descarga la nueva</a>, reemplaza los archivos de su carpeta y pulsa ↻ en chrome://extensions.</span>`
     :Ext.ready?`<span style="color:var(--success)">${ic('check_circle','sm')} Extensión instalada (v${esc(Ext.version)})</span>`
     :`${ic('extension_off','sm')} Extensión no detectada. <a href="facebook-publisher-extension.zip" download>Descargar extensión</a> · <a href="#" data-help="automatico">Cómo instalarla</a>`}
+/* Temporizador en un Web Worker: Chrome retrasa los temporizadores de las pestañas en segundo plano
+   (hasta 1 por minuto tras 5 min ocultas); los del worker mantienen la pausa exacta mientras trabajas en otra cosa. */
+const wsleep=(()=>{try{const w=new Worker(URL.createObjectURL(new Blob(['onmessage=e=>setTimeout(()=>postMessage(e.data.id),e.data.ms)'],{type:'text/javascript'})));const P={};let n=0;
+  w.onmessage=e=>{const r=P[e.data];delete P[e.data];if(r)r()};return ms=>new Promise(r=>{const id=++n;P[id]=r;w.postMessage({id,ms})})}catch(e){return ms=>new Promise(r=>setTimeout(r,ms))}})();
 const fileToB64=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(r.error);r.readAsDataURL(f)});
+/* Política de reintentos: ante fallos transitorios (conexión, sesión, extensión, carga del grupo)
+   se reintenta S.settings.retries veces cada S.settings.retryEvery s; al agotarse se detiene por completo. */
+async function retryWait(R,reason){
+  R.retries=(R.retries||0)+1;const max=S.settings.retries;
+  if(R.retries>max){R.stop=true;R.stopMsg=`${reason} Se agotaron los ${max} reintentos y se ha detenido la publicación. Tu progreso está guardado: pulsa «Continuar» cuando se resuelva.`;return false}
+  R.retry={n:R.retries,max,until:Date.now()+S.settings.retryEvery*1000,reason};R.phase='retry';renderRun();Ext.call('badge',{text:'↻'},3000);R.badge='↻';
+  while(R.retry&&Date.now()<R.retry.until&&!R.stop&&S.run===R){await wsleep(1000);const el=$('#retryLeft');if(el&&R.retry)el.textContent=Math.max(0,Math.ceil((R.retry.until-Date.now())/1000))}
+  R.retry=null;return !R.stop&&S.run===R}
+window.addEventListener('online',()=>{const R=S.run;if(R&&R.retry)R.retry.until=0});
 async function runAuto(){
-  const R=S.run;if(!R||R.autoRunning)return;R.auto=true;R.autoRunning=true;R.stop=false;R.stopMsg='';R.log=[];
+  const R=S.run;if(!R||R.autoRunning)return;R.auto=true;R.autoRunning=true;R.stop=false;R.stopMsg='';R.userStop=false;R.retries=0;R.retry=null;R.log=[];
   const test=S.settings.autoTest;
   const media=S.media.filter(m=>m.type==='image'||m.type==='video');
   const total=media.reduce((a,m)=>a+(m.file.size||0),0);
@@ -1737,17 +1756,17 @@ async function runAuto(){
     R.idx=idx;const it=R.entry.items[idx];
     let G=gate();
     while(!G.ok&&!R.stop&&S.run===R){if(G.reason==='lock'||G.reason==='day'){R.stop=true;R.stopMsg=G.reason==='day'?`Límite diario alcanzado. Podrás continuar a partir de ${hhmm(G.until)}.`:'Publicación bloqueada por seguridad.';break}
-      R.phase='wait';renderRun();await new Promise(r=>setTimeout(r,Math.min(5000,Math.max(500,G.until-Date.now()+300))));G=gate()}
+      R.phase='wait';renderRun();await wsleep(Math.min(5000,Math.max(500,G.until-Date.now()+300)));G=gate()}
     if(R.stop||S.run!==R)break;
     if(isRecentId(it.gid)){it.status='skipped';it.error='Ya publicaste aquí hace menos de 24 h';it.at=Date.now();persist.history();continue}
-    if(!navigator.onLine){R.stop=true;R.stopMsg='Sin conexión a Internet. Pulsa «Continuar» cuando vuelva; tu progreso está guardado.';break}
+    if(!navigator.onLine){if(await retryWait(R,'Sin conexión a Internet.'))continue;break}
     R.phase='posting';R.step='Comprobando conexión y sesión…';R.log=[];renderRun();
     const f=await checkFb(true);if(S.run!==R)break;
-    if(f.state==='offline'){R.stop=true;R.stopMsg='No hay conexión con Facebook. Comprueba tu conexión a Internet y pulsa «Continuar».';break}
-    if(f.state==='out'){R.stop=true;R.stopMsg='No hay ninguna sesión de Facebook iniciada en este navegador. Inicia sesión en Facebook y pulsa «Continuar».';break}
+    if(f.state==='offline'){if(await retryWait(R,'No hay conexión con Facebook.'))continue;break}
+    if(f.state==='out'){if(await retryWait(R,'No hay ninguna sesión de Facebook iniciada en este navegador.'))continue;break}
     R.step='Preparando…';renderRun();
     if(!test){it.inflight=Date.now();persist.history()}
-    const res=await Ext.call('post',{url:it.url,text:runText(it,true),link:autoJobLink(it),files,test,groupName:it.name});
+    const res=await Ext.call('post',{url:it.url,text:runText(it,true),link:autoJobLink(it),files,test,groupName:it.name,win:S.settings.autoWin,notify:S.settings.sysNotify});
     delete it.inflight;
     const fbm=Array.isArray(res.messages)?res.messages.map(m=>str(m,400)).filter(m=>m&&!/^(publicando|posting|publicado|posted|compartiendo|sharing|subiendo|uploading|cargando|loading|enviando|sending|procesando|processing)\b[\s.…]*(\d+\s*%)?[\s.…]*$/i.test(m.trim())).slice(0,5):[];
     if(fbm.length&&!test){it.fbMsg=fbm.join(' · ');R.msgs=R.msgs||[];fbm.forEach(m=>R.msgs.unshift({g:it.name,t:m,lv:res.blocked?'err':RX_PEND.test(m)?'info':'notice',at:Date.now()}));beep();
@@ -1758,19 +1777,25 @@ async function runAuto(){
     if(res.ok){it.error=undefined;mark('done',res.review||undefined)}
     else if(res.blocked){setLock(Date.now()+SAFE.LOCK_H*3600e3,`«${str(res.error,300)}» (en ${it.name})`);renderLock();R.stop=true;R.stopMsg='Facebook mostró un aviso: «'+str(res.error,200)+'». Se ha detenido todo y bloqueado 24 h para proteger tu cuenta.';it.error=str(res.error,200);persist.history();
       R.blockAlert={g:it.name,e:str(res.error,300)};break}
-    else if(res.step==='login'||res.step==='network'){R.stop=true;R.stopMsg=(res.step==='login'?'No hay ninguna sesión de Facebook iniciada en este navegador. Inicia sesión en Facebook y pulsa «Continuar».':'No hay conexión con Facebook. Comprueba tu conexión a Internet y pulsa «Continuar».');if(res.step==='login'){Fb.state='out';renderFb()}break}
+    else if(['login','network','load'].includes(res.step)||(res.step==='ext'&&/no está instalada|no está activa|Sin respuesta|Ya hay una publicación|Origen/.test(res.error||''))){
+      if(res.step==='login'){Fb.state='out';renderFb()}
+      const why=res.step==='login'?'No hay ninguna sesión de Facebook iniciada en este navegador.':res.step==='network'?'No hay conexión con Facebook.':res.step==='load'?`El grupo «${it.name}» no terminó de cargar.`:'La extensión no responde.';
+      if(await retryWait(R,why))continue;break}
+    else if(res.step==='timeout'){it.status='skipped';it.at=Date.now();it.error='La extensión no respondió mientras se enviaba: revisa en el grupo si llegó a publicarse antes de reintentar [timeout]';persist.history()}
     else{it.status='skipped';it.at=Date.now();it.error=str(res.error,200)+(res.step?` [${res.step}]`:'');persist.history();
       R.fails=(R.fails||0)+1}
     if(res.ok)R.fails=0;
-    renderRun();
+    R.retries=0;renderRun();
   }
   if(S.run===R&&!R.stop&&!R.testDone&&!R.entry.items.some(i=>i.status==='pending')){
     const F=failedItems(R.entry),ok=R.entry.items.filter(i=>i.status==='done').length,n=R.entry.items.length;
     if(S.settings.autoClose)await Ext.call('closeFb',{},5000);
     const title=F.length?`Publicación terminada con incidencias: ${ok} de ${n} grupos`:`Publicación terminada: ${ok} de ${n} grupos`;
     const msg=F.length?`No se pudo publicar en ${F.length} grupo(s): `+F.slice(0,4).map(i=>`${i.name} (${reasonOf(i.error)})`).join('; ')+(F.length>4?'…':''):'Se publicó en todos los grupos seleccionados.';
-    Ext.call('notify',{title,message:msg},5000);beep();
+    if(S.settings.sysNotify)Ext.call('notify',{title,message:msg},5000);beep();
   }
+  if(S.settings.sysNotify&&S.run===R&&R.stop&&!R.testDone&&R.stopMsg&&!R.userStop)Ext.call('notify',{title:'Publicación automática detenida',message:R.stopMsg},5000);
+  Ext.call('badge',{text:S.run===R&&R.stop&&!R.testDone&&R.entry.items.some(i=>i.status==='pending')?'II':''},3000);R.badge=null;
   R.autoRunning=false;R.phase='';Ext.onStep=null;
   if(R.blockAlert){const b=R.blockAlert;R.blockAlert=null;/* sin setTimeout: en segundo plano Chrome retrasa los temporizadores */
     alertBox('report',`Facebook mostró un aviso en «${b.g}»`,`«${b.e}»\n\nSe ha detenido la publicación y se ha bloqueado durante 24 horas para proteger tu cuenta. Tu progreso está guardado.`,{ok:'Entendido',cancel:'Qué hacer'}).then(v=>{if(v==='cancel')openHelp('aviso-facebook')})}if(S.run===R){if(R.idx>=R.entry.items.length||!R.entry.items.some(i=>i.status==='pending'))R.idx=R.entry.items.length;renderRun()}
@@ -1793,7 +1818,10 @@ function updAutoProgress(){const R=S.run;if(!R||!R.auto)return;const p=autoPct(R
   const fg=$('#apFg');if(fg)fg.style.strokeDashoffset=RING_C*(1-p/100);const t=$('#apPct');if(t)t.textContent=p+' %';
   const pb=$('#apBar');if(pb)pb.style.width=p+'%';$('#runBar').style.width=p+'%';$('#runCount').textContent=`${done} de ${items.length} · ${p} %`;
   const st=$('#apStats');if(st)st.outerHTML=apStatsHtml(R);
+  const bt=R.autoRunning&&!R.stop?p+'%':'';if(bt!==R.badge){R.badge=bt;Ext.call('badge',{text:bt},3000)}
   if(R.autoRunning&&!R.stop)document.title=`${p} % · Publicando · Facebook Publisher`}
+function retryHtml(R){const r=R.retry;if(!r)return '';
+  return `<div class="banner warn" style="margin-top:8px;align-items:center;flex-wrap:wrap">${ic('autorenew')}<div style="flex:1;min-width:0"><b>${esc(r.reason)}</b><div class="small">Reintento ${r.n} de ${r.max} en <b id="retryLeft">${Math.max(0,Math.ceil((r.until-Date.now())/1000))}</b> s. Si no se resuelve, se detendrá por completo.</div></div><button class="btn tonal sm" id="retryNow">${ic('refresh')}Reintentar ahora</button></div>`}
 function renderAuto(main,it){
   const R=S.run,items=R.entry.items;
   const errs=items.filter(i=>i.error).map(i=>`<li><b>${esc(i.name)}:</b> ${esc(i.error)}</li>`).join('');
@@ -1808,6 +1836,7 @@ function renderAuto(main,it){
     const bd=$('#aBad');if(bd)bd.onclick=()=>{closeRun(true);openHelp('automatico')};return;
   }
   main.innerHTML=`<div class="run-group"><div class="gav">${esc(initials(it.name))}</div><div style="min-width:0"><div class="muted small">Grupo ${R.idx+1} de ${items.length} · ${S.settings.autoTest?'<b>modo prueba</b>':'publicación automática'}</div><h3>${esc(it.name)}</h3><a class="small" href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.url.replace('https://www.',''))}</a></div></div>
+    ${retryHtml(R)}
     <div class="auto-box"><div class="pring" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${autoPct(R)}" aria-label="Progreso de la publicación"><svg viewBox="0 0 80 80"><circle class="bg" cx="40" cy="40" r="34"/><circle class="fg" id="apFg" cx="40" cy="40" r="34" stroke-dasharray="${RING_C}" stroke-dashoffset="${RING_C*(1-autoPct(R)/100)}"/></svg><b id="apPct">${autoPct(R)} %</b></div>
       <div style="min-width:0;flex:1"><h4 id="autoStep" aria-live="polite">${esc(R.step||'Preparando…')}</h4><div class="ap-track"><i id="apBar" style="width:${autoPct(R)}%"></i></div>${apStatsHtml(R)}
       <p class="muted small" style="margin:0">La extensión trabaja en la ventana de Facebook. No la cierres ni cierres esta pestaña; puedes seguir usando otras aplicaciones.</p>
@@ -1815,7 +1844,8 @@ function renderAuto(main,it){
     ${fbMsgsHtml(R)}
     ${errs?`<details class="adv"><summary>Incidencias${ic('chevron')}</summary><ul class="small" style="margin:8px 0">${errs}</ul></details>`:''}
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px"><button class="btn outlined" id="aStop">${ic('stop_circle')}Detener después de este grupo</button><button class="btn text danger" id="aPanic">${ic('report')}Facebook me mostró un aviso</button></div>`;
-  $('#aStop').onclick=()=>{R.stop=true;R.stopMsg='La has detenido. Tu progreso está guardado; pulsa Continuar cuando quieras.';snack('Se detendrá al terminar el grupo actual')};$('#aPanic').onclick=()=>{R.stop=true;panicStop()};
+  const rn=$('#retryNow');if(rn)rn.onclick=()=>{if(R.retry)R.retry.until=0};
+  $('#aStop').onclick=()=>{R.stop=true;R.userStop=true;if(R.retry)R.retry.until=0;R.stopMsg='La has detenido. Tu progreso está guardado; pulsa Continuar cuando quieras.';snack('Se detendrá al terminar el grupo actual')};$('#aPanic').onclick=()=>{R.stop=true;panicStop()};
 }
 let fbWin=null,runTick=null;
 /* ---------- Protección de la cuenta: ritmo y límites persistentes ---------- */
@@ -2341,7 +2371,7 @@ $('#histBox').addEventListener('click',e=>{const cb=e.target.closest('[data-hsel
 /* ============================================================
    AJUSTES
    ============================================================ */
-function openSettings(){const s=S.settings;$('#setAuto').checked=s.autoMode;$('#setAutoTest').checked=s.autoTest;$('#setAutoClose').checked=s.autoClose;renderExt();$('#setMode').value=s.mode;$('#setPause').value=s.pause;$('#setDay').value=s.dayCap;$('#setClear').value=s.clearAfter;$('#setAppend').checked=s.appendUrl;$('#setSound').checked=s.sound;
+function openSettings(){const s=S.settings;$('#setAuto').checked=s.autoMode;$('#setSysNotify').checked=s.sysNotify;$('#setAutoWin').value=s.autoWin;$('#setRetries').value=s.retries;$('#setRetryEvery').value=s.retryEvery;$('#setAutoTest').checked=s.autoTest;$('#setAutoClose').checked=s.autoClose;renderExt();$('#setMode').value=s.mode;$('#setPause').value=s.pause;$('#setDay').value=s.dayCap;$('#setClear').value=s.clearAfter;$('#setAppend').checked=s.appendUrl;$('#setSound').checked=s.sound;
   const locked=S.lock&&S.lock>Date.now();$('#lockRow').hidden=!locked;if(locked)$('#lockTxt').textContent=`Nuevas publicaciones bloqueadas hasta ${hhmm(S.lock)}.`;applyTheme();$('#settingsDlg').showModal()}
 function numSetting(id,key,min,max){$(id).onchange=e=>{S.settings[key]=clamp(e.target.value,min,max,DEF_SETTINGS[key]);e.target.value=S.settings[key];persist.settings();renderSummary();
   if(+e.target.value!==+e.target.dataset.prev)snack('Ajuste guardado')}}
@@ -2355,6 +2385,9 @@ $('#setAuto').onchange=async e=>{if(e.target.checked){
   S.settings.autoMode=e.target.checked;persist.settings();renderSummary();if(e.target.checked&&!Ext.ready)snack('Instala la extensión para usar la publicación automática','Cómo',()=>openHelp('automatico'),8000)};
 $('#setAutoTest').onchange=e=>{S.settings.autoTest=e.target.checked;persist.settings();renderSummary()};
 $('#setAutoClose').onchange=e=>{S.settings.autoClose=e.target.checked;persist.settings()};
+$('#setAutoWin').onchange=e=>{S.settings.autoWin=e.target.value;persist.settings();snack('Ajuste guardado')};
+numSetting('#setRetries','retries',0,50);
+$('#setSysNotify').onchange=e=>{S.settings.sysNotify=e.target.checked;persist.settings();snack(e.target.checked?'Notificaciones del sistema activadas':'Notificaciones del sistema desactivadas')};numSetting('#setRetryEvery','retryEvery',5,600);
 $('#setMode').onchange=e=>{S.settings.mode=e.target.value;persist.settings()};
 $('#setPause').onchange=e=>{const v=parseInt(e.target.value);S.settings.pause=clamp(v,SAFE.MIN_PAUSE,SAFE.MAX_PAUSE,60);e.target.value=S.settings.pause;persist.settings();renderSummary();if(v<SAFE.MIN_PAUSE)snack(`La pausa mínima es de ${SAFE.MIN_PAUSE} segundos`)};
 $('#setAppend').onchange=e=>{S.settings.appendUrl=e.target.checked;persist.settings();renderPreview()};
@@ -2480,7 +2513,7 @@ H('automatico','Empezar','Publicación automática (extensión)','automatico aut
 <h3>Instalación (una vez)</h3><ol><li><a href="facebook-publisher-extension.zip" download>Descarga la extensión</a> y descomprime el .zip en una carpeta que no vayas a borrar.</li><li>Abre <code>chrome://extensions</code> y activa el <b>Modo de desarrollador</b> (arriba a la derecha).</li><li>Pulsa <b>Cargar descomprimida</b> y elige la carpeta.</li><li>Recarga Facebook Publisher. En <b>Ajustes</b> verás «Extensión instalada».</li><li>Activa <b>Publicar automáticamente</b>. Si abres la app como archivo local, en los detalles de la extensión activa también «Permitir acceso a URLs de archivo».</li></ol>
 <h3>Primera vez: modo prueba</h3><p>Con el <b>Modo prueba</b> (activado por defecto), la extensión prepara la publicación en el primer grupo <b>sin pulsar «Publicar»</b>. Revisa en la ventana de Facebook que el texto, las imágenes y la vista previa del enlace están bien, cierra ese cuadro sin publicar, desactiva el modo prueba en Ajustes y empieza de nuevo.</p>
 <h3>Cuenta, conexión y vista previa</h3><ul><li>Arriba a la derecha verás la <b>cuenta de Facebook detectada</b> (foto, nombre y una marca de verificación). Púlsala para ver los detalles o volver a comprobar. Se publicará con esa cuenta.</li><li>Antes de empezar y antes de cada grupo se comprueba que hay <b>conexión a Internet</b> y una <b>sesión de Facebook</b>. Si falta alguna, verás un mensaje de error y no se publicará nada.</li><li>En la <b>vista previa</b> aparece la miniatura real de la publicación o reel de origen.</li><li>La extensión solo lee tu identificador de usuario y tu propio perfil para mostrarlos; nunca lee tu contraseña ni tu token de sesión, y nada sale de tu navegador.</li></ul>
-<h3>Mientras publica</h3><ul><li>Deja abiertas la pestaña de la app y la ventana de Facebook. Puedes usar otras aplicaciones. Al terminar todos los grupos, la ventana de Facebook <b>se cierra sola</b> (lo puedes cambiar en Ajustes).</li><li>La <b>pausa entre grupos</b> se elige en la barra de publicación, junto al botón de inicio: mínimo 30 s, recomendado 60 s o más. Facebook no publica un mínimo oficial; cuanto más larga, menos riesgo.</li><li><b>Detener después de este grupo</b> para pausar; <b>Continuar</b> para seguir. El progreso queda en el Historial.</li><li>Si un grupo falla (no eres miembro, no permite publicar, error técnico…), se omite con el motivo y <b>se continúa con los demás</b>. Solo se detiene todo ante un aviso que pone en riesgo tu cuenta, si no hay sesión de Facebook o si se pierde la conexión.</li><li>Al terminar verás un <b>resumen</b>: si hubo fallos, «Terminada con incidencias», con cada grupo y su motivo, una notificación del sistema y el botón <b>Reintentar los fallidos</b>. El aviso se mantiene en Publicar hasta que reintentes o lo cierres.</li><li><b>Si Facebook muestra un mensaje</b> (por ejemplo «pendiente de aprobación» o un aviso), recibirás una <b>notificación del sistema</b> con su texto exacto y lo verás en «Mensajes de Facebook». Queda guardado en el Historial y aparece en el informe diario. Si es un aviso de bloqueo, además se detiene todo y se muestra una ventana con el mensaje.</li></ul>
+<h3>Mientras publica</h3><ul><li><b>Puedes seguir trabajando:</b> la extensión usa una ventana pequeña en una esquina que no te quita el foco (puedes dejarla detrás de otras ventanas). En Ajustes → «Dónde trabaja la publicación automática» puedes elegir también una pestaña en segundo plano o una ventana minimizada. Si en tu equipo Facebook no responde bien en segundo plano, usa «Ventana en primer plano».</li><li>El <b>porcentaje</b> se ve en el icono de la extensión, en la barra de Chrome. Púlsalo para volver a la app. Si activas las notificaciones del sistema en Ajustes, te avisará al terminar o si se detiene.</li><li>Deja abiertas la pestaña de la app y la ventana de Facebook. Al terminar todos los grupos, la ventana de Facebook <b>se cierra sola</b> (lo puedes cambiar en Ajustes).</li><li>La <b>pausa entre grupos</b> se elige en la barra de publicación, junto al botón de inicio: mínimo 30 s, recomendado 60 s o más. Facebook no publica un mínimo oficial; cuanto más larga, menos riesgo.</li><li><b>Detener después de este grupo</b> para pausar; <b>Continuar</b> para seguir. El progreso queda en el Historial.</li><li>Si un grupo falla (no eres miembro, no permite publicar, error técnico…), se omite con el motivo y <b>se continúa con los demás</b>. Solo se detiene todo ante un aviso que pone en riesgo tu cuenta, si no hay sesión de Facebook o si se pierde la conexión.</li><li><b>Reintentos automáticos:</b> si se corta la conexión, se cierra la sesión de Facebook, la extensión deja de responder o un grupo no carga, la publicación espera y lo vuelve a intentar sola (10 veces, cada 20 s; configurable en Ajustes). Si se recupera, continúa; si se agotan, se detiene y te avisa. Los avisos de riesgo para la cuenta no se reintentan.</li><li>Al terminar verás un <b>resumen</b>: si hubo fallos, «Terminada con incidencias», con cada grupo y su motivo, y el botón <b>Reintentar los fallidos</b>. El aviso se mantiene en Publicar hasta que reintentes o lo cierres.</li><li><b>Si Facebook muestra un mensaje</b> (por ejemplo «pendiente de aprobación» o un aviso), lo verás en «Mensajes de Facebook» con su texto exacto (y, si activas las <b>notificaciones del sistema</b> en Ajustes, también un aviso de tu ordenador). Queda guardado en el Historial y aparece en el informe diario. Si es un aviso de bloqueo, además se detiene todo y se muestra una ventana con el mensaje.</li></ul>
 <div class="callout warn"><b>Riesgos:</b> las condiciones de Facebook no permiten publicar de forma automatizada. Aunque los límites reducen mucho el riesgo, puede haber bloqueos temporales o restricciones de la cuenta. Empieza con pocos grupos y límites bajos. Facebook cambia su interfaz con frecuencia: si la extensión deja de encontrar algún botón, se detendrá y podrás seguir con el modo asistido.</div>`),
 H('informe','Historial','Informe diario de difusión','informe reporte resumen diario pdf word docx copiar exportar cliente marca',`
 <p>Genera un resumen profesional de lo que se ha compartido en un día, listo para enviar a un cliente o incluir en tu informe diario.</p>

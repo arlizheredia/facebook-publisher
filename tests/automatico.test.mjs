@@ -33,7 +33,11 @@ const GROUPS = [
   {id: 'g8', slug: '2000000008', name: 'Grupo solo administradores', mode: 'adminsonly'},
   {id: 'g9', slug: '2000000009', name: 'Grupo nueve', mode: 'ok'},
   {id: 'g10', slug: '2000000010', name: 'Grupo diez', mode: 'ok'},
-  {id: 'g11', slug: '2000000011', name: 'Grupo once', mode: 'ok'}
+  {id: 'g11', slug: '2000000011', name: 'Grupo once', mode: 'ok'},
+  {id: 'g12', slug: '2000000012', name: 'Grupo doce', mode: 'ok'},
+  {id: 'g13', slug: '2000000013', name: 'Grupo trece', mode: 'ok'},
+  {id: 'g14', slug: '2000000014', name: 'Grupo catorce', mode: 'ok'},
+  {id: 'g15', slug: '2000000015', name: 'Grupo quince', mode: 'ok'}
 ];
 
 /* ---------- Chrome por tubería (necesario para cargar extensiones) ---------- */
@@ -45,7 +49,7 @@ function findChrome() {
 }
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'fbp-auto-'));
 const chrome = spawn(findChrome(), ['--headless=new', '--remote-debugging-pipe', '--enable-unsafe-extension-debugging', '--no-first-run',
-  '--no-default-browser-check', `--user-data-dir=${profile}`, '--window-size=1280,900'], {stdio: ['ignore', 'ignore', 'ignore', 'pipe', 'pipe']});
+  '--no-default-browser-check', `--user-data-dir=${profile}`, '--screen-info={1920x1080}'], {stdio: ['ignore', 'ignore', 'ignore', 'pipe', 'pipe']});
 const out = chrome.stdio[3], inp = chrome.stdio[4];
 let seq = 0, buf = ''; const pending = {}, listeners = [];
 inp.on('data', d => {
@@ -171,6 +175,10 @@ async function waitAuto(maxMs = 120000) {
   throw new Error('la publicación automática no terminó');
 }
 
+/* Las notificaciones de la extensión se registran sin mostrarse en el escritorio */
+for (let i = 0; i < 20 && !swSession; i++) await sleep(250);
+await swEval(`chrome.storage.session.set({dryNotify:true})`);
+const dryCount = async () => +(await swEval(`chrome.storage.session.get('dryLog').then(v=>String((v.dryLog||[]).length))`));
 console.log('1. Extensión');
 await t('la app detecta la extensión', async () => (await ev(`Ext.ready`)) ? `v${await ev('Ext.version')}` : false);
 await ev(`(()=>{localStorage.setItem('fbp.welcomed','true');S.groups=cleanGroups(${JSON.stringify(GROUPS.map(g => ({id: g.id, name: g.name, url: `https://www.facebook.com/groups/${g.slug}/`, active: true})))});persist.groups();
@@ -345,7 +353,64 @@ await t('publica la tarjeta de la publicación sin la URL en el texto', async ()
 await t('con imágenes adjuntas, el enlace se mantiene en el texto para no perderlo', async () => { const p1 = posted.find(p => p.group === MAIN); return p1.text.includes(POST_URL) && p1.files.length === 1; });
 await ev(`closeRun(true)`);
 
+console.log('5d. Trabajar mientras publica');
+await t('las pausas usan un temporizador en segundo plano (Web Worker) permitido por la CSP', async () => (await ev(`(async()=>{const t=performance.now();await wsleep(60);return performance.now()-t>=50})()`)) === true);
+await fastForward();
+await ev(`S.settings.autoWin='nofocus';persist.settings();S.sel=new Set(['g12']);renderDest();renderSummary();openPreflight()`);
+for (let i = 0; i < 30 && !(await ev(`document.getElementById('checkDlg').open`)); i++) await sleep(300);
+await ev(`document.getElementById('checkGo').click()`);
+let winInfo = null, badges = new Set();
+for (let i = 0; i < 60; i++) {
+  const w = await swEval(`chrome.windows.getAll({populate:true}).then(ws=>JSON.stringify(ws.filter(w=>w.tabs.some(t=>(t.url||t.pendingUrl||'').includes('facebook.com/groups'))).map(w=>({f:w.focused,w:w.width,s:w.state}))))`);
+  if (w && w !== '[]') winInfo = winInfo || w;
+  const b = await swEval(`chrome.action.getBadgeText({})`); if (b) badges.add(b);
+  if (await ev(`!S.run||!S.run.autoRunning`)) break; await sleep(500);
+}
+await t('modo recomendado: ventana pequeña que no quita el foco', async () => { const w = JSON.parse(winInfo || '[]')[0]; return w && w.f === false && w.w <= 600 ? `ventana sin foco (${w.w}px de ancho)` : (() => { throw new Error(winInfo); })(); });
+await t('muestra el porcentaje en el icono de la extensión', async () => [...badges].some(b => /%$/.test(b)) ? [...badges].join(' → ') : (() => { throw new Error(JSON.stringify([...badges])); })());
+await t('publica también así', async () => posted.some(p => p.group === '2000000012'));
+await ev(`closeRun(true)`);
+await fastForward();
+await ev(`S.settings.autoWin='tab';persist.settings();S.sel=new Set(['g13']);renderDest();renderSummary();openPreflight()`);
+for (let i = 0; i < 30 && !(await ev(`document.getElementById('checkDlg').open`)); i++) await sleep(300);
+await ev(`document.getElementById('checkGo').click()`);
+let tabInfo = null;
+for (let i = 0; i < 60; i++) {
+  const r = await swEval(`chrome.tabs.query({}).then(ts=>{const fb=ts.find(t=>(t.url||t.pendingUrl||'').includes('facebook.com/groups'));const app=ts.find(t=>(t.url||'').includes('facebook-publisher.html'));return fb&&app?JSON.stringify({same:fb.windowId===app.windowId,fbActive:fb.active,appActive:app.active}):''})`);
+  if (r) tabInfo = tabInfo || r;
+  if (await ev(`!S.run||!S.run.autoRunning`)) break; await sleep(500);
+}
+await t('modo pestaña: Facebook en una pestaña oculta junto a la app, que sigue visible', async () => { const o = JSON.parse(tabInfo || '{}'); return o.same && o.fbActive === false && o.appActive === true && posted.some(p => p.group === '2000000013') ? 'pestaña en segundo plano; la app sigue en primer plano' : (() => { throw new Error(tabInfo); })(); });
+await t('al terminar se cierra la pestaña de Facebook y se limpia el icono', async () => { await sleep(800); const n = await swEval(`chrome.tabs.query({}).then(ts=>ts.filter(t=>(t.url||'').includes('facebook.com/groups')).length)`); const b = await swEval(`chrome.action.getBadgeText({})`); return n === 0 && b === '' ? 'sin pestañas abiertas' : (() => { throw new Error(n + ' badge=' + b); })(); });
+await ev(`closeRun(true);S.settings.autoWin='nofocus';persist.settings()`);
+
+console.log('5e. Reintentos automáticos');
+const offline = on => send('Network.emulateNetworkConditions', {offline: on, latency: 0, downloadThroughput: -1, uploadThroughput: -1}, app);
+await send('Network.enable', {}, app);
+await fastForward();
+await ev(`S.settings.retries=2;S.settings.retryEvery=5;persist.settings();S.sel=new Set(['g14']);renderDest();renderSummary();openPreflight()`);
+for (let i = 0; i < 30 && !(await ev(`document.getElementById('checkDlg').open`)); i++) await sleep(300);
+await offline(true); await sleep(300);
+await ev(`document.getElementById('checkGo').click()`);
+let sawRetry = '';
+for (let i = 0; i < 40 && !sawRetry; i++) { sawRetry = await ev(`S.run&&S.run.retry?document.getElementById('runMain').textContent.match(/Reintento \\d+ de \\d+/)?.[0]||'retry':''`); await sleep(300); }
+await offline(false);
+await waitAuto(120000);
+await t('si se corta la conexión, espera y reintenta; al volver, continúa sola', async () => sawRetry && posted.some(p => p.group === '2000000014') && (await ev(`S.history[0].items[0].status`)) === 'done' ? `${sawRetry} → publicado al volver la conexión` : (() => { throw new Error(sawRetry); })());
+await ev(`closeRun(true)`);
+await fastForward();
+await ev(`S.sel=new Set(['g15']);renderDest();renderSummary();openPreflight()`);
+for (let i = 0; i < 30 && !(await ev(`document.getElementById('checkDlg').open`)); i++) await sleep(300);
+await offline(true); await sleep(300);
+await ev(`document.getElementById('checkGo').click()`);
+for (let i = 0; i < 60 && !(await ev(`!!(S.run&&S.run.stop&&!S.run.autoRunning)`)); i++) await sleep(500);
+await t('si no se resuelve, agota los reintentos y se detiene por completo', async () => { const m = await ev(`S.run&&S.run.stopMsg||''`); return /Se agotaron los 2 reintentos/.test(m) && !posted.some(p => p.group === '2000000015') ? m.slice(0, 90) + '…' : (() => { throw new Error(m); })(); });
+await offline(false);
+await ev(`(()=>{const h=S.history[0];h.items.forEach(i=>{if(i.status==='pending'){i.status='skipped';i.error='Descartado'}});persist.history();closeRun(true);S.settings.retries=10;S.settings.retryEvery=20;persist.settings();try{localStorage.removeItem('fbp.run')}catch(e){};renderResume()})()`);
+
 console.log('6. Mensajes de Facebook');
+await t('las notificaciones del sistema están desactivadas por defecto y no se envían', async () => (await ev(`cleanSettings({}).sysNotify`)) === false && (await dryCount()) === 0);
+await ev(`S.settings.sysNotify=true;persist.settings()`);
 await fastForward();
 await ev(`S.sel=new Set(['g7','g8']);renderDest();renderSummary();openPreflight()`);
 for (let i = 0; i < 30 && !(await ev(`document.getElementById('checkDlg').open`)); i++) await sleep(300);
@@ -358,14 +423,14 @@ await t('captura el texto exacto del mensaje que muestra Facebook', async () => 
 await t('lo muestra en «Mensajes de Facebook» durante la publicación', async () => /Mensajes de Facebook \(2\)/.test(await ev(`document.getElementById('runMain').textContent`)));
 await t('envía una notificación del sistema con el grupo y el mensaje', async () => {
   if (!swSession) throw new Error('sin acceso al service worker');
-  const n = await swEval(`chrome.notifications.getAll().then(o=>JSON.stringify(Object.keys(o).length))`);
+  const n = await dryCount();
   return +n >= 1 ? `${n} notificación(es) creadas` : (() => { throw new Error('notificaciones: ' + n); })();
 });
 await t('no se detiene por un fallo sin riesgo: termina y resume «con incidencias»', async () => {
   const r = await ev(`JSON.stringify({t:document.querySelector('#runMain h2')?.textContent,txt:document.getElementById('runMain').textContent,retry:!!document.getElementById('rRetry')})`); const o = JSON.parse(r);
   return /terminada con incidencias/.test(o.t) && /Grupo solo administradores/.test(o.txt) && /El grupo no permite publicar/.test(o.txt) && o.retry ? 'lista el grupo fallido con su motivo y ofrece reintentar' : (() => { throw new Error(r); })();
 });
-await t('al terminar con fallos envía una notificación con el resumen', async () => +(await swEval(`chrome.notifications.getAll().then(o=>JSON.stringify(Object.keys(o).length))`)) >= 3);
+await t('al terminar con fallos envía una notificación con el resumen', async () => (await dryCount()) >= 3);
 await ev(`closeRun(true)`); await sleep(300);
 await t('tras cerrar, Publicar mantiene el aviso de incidencias con «Reintentar»', async () => {
   const r = await ev(`JSON.stringify({vis:!document.getElementById('resumeBanner').hidden,txt:document.getElementById('resumeBanner').textContent})`); const o = JSON.parse(r);
@@ -412,7 +477,7 @@ await t('«Publicar de todas maneras» pide confirmación, quita el bloqueo y pe
   return !o.lock && !o.go && o.ov ? 'bloqueo quitado; «Empezar» habilitado' : (() => { throw new Error(r); })();
 });
 await t('respeta la pausa entre grupos (no publica dos seguidos sin esperar)', async () => (await ev(`(()=>{const t=S.history.flatMap(h=>h.items).filter(i=>i.status==='done').map(i=>i.at).sort((a,b)=>a-b);for(let i=1;i<t.length;i++)if(t[i]-t[i-1]<S.settings.pause*1000)return false;return true})()`)) === true);
-await t('solo se publicó en los grupos correctos', async () => posted.length === 8 && posted.map(p => p.group).join() === `${MAIN},2000000005,2000000006,2000000009,2000000010,2000000011,2000000007,2000000002` ? posted.map(p => p.group).join(', ') : false);
+await t('solo se publicó en los grupos correctos', async () => posted.length === 11 && posted.map(p => p.group).join() === `${MAIN},2000000005,2000000006,2000000009,2000000010,2000000011,2000000012,2000000013,2000000014,2000000007,2000000002` ? posted.map(p => p.group).join(', ') : false);
 await t('sin errores de JavaScript en la app', async () => errors.length === 0 || (() => { throw new Error(errors.slice(0, 3).join(' | ')); })());
 
 console.log(`\n${passed} correctas, ${failed} fallidas\n`);

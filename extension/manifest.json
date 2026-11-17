@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Facebook Publisher · Publicación automática",
   "short_name": "FB Publisher",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Publica en tus grupos de Facebook lo que preparas en Facebook Publisher, usando tu propia sesión y respetando los límites de seguridad.",
   "minimum_chrome_version": "116",
   "permissions": [
@@ -48,5 +48,13 @@
     "16": "icon16.png",
     "48": "icon48.png",
     "128": "icon128.png"
+  },
+  "action": {
+    "default_title": "Facebook Publisher · volver a la app",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
   }
 }
