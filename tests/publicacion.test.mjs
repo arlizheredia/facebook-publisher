@@ -64,6 +64,14 @@ const go = async url => {
 
 /* ---------- Facebook simulado ---------- */
 let mockHasPost = true;
+/* «Tus grupos» con el panel de notificaciones abierto (enlaces a grupos con texto de notificación) */
+function mockJoinsPage() {
+  const g = (id, name) => `<div><a href="https://www.facebook.com/groups/${id}/"><img alt=""></a><a href="https://www.facebook.com/groups/${id}/">${name}</a><span>Última actividad: hace 2 h</span></div>`;
+  const n = (id, txt) => `<a href="https://www.facebook.com/groups/${id}/posts/55/?notif_id=1&ref=notif">${txt}</a>`;
+  return '<!doctype html><html><head><meta charset="utf-8"><title>Tus grupos | Facebook</title></head><body>' +
+    '<div role="dialog" aria-label="Notificaciones">' + n('7001', 'No leídaAhora en Grupo Siete: "https://www.facebook.com/share/p/x"') + n('7002', 'No leídaYuli ha publicado en Grupo Ocho: "Vendo"') + '</div>' +
+    '<div role="main"><h1>Todos los grupos a los que te has unido</h1>' + g('7001', 'Grupo Siete') + g('7002', 'Grupo Ocho') + g('7003', 'Fotos Antiguas, Santiago') + '</div></body></html>';
+}
 function mockGroupPage() {
   const other = '<div role="article"><a href="/groups/' + groupSlug + '/posts/1000000001/">hace 3 h</a><p>Otra publicación sin relación</p><a href="https://www.facebook.com/reel/999999999999/">Reel ajeno</a></div>';
   const ours = '<div role="article"><a href="/groups/' + groupSlug + '/posts/1000000002/">hace 1 min</a><p>¡Hola, comunidad de ' + GROUP_NAME + '! ' + POST_URL + '</p>' +
@@ -74,7 +82,7 @@ function mockGroupPage() {
 await send('Fetch.enable', {patterns: [{urlPattern: 'https://www.facebook.com/*'}]});
 handlers.push(m => {
   if (m.method !== 'Fetch.requestPaused') return;
-  const body = Buffer.from(mockGroupPage()).toString('base64');
+  const body = Buffer.from(/\/groups\/joins/.test(m.params.request.url) ? mockJoinsPage() : mockGroupPage()).toString('base64');
   send('Fetch.fulfillRequest', {requestId: m.params.requestId, responseCode: 200, responseHeaders: [{name: 'Content-Type', value: 'text/html; charset=utf-8'}], body});
 });
 await send('Runtime.enable'); await send('Page.enable');
@@ -105,6 +113,37 @@ await t('añade el grupo desde el diálogo y normaliza su URL', async () => {
 });
 await t('rechaza URLs que no son de Facebook', async () => (await ev(`normGroupUrl('https://evil.com/groups/1')`)) === null && (await ev(`parseFbUrl('javascript:alert(1)').error`)) != null);
 await t('el grupo queda seleccionado como destino', async () => (await ev(`selectedGroups().map(g=>g.name).join()`)) === GROUP_NAME);
+await t('corrige nombres capturados de notificaciones («No leída…», «… ha publicado en …»)', async () => {
+  const n = await ev(`JSON.stringify(cleanGroups([
+    {url:'https://www.facebook.com/groups/1615283163101463/',name:'No leídaAhora en Grupo Test 1: "https://www.facebook.com/share/p/1Ch81wRRrf/"'},
+    {url:'https://www.facebook.com/groups/1010482899070551/',name:'No leídaLA GENTE DEL SALAO: "BUSCO".10 h'},
+    {url:'https://www.facebook.com/groups/978631067371193/',name:'No leídaYuli Rodriguez ha publicado en Ventas Al por mayor y por menor en Santiago de Cuba: "Ofertas"'},
+    {url:'https://www.facebook.com/groups/281930785337165/',name:'Fotos Antiguas,Provincia,Santiago de cuba.'}]).map(g=>g.name))`);
+  return n === '["Grupo Test 1","LA GENTE DEL SALAO","Ventas Al por mayor y por menor en Santiago de Cuba","Fotos Antiguas,Provincia,Santiago de cuba"]' ? n : (() => { throw new Error(n); })();
+});
+await t('el marcador ignora el panel de notificaciones y captura los nombres reales', async () => {
+  await go('https://www.facebook.com/groups/joins/');
+  await ev(`window.__clip=[];navigator.clipboard.writeText=async t=>{window.__clip.push(t)}`);
+  await ev(bookmarklet); await sleep(1300 * 9);
+  await ev(`document.getElementById('fbpCopy')?.click()`); await sleep(300);
+  const out = await ev(`window.__clip.at(-1)||''`);
+  const names = JSON.parse(out.replace(/^FBP_GROUPS:/, '') || '[]').map(g => g.name).sort().join(' | ');
+  await go(APP); await ev(`srcEl.value=${JSON.stringify(POST_URL)};srcEl.dispatchEvent(new Event('input'));srcEl.dispatchEvent(new Event('blur'))`); await sleep(700);
+  return names === 'Fotos Antiguas, Santiago | Grupo Ocho | Grupo Siete' ? names : (() => { throw new Error(out.slice(0, 300)); })();
+});
+await t('el Historial también muestra el nombre corregido', async () => {
+  const n = await ev(`cleanHistory([{id:'hx',date:Date.now(),url:'',text:'x',items:[{gid:'zz',name:'No leídaAhora en Grupo Test 1: "https://www.facebook.com/share/p/1Ch81wRRrf/ Esto..."10 h',url:'https://www.facebook.com/groups/1615283163101463/',status:'pending'}]}])[0].items[0].name`);
+  return n === 'Grupo Test 1' ? n : (() => { throw new Error(n); })();
+});
+await t('al volver a importar, corrige los nombres estropeados de los grupos que ya tenías', async () => {
+  await ev(`S.groups.push(...cleanGroups([{url:'https://www.facebook.com/groups/7001/',name:'No leídaAhora en Grupo Siete: "x"'}]));persist.groups();openImport();
+    document.getElementById('impText').value='FBP_GROUPS:'+JSON.stringify([{name:'Grupo Siete (oficial)',url:'https://www.facebook.com/groups/7001/'}]);document.getElementById('impText').dispatchEvent(new Event('input'))`);
+  const lbl = await ev(`document.getElementById('impGo').textContent`);
+  await ev(`document.getElementById('impGo').click()`);
+  const nm = await ev(`S.groups.find(g=>g.url.includes('/7001/')).name`);
+  await ev(`S.groups=S.groups.filter(g=>!g.url.includes('/7001/'));persist.groups()`);
+  return nm === 'Grupo Siete (oficial)' && /corregir 1/.test(lbl) ? `${lbl} → «${nm}»` : (() => { throw new Error(lbl + ' / ' + nm); })();
+});
 await ev(`txtEl.value='¡Hola, comunidad de {grupo}!';txtEl.dispatchEvent(new Event('input'))`);
 
 await t('limpia «Foto de perfil del grupo …» del nombre (app y marcador)', async () => {

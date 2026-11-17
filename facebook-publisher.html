@@ -1033,14 +1033,26 @@ const str=(v,max)=>typeof v==='string'?v.slice(0,max):'';
 const okId=v=>typeof v==='string'&&/^[\w-]{1,40}$/.test(v)?v:null;
 const okTs=v=>typeof v==='number'&&isFinite(v)&&v>0?v:null;
 const GROUP_NAME_PREFIX=/^\s*(foto de (perfil|portada) del grupo|imagen (de perfil )?del grupo|profile (picture|photo) of( the group)?|cover photo of( the group)?|group (profile )?(picture|photo)( of)?)\s*[:\-–]?\s*/i;
-const cleanGroupName=n=>String(n||'').replace(GROUP_NAME_PREFIX,'').trim();
+/* Limpia nombres mal capturados: prefijos de foto, «No leída» y textos de notificaciones de Facebook
+   («Ahora en GRUPO: "…"», «Fulano ha publicado en GRUPO: "…"», «GRUPO: "…" 10 h») */
+const NOTIF_RX=/\b(ha publicado|publicó|ha compartido|compartió|ha comentado|comentó|reaccionó|posted|shared|commented)\b/i;
+function cleanGroupName(n){
+  let t=String(n||'').replace(/\s+/g,' ').trim().replace(/^(no le[ií]das?|unread)\s*/i,'').replace(GROUP_NAME_PREFIX,'');
+  let m=NOTIF_RX.test(t)&&t.match(/\b(?:ha publicado|publicó|ha compartido|compartió|ha comentado|comentó|reaccionó|posted|shared|commented)\b.*?\b(?:en|in)\s+(.+?)(?:\s*[:.]\s*["“«].*|$)/i);
+  if(m)t=m[1];
+  else if((m=t.match(/^(?:ahora|hace\s+\S+(?:\s+\S+)?|just now|\d+\s*\w+ ago)\s+(?:en|in)\s+(.+?)\s*:\s*["“«]/i)))t=m[1];
+  else if((m=t.match(/^(.+?)\s*:\s*["“«]/)))t=m[1];
+  return t.replace(/[.\s]*\b\d+\s*(min|h|d|sem|s|a|w|y)\b\.?$/i,'').replace(/[.:\s]+$/,'').trim();
+}
+const badGroupName=n=>/^(no le[ií]da|unread)/i.test(n)||/:\s*["“«]/.test(n)||NOTIF_RX.test(n)||GROUP_NAME_PREFIX.test(n);
 function cleanGroups(list){const seen=new Set();return (Array.isArray(list)?list:[]).map(g=>{if(!g||typeof g!=='object')return null;const url=normGroupUrl(str(g.url,300));if(!url)return null;
   const k=groupKey(url);if(seen.has(k))return null;seen.add(k);
-  return {id:okId(g.id)||uid(),name:cleanGroupName(str(g.name,140))||url.split('/groups/')[1].replace('/',''),url,tags:(Array.isArray(g.tags)?g.tags:[]).map(t=>str(t,40).trim()).filter(Boolean).slice(0,20),
+  const raw=str(g.name,400),nm=cleanGroupName(raw).slice(0,140),slug=url.split('/groups/')[1].replace('/','');
+  return {id:okId(g.id)||uid(),name:nm||slug,nameFixed:g.nameFixed===true||(!!raw&&nm!==raw.replace(/\s+/g,' ').trim())||!nm,url,tags:(Array.isArray(g.tags)?g.tags:[]).map(t=>str(t,40).trim()).filter(Boolean).slice(0,20),
     notes:str(g.notes,500),active:g.active!==false,approval:g.approval===true,lastShared:okTs(g.lastShared),created:okTs(g.created)||Date.now()}}).filter(Boolean)}
 function cleanHistory(list){return (Array.isArray(list)?list:[]).map(h=>{if(!h||typeof h!=='object')return null;
   const items=(Array.isArray(h.items)?h.items:[]).map(i=>{const url=i&&normGroupUrl(str(i.url,300));if(!url)return null;
-    return {gid:okId(i.gid)||'',name:str(i.name,140),url,notes:str(i.notes,500),status:['pending','done','skipped'].includes(i.status)?i.status:'pending',at:okTs(i.at),review:i.status==='done'&&['awaiting','approved','rejected'].includes(i.review)?i.review:undefined,rat:okTs(i.rat),error:i.error?str(i.error,240):undefined,fbMsg:i.fbMsg?str(i.fbMsg,800):undefined,inflight:i.status==='pending'?okTs(i.inflight)||undefined:undefined,verify:i.verify&&typeof i.verify==='object'&&okTs(i.verify.at)?{at:i.verify.at,found:i.verify.found===true}:undefined}}).filter(Boolean);
+    return {gid:okId(i.gid)||'',name:cleanGroupName(str(i.name,400)).slice(0,140)||str(i.name,140),url,notes:str(i.notes,500),status:['pending','done','skipped'].includes(i.status)?i.status:'pending',at:okTs(i.at),review:i.status==='done'&&['awaiting','approved','rejected'].includes(i.review)?i.review:undefined,rat:okTs(i.rat),error:i.error?str(i.error,240):undefined,fbMsg:i.fbMsg?str(i.fbMsg,800):undefined,inflight:i.status==='pending'?okTs(i.inflight)||undefined:undefined,verify:i.verify&&typeof i.verify==='object'&&okTs(i.verify.at)?{at:i.verify.at,found:i.verify.found===true}:undefined}}).filter(Boolean);
   if(!items.length)return null;const u=parseFbUrl(str(h.url,2000));
   return {id:okId(h.id)||uid(),date:okTs(h.date)||Date.now(),url:u.url||'',text:str(h.text,63206),mediaCount:clamp(h.mediaCount,0,999,0),appendUrl:h.appendUrl!==false,items,ack:h.ack===true}}).filter(Boolean).slice(0,300)}
 function cleanTemplates(list){return (Array.isArray(list)?list:[]).map(t=>t&&typeof t==='object'&&typeof t.text==='string'?{id:okId(t.id)||uid(),name:str(t.name,80)||'Plantilla',text:str(t.text,63206)}:null).filter(Boolean)}
@@ -1519,17 +1531,21 @@ function parseImport(txt){
   const seen=new Set();return out.filter(g=>{const k=groupKey(g.url);if(seen.has(k))return false;seen.add(k);return true});
 }
 function openImport(){$('#impText').value='';updImp();$('#importDlg').showModal()}
+function impFixes(list){const out=[];list.forEach(g=>{const ex=S.groups.find(x=>groupKey(x.url)===groupKey(g.url));if(!ex)return;
+  const nm=cleanGroupName(g.name),slug=(ex.url.split('/groups/')[1]||'').replace('/','').toLowerCase();
+  if(nm&&!badGroupName(g.name)&&nm.toLowerCase()!==slug&&nm!==ex.name&&(ex.nameFixed||ex.name.toLowerCase()===slug))out.push({g:ex,name:nm})});return out}
 function updImp(){if(/FBP_CHECK:/.test($('#impText').value)){const h=$('#impHint');h.className='hint err';h.innerHTML='Esto es una <b>verificación</b>, no una lista de grupos. Pégala en Historial → Verificar.';$('#impGo').disabled=true;return []}
   const list=parseImport($('#impText').value);const existing=new Set(S.groups.map(g=>groupKey(g.url)));const nw=list.filter(g=>!existing.has(groupKey(g.url)));
   const h=$('#impHint');if(!$('#impText').value.trim()){h.className='hint';h.innerHTML='&nbsp;'}else if(!list.length){h.className='hint err';h.textContent='No se ha detectado ningún grupo válido.'}
-  else{h.className='hint ok';h.textContent=`${list.length} grupo(s) detectados · ${nw.length} nuevos${list.length-nw.length?` · ${list.length-nw.length} ya existen (se omitirán)`:''}`}
-  $('#impGo').disabled=!nw.length;$('#impGo').textContent=nw.length?`Importar ${nw.length}`:'Importar';return nw}
+  const fx=impFixes(list);S.impFix=fx;
+  if(list.length){h.className='hint ok';h.textContent=`${list.length} grupo(s) detectados · ${nw.length} nuevos${fx.length?` · se corregirá el nombre de ${fx.length}`:''}${list.length-nw.length-fx.length>0?` · ${list.length-nw.length-fx.length} ya existen (se omitirán)`:''}`}
+  $('#impGo').disabled=!nw.length&&!fx.length;$('#impGo').textContent=nw.length||fx.length?`Importar${nw.length?' '+nw.length:''}${fx.length?` y corregir ${fx.length}`:''}`:'Importar';return nw}
 $('#importBtn').onclick=openImport;
 $('#impText').addEventListener('input',updImp);
 $('#impPaste').onclick=async()=>{try{$('#impText').value=await navigator.clipboard.readText();updImp()}catch(e){$('#impText').focus();snack('Pulsa Ctrl+V dentro del cuadro de texto')}};
 $('#impFileBtn').onclick=()=>$('#impFile').click();
 $('#impFile').onchange=async e=>{const f=e.target.files[0];if(f){$('#impText').value=await f.text();updImp()}e.target.value=''};
-$('#impGo').onclick=()=>{const nw=cleanGroups(updImp().map(g=>Object.assign({id:uid(),created:Date.now(),lastShared:null},g)));nw.forEach(g=>S.groups.push(g));if(S.sel)nw.forEach(g=>{const x=S.groups.find(y=>y.url===g.url);if(x&&x.active)S.sel.add(x.id)});persist.groups();$('#importDlg').close();snack(`${nw.length} grupo(s) importados`)};
+$('#impGo').onclick=()=>{const nw=cleanGroups(updImp().map(g=>Object.assign({id:uid(),created:Date.now(),lastShared:null},g)));nw.forEach(g=>S.groups.push(g));const fx=S.impFix||[];fx.forEach(f=>{f.g.name=f.name;f.g.nameFixed=false});S.impFix=null;if(S.sel)nw.forEach(g=>{const x=S.groups.find(y=>y.url===g.url);if(x&&x.active)S.sel.add(x.id)});persist.groups();$('#importDlg').close();snack(`${nw.length} grupo(s) importados${fx.length?` · ${fx.length} nombre(s) corregidos`:''}`)};
 $('#exportBtn').onclick=()=>{if(!S.groups.length){snack('No hay grupos para exportar');return}download(`facebook-publisher-grupos-${new Date().toISOString().slice(0,10)}.json`,JSON.stringify({app:'Facebook Publisher',type:'groups',groups:S.groups.map(({name,url,tags,notes,active})=>({name,url,tags,notes,active}))},null,2));snack('Grupos exportados')};
 
 /* Marcador (bookmarklet) — solo LEE la página de Facebook y copia la lista al portapapeles */
@@ -1540,7 +1556,7 @@ function fbpCapture(){
   var BAD=/^(ver grupo|view group|visitar|visit|unirte|join|ver m[aá]s|see more|ver todo|see all|activo|active|[uú]ltima|last|hace|about|\d|miembros|members|publicaciones|posts|grupo (p[uú]blico|privado)|(public|private) group|tus grupos|your groups|grupos a los que|groups you|administrar|manage|nueva actividad|new activity|unread|sin leer|·)/i;
   var map={},order=[];
   function slugOf(h){var m=(h||'').match(/\/groups\/([^\/?#]+)\/?(?:[?#].*)?$/);return m&&!SKIP[m[1].toLowerCase()]?m[1]:null}
-  function okName(t){t=String(t||'').replace(/\s+/g,' ').replace(/^\s*(foto de (perfil|portada) del grupo|imagen (de perfil )?del grupo|profile (picture|photo) of( the group)?|cover photo of( the group)?|group (profile )?(picture|photo)( of)?)\s*[:\-–]?\s*/i,'').replace(/\s*(Activo por [uú]ltima vez|Activo hace|Last active|Active \d|[UÚ]ltima actividad|Hace \d+ (min|hora|d[ií]a)|\d[\d.,]*\s*(mil\s*)?(miembros|members)).*$/i,'').trim();return t.length>1&&t.length<=140&&!BAD.test(t)?t:''}
+  function okName(t){t=String(t||'').replace(/\s+/g,' ').replace(/^\s*(no le[ií]das?|unread)\s*/i,'');if(/:\s*["“«]/.test(t)||/\b(ha publicado|publicó|ha compartido|compartió|ha comentado|comentó|reaccionó|posted|shared|commented)\b/i.test(t))return '';t=t.replace(/^\s*(foto de (perfil|portada) del grupo|imagen (de perfil )?del grupo|profile (picture|photo) of( the group)?|cover photo of( the group)?|group (profile )?(picture|photo)( of)?)\s*[:\-–]?\s*/i,'').replace(/\s*(Activo por [uú]ltima vez|Activo hace|Last active|Active \d|[UÚ]ltima actividad|Hace \d+ (min|hora|d[ií]a)|\d[\d.,]*\s*(mil\s*)?(miembros|members)).*$/i,'').trim();return t.length>1&&t.length<=140&&!BAD.test(t)?t:''}
   function firstGood(txt){var ls=String(txt||'').split('\n');for(var i=0;i<ls.length;i++){var n=okName(ls[i]);if(n)return n}return ''}
   function nameFor(a,slug){
     var n=firstGood(a.innerText)||okName(a.getAttribute('aria-label'));if(n)return n;
@@ -1555,7 +1571,7 @@ function fbpCapture(){
   function collect(){
     var m=location.pathname.match(/^\/groups\/([^\/?#]+)/);
     if(m&&!SKIP[m[1].toLowerCase()]){var h=document.querySelector('[role=main] h1')||document.querySelector('h1');add(m[1],(h&&h.innerText)||document.title.replace(/\s*[|\-]\s*Facebook\s*$/,''))}
-    document.querySelectorAll('a[href*="/groups/"]').forEach(function(a){if(box.contains(a))return;var s=slugOf(a.getAttribute('href'));if(s)add(s,nameFor(a,s))});
+    document.querySelectorAll('a[href*="/groups/"]').forEach(function(a){if(box.contains(a))return;var hr=a.getAttribute('href')||'';if(/notif_|ref=notif/.test(hr)||a.closest('[role=dialog],[role=banner],[role=complementary],[aria-label*="otificacion"],[aria-label*="otification"]'))return;var s=slugOf(hr);if(s)add(s,nameFor(a,s))});
   }
   function add(slug,name){name=okName(name);if(!(slug in map)){map[slug]='';order.push(slug)}if(name&&!map[slug])map[slug]=name}
   var box=document.createElement('div');window.__fbpCap=box;box.tabIndex=-1;
@@ -1879,6 +1895,7 @@ async function startRun(fromHist){
       items:groups.map(g=>({gid:g.id,name:g.name,url:g.url,notes:g.notes||'',status:'pending',at:null}))};
     S.history.unshift(entry);persist.history();
   }
+  entry.items.forEach(i=>{const g=S.groups.find(x=>x.id===i.gid)||S.groups.find(x=>groupKey(x.url)===groupKey(i.url));if(g&&g.name)i.name=g.name});
   const idx=entry.items.findIndex(i=>i.status==='pending');
   S.run={entry,idx:idx<0?entry.items.length:idx,opened:false,auto:autoActive()};saveRunState();renderResume();
   $('#runDlg').showModal();renderRun();if(S.run.auto)runAuto();
