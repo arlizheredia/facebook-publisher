@@ -1,0 +1,45 @@
+{
+  "version": "1.7.0",
+  "files": [
+    {
+      "name": "background.js",
+      "sha256": "aa579bfed4baf77510adafce2da4da8f9a828ffd2d76969c5c65657f4633ca96"
+    },
+    {
+      "name": "bridge.js",
+      "sha256": "2ccfabe8c6a97bbc4bc1e0a2f0413172f11a61220b28d1a3e8823d80153a7269"
+    },
+    {
+      "name": "fb.js",
+      "sha256": "afa077308eaafe96e5d4abe96d8522d68a04f0e9eb8845ed4b3bfe7a9071ac38"
+    },
+    {
+      "name": "icon.svg",
+      "sha256": "0cf5c036aefba9b4fee115c023e76e7edbb7dcb16a5ca749dc2a11b70dac10c9"
+    },
+    {
+      "name": "icon128.png",
+      "sha256": "65805a4993100a61865bee928f1f7fdad003eee06c5dadc1a077d387f3995352"
+    },
+    {
+      "name": "icon16.png",
+      "sha256": "b201b00e387e30d9ef651c025cba7714737aeb08630f99592263837370727923"
+    },
+    {
+      "name": "icon48.png",
+      "sha256": "5433d4474da61ac3be7b8429c6ba8703c0b5d393ba7dfaa0f07c3549156ce960"
+    },
+    {
+      "name": "manifest.json",
+      "sha256": "584d848ac4e98e4a1ac5e906917ccf061693c19b4f95eed25aa1011768583b59"
+    },
+    {
+      "name": "update.html",
+      "sha256": "991bff5163075218c7efe208fb53eeefa0a59f7b97a36dc45a1043b19cef3d63"
+    },
+    {
+      "name": "update.js",
+      "sha256": "bfe02052f16664bffeae78500d9a06fe9e7ac0169495ef2c9d020b60e7a5339e"
+    }
+  ]
+}

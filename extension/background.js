@@ -41,6 +41,8 @@ chrome.runtime.onMessage.addListener((msg, sender, send) => {
     handlePost(msg.job).then(r => { notifyResult(msg.job, r); return r; }).then(send, e => send({ok: false, step: 'ext', error: String((e && e.message) || e)})).finally(() => { busy = false; });
     return true;
   }
+  if (msg.cmd === 'checkUpdate') { checkUpdate().then(send, e => send({ok: false, error: String(e && e.message || e)})); return true; }
+  if (msg.cmd === 'update') { openUpdater(!!(msg.job && msg.job.auto)).then(() => send({ok: true}), e => send({ok: false, error: String(e && e.message || e)})); return true; }
   if (msg.cmd === 'badge') { setBadge(typeof msg.job?.text === 'string' ? msg.job.text.slice(0, 4) : ''); send({ok: true}); return; }
   if (msg.cmd === 'notify') {
     const j = msg.job || {};
@@ -154,6 +156,32 @@ if (chrome.notifications) chrome.notifications.onClicked.addListener(async id =>
   await ready;
   if (appTabId != null) chrome.tabs.get(appTabId).then(t => { chrome.windows.update(t.windowId, {focused: true}); chrome.tabs.update(appTabId, {active: true}); }).catch(() => {});
   chrome.notifications.clear(id);
+});
+
+/* ---- Autoactualización (extensión instalada «descomprimida») ---- */
+const REMOTE = 'https://arlizheredia.github.io/facebook-publisher/extension/';
+const verGt = (a, b) => { const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; };
+async function checkUpdate() {
+  const r = await fetch(REMOTE + 'manifest.json?t=' + Date.now(), {cache: 'no-store'});
+  const m = await r.json();
+  const current = chrome.runtime.getManifest().version, latest = String(m.version || '');
+  return {ok: true, current, latest, available: /^\d+\.\d+\.\d+$/.test(latest) && verGt(latest, current)};
+}
+async function openUpdater(auto) {
+  await ready;
+  const url = chrome.runtime.getURL('update.html') + (auto ? '?auto=1' : '');
+  const open = (await chrome.tabs.query({})).find(t => (t.url || '').startsWith(chrome.runtime.getURL('update.html')));
+  if (open) { await chrome.tabs.update(open.id, {url, active: !auto}); return; }
+  let windowId; try { if (appTabId != null) windowId = (await chrome.tabs.get(appTabId)).windowId; } catch {}
+  await chrome.tabs.create({url, active: !auto, ...(windowId != null ? {windowId} : {})});
+}
+/* Tras actualizarse: recarga las pestañas de la app para que se conecten a la versión nueva */
+chrome.runtime.onInstalled.addListener(async d => {
+  if (d.reason !== 'update') return;
+  const {updatedTo} = await chrome.storage.local.get('updatedTo').catch(() => ({}));
+  if (!updatedTo || updatedTo !== chrome.runtime.getManifest().version) return;
+  await chrome.storage.local.remove(['updatedTo']).catch(() => {});
+  for (const t of await chrome.tabs.query({})) if (APP_URL.some(r => r.test(t.url || ''))) chrome.tabs.reload(t.id).catch(() => {});
 });
 
 /* Porcentaje en el icono de la extensión: se ve aunque trabajes en otra cosa. Al pulsarlo vuelves a la app. */

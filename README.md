@@ -16,6 +16,8 @@ Aplicación web de un solo archivo para compartir una publicación de Facebook e
 
 Con la extensión de [`extension/`](extension/) (descarga: [facebook-publisher-extension.zip](https://arlizheredia.github.io/facebook-publisher/facebook-publisher-extension.zip)), un clic en **Comenzar publicación automática** publica en todos los grupos seleccionados el texto, los archivos y la URL. La extensión usa la sesión de Facebook que ya tienes abierta en Chrome; la app aplica los límites de seguridad (pausas, máximos por hora y día, 24 h por grupo) y todo se detiene si Facebook muestra un aviso.
 
+**Actualización automática (desde la v1.7):** la extensión comprueba si hay una versión nueva en GitHub Pages, descarga sus archivos, verifica el SHA-256 de cada uno (`extension/files.json`), los escribe en su propia carpeta (la primera vez pide elegirla) y se reinicia. Para publicar una versión nueva: sube `version` en `extension/manifest.json`, ejecuta `python3 tools/build-extension.py` y sube los cambios.
+
 Instalación: descomprime el .zip, abre `chrome://extensions`, activa el *Modo de desarrollador*, pulsa **Cargar descomprimida** y elige la carpeta. La primera vez usa el **modo prueba** (prepara la publicación sin pulsar «Publicar»).
 
 > Las condiciones de Facebook no permiten publicar de forma automatizada: puede haber bloqueos temporales o restricciones de la cuenta. Empieza con pocos grupos y límites bajos.

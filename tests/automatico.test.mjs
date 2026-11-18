@@ -102,6 +102,20 @@ if(c)c.addEventListener('click',()=>{
 </script></body></html>`;
 }
 const PNG = fs.readFileSync(path.join(ROOT, 'extension', 'icon128.png'));
+/* Versión «nueva» de la extensión (9.9.9) para probar la autoactualización */
+const REMOTE_EXT = 'https://arlizheredia.github.io/facebook-publisher/extension/';
+const UPD = {serveNew: false, tamper: false};
+const NEWEXT = fs.mkdtempSync(path.join(os.tmpdir(), 'fbp-newext-'));
+{
+  const crypto = await import('node:crypto');
+  const names = fs.readdirSync(path.join(ROOT, 'extension')).filter(n => n !== 'files.json');
+  for (const n of names) fs.copyFileSync(path.join(ROOT, 'extension', n), path.join(NEWEXT, n));
+  const m = JSON.parse(fs.readFileSync(path.join(NEWEXT, 'manifest.json'), 'utf8')); m.version = '9.9.9';
+  fs.writeFileSync(path.join(NEWEXT, 'manifest.json'), JSON.stringify(m, null, 2) + '\n');
+  const files = names.sort().map(n => ({name: n, sha256: crypto.createHash('sha256').update(fs.readFileSync(path.join(NEWEXT, n))).digest('hex')}));
+  fs.writeFileSync(path.join(NEWEXT, 'files.json'), JSON.stringify({version: '9.9.9', files}));
+}
+const TYPES = {js: 'application/javascript', json: 'application/json', png: 'image/png', html: 'text/html; charset=utf-8', svg: 'image/svg+xml'};
 const USER = {id: '100012345678', name: 'Ana Pérez'};
 /* PNG de 300×300 para el plan B de la miniatura (imagen ya cargada en la página) */
 const BIG = (() => { const zlib = require('node:zlib'); const n = 300, row = Buffer.alloc(1 + n * 4); for (let x = 0; x < n; x++) row.set([232, 113, 10, 255], 1 + x * 4);
@@ -111,7 +125,12 @@ const BIG = (() => { const zlib = require('node:zlib'); const n = 300, row = Buf
   return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ih), chunk('IDAT', zlib.deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]); })();
 function fulfill(sessionId, ev) {
   const u = ev.request.url; let body = '', type = 'text/html; charset=utf-8', code = 200;
-  if (u.startsWith(APP_URL)) body = appHtml;
+  if (u.startsWith(REMOTE_EXT)) {
+    const name = u.slice(REMOTE_EXT.length).split('?')[0], dir = UPD.serveNew ? NEWEXT : path.join(ROOT, 'extension'), f = path.join(dir, name);
+    if (/^[\w.-]+$/.test(name) && fs.existsSync(f)) { body = fs.readFileSync(f); if (UPD.tamper && name === 'fb.js') body = Buffer.concat([body, Buffer.from('\n// alterado')]); type = TYPES[name.split('.').pop()] || 'application/octet-stream'; }
+    else { body = 'no encontrado'; code = 404; }
+  }
+  else if (u.startsWith(APP_URL)) body = appHtml;
   else if (/^https:\/\/www\.facebook\.com\/me(\?|$)/.test(u)) body = `<html><head><title>(3) ${USER.name} | Facebook</title><meta property="og:image" content="https://scontent.test.fbcdn.net/avatar.png"></head><body></body></html>`;
   else if (/\/reel\/999/.test(u)) body = '<html><head><title>Otro reel | Facebook</title></head><body><div role="main"><img src="https://scontent.test.fbcdn.net/big.png" width="300" height="300"></div></body></html>';
   else if (/big\.png/.test(u)) { body = BIG; type = 'image/png'; }
@@ -148,7 +167,9 @@ const login = () => send('Storage.setCookies', {cookies: [{name: 'c_user', value
 await login();
 await send('Target.setAutoAttach', {autoAttach: true, waitForDebuggerOnStart: false, flatten: true});
 await send('Target.setDiscoverTargets', {discover: true});
-const ext = await send('Extensions.loadUnpacked', {path: path.join(ROOT, 'extension')});
+const EXTDIR = fs.mkdtempSync(path.join(os.tmpdir(), 'fbp-ext-'));
+for (const n of fs.readdirSync(path.join(ROOT, 'extension'))) fs.copyFileSync(path.join(ROOT, 'extension', n), path.join(EXTDIR, n));
+const ext = await send('Extensions.loadUnpacked', {path: EXTDIR});
 console.log(`\nExtensión cargada: ${ext.result?.id || JSON.stringify(ext.error)}\nPublicación: ${POST_URL}\nGrupo:       ${GROUP_URL}\n`);
 const {result: {targetId}} = await send('Target.createTarget', {url: 'about:blank'});
 const {result: {sessionId: app}} = await send('Target.attachToTarget', {targetId, flatten: true});
@@ -478,6 +499,44 @@ await t('«Publicar de todas maneras» pide confirmación, quita el bloqueo y pe
 });
 await t('respeta la pausa entre grupos (no publica dos seguidos sin esperar)', async () => (await ev(`(()=>{const t=S.history.flatMap(h=>h.items).filter(i=>i.status==='done').map(i=>i.at).sort((a,b)=>a-b);for(let i=1;i<t.length;i++)if(t[i]-t[i-1]<S.settings.pause*1000)return false;return true})()`)) === true);
 await t('solo se publicó en los grupos correctos', async () => posted.length === 11 && posted.map(p => p.group).join() === `${MAIN},2000000005,2000000006,2000000009,2000000010,2000000011,2000000012,2000000013,2000000014,2000000007,2000000002` ? posted.map(p => p.group).join(', ') : false);
+console.log('8. Autoactualización de la extensión');
+await t('con la versión publicada igual a la instalada, no hay actualización', async () => { const r = await ev(`Ext.call('checkUpdate').then(JSON.stringify)`); const o = JSON.parse(r); return o.ok && !o.available ? `instalada ${o.current}, publicada ${o.latest}` : (() => { throw new Error(r); })(); });
+UPD.serveNew = true;
+await t('detecta una versión nueva publicada', async () => { const r = await ev(`Ext.call('checkUpdate').then(JSON.stringify)`); const o = JSON.parse(r); return o.ok && o.available && o.latest === '9.9.9' ? `${o.current} → ${o.latest}` : (() => { throw new Error(r); })(); });
+await ev(`sessionStorage.removeItem('fbp.updTried');extCheckUpdate(false)`);
+let updTarget = null;
+for (let i = 0; i < 30 && !updTarget; i++) { await sleep(300); updTarget = (await send('Target.getTargets')).result.targetInfos.find(t => t.type === 'page' && t.url.includes('/update.html')); }
+await t('la app abre el actualizador automáticamente', async () => updTarget ? updTarget.url.replace(/^chrome-extension:\/\/[a-p]+/, 'chrome-extension://…') : (() => { throw new Error('sin pestaña de actualización'); })());
+const {result: {sessionId: upd}} = await send('Target.attachToTarget', {targetId: updTarget.targetId, flatten: true});
+await send('Runtime.enable', {}, upd);
+const uev = async expr => { const r = await send('Runtime.evaluate', {expression: expr, awaitPromise: true, returnByValue: true}, upd); if (r.result?.exceptionDetails) return 'ERR ' + (r.result.exceptionDetails.exception?.description || ''); return r.result?.result?.value; };
+await sleep(800);
+await t('la primera vez pide elegir la carpeta de la extensión', async () => (await uev(`!document.getElementById('pick').hidden&&/Elegir carpeta/.test(document.body.textContent)`)) === true);
+await t('rechaza una carpeta que no es la de la extensión', async () => (await uev(`(async()=>{const d=await navigator.storage.getDirectory();const o=await d.getDirectoryHandle('otra',{create:true});return __fbpUpdate.verifyFolder(o)})()`)) === false);
+await uev(`(async()=>{const d=await navigator.storage.getDirectory();const e=await d.getDirectoryHandle('ext',{create:true});const w=await (await e.getFileHandle('manifest.json',{create:true})).createWritable();await w.write(JSON.stringify(chrome.runtime.getManifest()));await w.close()})()`);
+UPD.tamper = true;
+await t('si un archivo está alterado, no instala nada', async () => {
+  const r = await uev(`(async()=>{const d=await (await navigator.storage.getDirectory()).getDirectoryHandle('ext');try{await __fbpUpdate.doUpdate(d,{noReload:true});return 'instalado'}catch(e){const m=JSON.parse(await (await (await d.getFileHandle('manifest.json')).getFile()).text());return e.message+' | versión en carpeta: '+m.version}})()`);
+  return /integridad/.test(r) && !/9\.9\.9/.test(r) ? r : (() => { throw new Error(r); })();
+});
+UPD.tamper = false;
+await t('descarga, verifica e instala la versión nueva en la carpeta de la extensión', async () => {
+  const r = await uev(`(async()=>{const d=await (await navigator.storage.getDirectory()).getDirectoryHandle('ext');const res=await __fbpUpdate.doUpdate(d,{noReload:true});
+    const m=JSON.parse(await (await (await d.getFileHandle('manifest.json')).getFile()).text());const fb=await (await (await d.getFileHandle('fb.js')).getFile()).arrayBuffer();
+    return JSON.stringify({res,ver:m.version,fbHash:await __fbpUpdate.sha256(fb)})})()`);
+  const o = JSON.parse(r), list = JSON.parse(fs.readFileSync(path.join(NEWEXT, 'files.json'), 'utf8'));
+  return o.res.updated && o.ver === '9.9.9' && o.fbHash === list.files.find(f => f.name === 'fb.js').sha256 ? `instalada ${o.ver}; archivos verificados` : (() => { throw new Error(r); })();
+});
+UPD.serveNew = false;
+await send('Target.closeTarget', {targetId: updTarget.targetId});
+/* Último tramo: los archivos nuevos ya están en la carpeta de la extensión → se reinicia y se activa */
+for (const n of fs.readdirSync(NEWEXT)) fs.copyFileSync(path.join(NEWEXT, n), path.join(EXTDIR, n));
+await ev(`window.__beforeReload=1`);
+await swEval(`chrome.storage.local.set({updatedTo:'9.9.9'}).then(()=>{setTimeout(()=>chrome.runtime.reload(),100);return 1})`);
+let after = null;
+for (let i = 0; i < 60; i++) { await sleep(500); try { after = await ev(`JSON.stringify({fresh:!window.__beforeReload,ver:typeof Ext==='object'&&Ext.ready?Ext.version:null,snack:document.querySelector('#snack .msg')?.textContent||''})`); const o = JSON.parse(after); if (o.fresh && o.ver) { await sleep(1500); after = await ev(`JSON.stringify({fresh:!window.__beforeReload,ver:Ext.version,snack:document.querySelector('#snack .msg')?.textContent||''})`); break; } } catch {} }
+await t('tras instalarse, la extensión se reinicia, la app se recarga sola y avisa de la versión nueva', async () => { const o = JSON.parse(after || '{}'); return o.fresh && o.ver === '9.9.9' && /actualizada a la versión 9\.9\.9/.test(o.snack) ? `«${o.snack}»` : (() => { throw new Error(after); })(); });
+
 await t('sin errores de JavaScript en la app', async () => errors.length === 0 || (() => { throw new Error(errors.slice(0, 3).join(' | ')); })());
 
 console.log(`\n${passed} correctas, ${failed} fallidas\n`);

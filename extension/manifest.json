@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Facebook Publisher · Publicación automática",
   "short_name": "FB Publisher",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Publica en tus grupos de Facebook lo que preparas en Facebook Publisher, usando tu propia sesión y respetando los límites de seguridad.",
   "minimum_chrome_version": "116",
   "permissions": [
@@ -13,7 +13,8 @@
   ],
   "host_permissions": [
     "https://www.facebook.com/*",
-    "https://*.fbcdn.net/*"
+    "https://*.fbcdn.net/*",
+    "https://arlizheredia.github.io/*"
   ],
   "background": {
     "service_worker": "background.js"
