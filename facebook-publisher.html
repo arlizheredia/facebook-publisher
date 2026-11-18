@@ -371,6 +371,8 @@ input[type=checkbox].cb{accent-color:var(--primary);width:18px;height:18px;margi
 .pace select{height:32px;border-radius:16px;border:1px solid var(--outline);background:var(--surface);color:var(--text);padding:0 10px;font:500 13px var(--font);cursor:pointer}
 @media (max-width:720px){.fb-acct .nm{display:none}.fb-acct{padding:0 4px}}
 #reportDlg{width:min(880px,calc(100vw - 32px))}
+.chip .cb{margin-right:2px}
+#grDlg{width:min(720px,calc(100vw - 32px))}
 #reportDlg .dlg-h .icon-btn{margin-right:-4px}
 #reportDlg textarea.rp-text{min-height:260px}
 #reportDlg .tip[data-tip]:hover::before{top:auto;bottom:calc(100% + 6px)}
@@ -745,6 +747,7 @@ details.adv[open] summary .ms{transform:rotate(180deg)}
         </div>
         <div class="actions">
           <button class="btn outlined" id="importBtn"><span class="ms" aria-hidden="true">upload</span>Importar</button>
+          <button class="btn outlined" id="grReportBtn"><span class="ms" aria-hidden="true">summarize</span>Reporte</button>
           <button class="btn outlined" id="exportBtn"><span class="ms" aria-hidden="true">download</span>Exportar</button>
           <button class="btn filled" id="addGroupBtn"><span class="ms" aria-hidden="true">add</span>Añadir grupo</button>
         </div>
@@ -905,6 +908,25 @@ details.adv[open] summary .ms{transform:rotate(180deg)}
       <button class="btn text danger" id="wipeAll">Borrar</button></div>
   </div>
   <div class="dlg-f"><button class="btn filled" data-close>Listo</button></div>
+</dialog>
+
+<!-- Groups report dialog -->
+<dialog id="grDlg">
+  <div class="dlg-h"><span class="ms" aria-hidden="true" style="color:var(--primary);font-size:28px">summarize</span><h2>Reporte de grupos</h2><button class="help-link" data-help="grupos" aria-label="Ayuda"><span class="ms" aria-hidden="true">help</span></button></div>
+  <div class="dlg-b">
+    <div class="rp-label" style="margin-top:0">Grupos</div>
+    <div class="seg" id="grScope" role="radiogroup"><button data-sc="active" class="on">Activos</button><button data-sc="all">Todos</button><button data-sc="sel">Seleccionados</button></div>
+    <div class="rp-label">Incluir de cada grupo</div>
+    <div class="chips" id="grInc">
+      <label class="chip"><input type="checkbox" class="cb" data-inc="link" checked> Enlace</label>
+      <label class="chip"><input type="checkbox" class="cb" data-inc="tags" checked> Etiquetas</label>
+      <label class="chip"><input type="checkbox" class="cb" data-inc="notes"> Notas</label>
+      <label class="chip"><input type="checkbox" class="cb" data-inc="last"> Último uso</label>
+    </div>
+    <div class="rp-label">Texto del reporte <span class="small muted" style="font-weight:400">· Word y PDF en Arial 12, blanco y negro</span></div>
+    <textarea class="input textarea rp-text" id="grText" style="min-height:240px"></textarea>
+  </div>
+  <div class="dlg-f"><button class="btn text" data-close>Cerrar</button><button class="btn outlined" id="grCopy"><span class="ms" aria-hidden="true">content_copy</span>Copiar</button><button class="btn outlined" id="grDocx"><span class="ms" aria-hidden="true">description</span>Word</button><button class="btn filled" id="grPdf"><span class="ms" aria-hidden="true">picture_as_pdf</span>PDF</button></div>
 </dialog>
 
 <!-- Report dialog -->
@@ -2274,14 +2296,14 @@ function buildReport(date,ids,meta){
 }
 /* Texto → bloques (respeta las ediciones del usuario) */
 function reportBlocks(t){
-  const H2=/^(Resumen|Detalle por publicación|Observaciones|Próximos pasos|Conclusiones|Notas|Recomendaciones)\s*:?$/i;const B=[];let first=true;
+  const H2=/^(Resumen|Detalle por publicación|Observaciones|Próximos pasos|Conclusiones|Notas|Recomendaciones|Listado)\s*:?$/i;const B=[];let first=true;
   String(t).replace(/\r/g,'').split('\n').forEach(raw=>{const s=raw.replace(/\s+$/,'');const x=s.trim();
     if(!x){B.push({t:'sp'});return}
     if(first){B.push({t:'h1',x});first=false;return}
     if(H2.test(x))B.push({t:'h2',x:x.replace(/:$/,'')});
     else if(/^\d+\.\s+/.test(x))B.push({t:'h3',x});
     else if(/^[-•·]\s+/.test(x))B.push({t:'li',x:x.replace(/^[-•·]\s+/,'')});
-    else if(/^(Fecha|Elaborado por|Cliente \/ marca|Enlace|Texto|Grupos en los que se compartió|Grupos)\s*:/.test(x)){const k=x.slice(0,x.indexOf(':'));B.push({t:'kv',k,x:x.slice(x.indexOf(':')+1).trim()})}
+    else if(/^(Fecha|Elaborado por|Cliente \/ marca|Enlace|Texto|Grupos en los que se compartió|Grupos|Total|Etiquetas|Notas|Último uso|Estado)\s*:/.test(x)){const k=x.slice(0,x.indexOf(':'));B.push({t:'kv',k,x:x.slice(x.indexOf(':')+1).trim()})}
     else B.push({t:'p',x})});
   return B}
 /* ---- PDF (Helvetica estándar, WinAnsiEncoding) ---- */
@@ -2298,24 +2320,29 @@ function wrapPdf(s,bold,size,maxW){const out=[];let line='';
     while(textW(w,bold,size)>maxW){let k=w.length;while(k>1&&textW(w.slice(0,k),bold,size)>maxW)k--;if(line){out.push(line);line=''}out.push(w.slice(0,k));w=w.slice(k)}
     const cand=line?line+' '+w:w;if(textW(cand,bold,size)<=maxW)line=cand;else{out.push(line);line=w}}
   if(line)out.push(line);return out.length?out:['']}
-function buildPdf(text,title){
+function buildPdf(text,title,opts={}){
+  const mono=!!opts.mono,ACC=mono?'0 0 0':'0.04 0.34 0.82',TXT=mono?'0 0 0':'0.12 0.12 0.12',KEY=mono?'0 0 0':'0.3 0.3 0.3',FOOT=mono?'0 0 0':'0.45 0.45 0.45';
+  const Z=mono?{h1:14,h1l:20,h2:12,h2l:18,h3:12,h3l:17,kv:12,kvl:17,li:12,lil:17,p:12,pl:17}:{h1:17,h1l:22,h2:12.5,h2l:18,h3:11,h3l:16,kv:10,kvl:15,li:10.5,lil:15,p:10.5,pl:15.5};
   const B=reportBlocks(text),W=595.28,H=841.89,M=56,MW=W-2*M,pages=[];let ops=[],y=H-M;
   const esc=s=>s.replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
   const brk=need=>{if(y-need<M+20){pages.push(ops);ops=[];y=H-M}};
-  const write=(lines,font,size,lh,x,color)=>lines.forEach(l=>{brk(lh);y-=lh;ops.push(`BT ${color||'0.12 0.12 0.12'} rg /${font} ${size} Tf ${x.toFixed(2)} ${y.toFixed(2)} Td (${esc(l)}) Tj ET`)});
+  const write=(lines,font,size,lh,x,color)=>lines.forEach(l=>{brk(lh);y-=lh;ops.push(`BT ${color||TXT} rg /${font} ${size} Tf ${x.toFixed(2)} ${y.toFixed(2)} Td (${esc(l)}) Tj ET`)});
   B.forEach((b,ix)=>{const x=pdfText(b.x||'');
     if(b.t==='sp'){y-=5;return}
-    if(b.t==='h1'){write(wrapPdf(x,true,17,MW),'F2',17,22,M,'0.04 0.34 0.82');y-=4;ops.push(`0.04 0.34 0.82 RG 1.2 w ${M} ${y.toFixed(2)} m ${(W-M).toFixed(2)} ${y.toFixed(2)} l S`);y-=10;return}
-    if(b.t==='h2'){y-=8;brk(40);write([x],'F2',12.5,18,M,'0.04 0.34 0.82');y-=3;return}
-    if(b.t==='h3'){y-=4;brk(36);write(wrapPdf(x,true,11,MW),'F2',11,16,M);return}
-    if(b.t==='kv'){const k=pdfText(b.k)+': ',kw=textW(k,true,10);const ls=wrapPdf(x,false,10,MW-kw);
-      ls.forEach((l,i)=>{brk(15);y-=15;ops.push(i===0?`BT 0.3 0.3 0.3 rg /F2 10 Tf ${M} ${y.toFixed(2)} Td (${esc(k)}) Tj /F1 10 Tf 0.12 0.12 0.12 rg (${esc(l)}) Tj ET`:`BT 0.12 0.12 0.12 rg /F1 10 Tf ${(M+kw).toFixed(2)} ${y.toFixed(2)} Td (${esc(l)}) Tj ET`)});return}
-    if(b.t==='li'){const ls=wrapPdf(x,false,10.5,MW-16);ls.forEach((l,i)=>{brk(15);y-=15;ops.push(`BT 0.12 0.12 0.12 rg /F1 10.5 Tf ${(M+16).toFixed(2)} ${y.toFixed(2)} Td (${esc(l)}) Tj ET`);if(i===0)ops.push(`BT 0.04 0.34 0.82 rg /F1 10.5 Tf ${(M+4).toFixed(2)} ${y.toFixed(2)} Td (${esc(String.fromCharCode(149))}) Tj ET`)});return}
-    write(wrapPdf(x,false,10.5,MW),'F1',10.5,15.5,M)});
+    if(b.t==='h1'){write(wrapPdf(x,true,Z.h1,MW),'F2',Z.h1,Z.h1l,M,ACC);y-=4;ops.push(`${ACC} RG ${mono?0.6:1.2} w ${M} ${y.toFixed(2)} m ${(W-M).toFixed(2)} ${y.toFixed(2)} l S`);y-=10;return}
+    if(b.t==='h2'){y-=8;brk(40);write([x],'F2',Z.h2,Z.h2l,M,ACC);y-=3;return}
+    if(b.t==='h3'){y-=4;brk(36);write(wrapPdf(x,true,Z.h3,MW),'F2',Z.h3,Z.h3l,M);return}
+    if(b.t==='kv'){const k=pdfText(b.k)+': ',kw=textW(k,true,Z.kv);const ls=wrapPdf(x,false,Z.kv,MW-kw);
+      ls.forEach((l,i)=>{brk(Z.kvl);y-=Z.kvl;ops.push(i===0?`BT ${KEY} rg /F2 ${Z.kv} Tf ${M} ${y.toFixed(2)} Td (${esc(k)}) Tj /F1 ${Z.kv} Tf ${TXT} rg (${esc(l)}) Tj ET`:`BT ${TXT} rg /F1 ${Z.kv} Tf ${(M+kw).toFixed(2)} ${y.toFixed(2)} Td (${esc(l)}) Tj ET`)});return}
+    if(b.t==='li'){const ls=wrapPdf(x,false,Z.li,MW-16);ls.forEach((l,i)=>{brk(Z.lil);y-=Z.lil;ops.push(`BT ${TXT} rg /F1 ${Z.li} Tf ${(M+16).toFixed(2)} ${y.toFixed(2)} Td (${esc(l)}) Tj ET`);if(i===0)ops.push(`BT ${ACC} rg /F1 ${Z.li} Tf ${(M+4).toFixed(2)} ${y.toFixed(2)} Td (${esc(String.fromCharCode(149))}) Tj ET`)});return}
+    write(wrapPdf(x,false,Z.p,MW),'F1',Z.p,Z.pl,M)});
   pages.push(ops);
   const objs=[];const add=s=>{objs.push(s);return objs.length};
-  const cat=add(''),pg=add(''),f1=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>'),f2=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
-  const kids=pages.map((o,i)=>{const foot=`BT 0.45 0.45 0.45 rg /F1 8.5 Tf ${M} 30 Td (${esc(pdfText(title))}) Tj ET BT 0.45 0.45 0.45 rg /F1 8.5 Tf ${(W-M-textW(`Página ${i+1} de ${pages.length}`,false,8.5)).toFixed(2)} 30 Td (${esc(pdfText(`Página ${i+1} de ${pages.length}`))}) Tj ET`;
+  const arial=bold=>{const ws=[];for(let c=32;c<=255;c++)ws.push(Math.round(textW(String.fromCharCode(c),bold,1000)));
+    const fd=add(`<< /Type /FontDescriptor /FontName /${bold?'Arial,Bold':'Arial'} /Flags 32 /FontBBox [-665 -325 2000 1006] /ItalicAngle 0 /Ascent 905 /Descent -212 /CapHeight 716 /StemV ${bold?120:80} >>`);
+    return add(`<< /Type /Font /Subtype /TrueType /BaseFont /${bold?'Arial,Bold':'Arial'} /FirstChar 32 /LastChar 255 /Widths [${ws.join(' ')}] /FontDescriptor ${fd} 0 R /Encoding /WinAnsiEncoding >>`)};
+  const cat=add(''),pg=add(''),f1=mono?arial(false):add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>'),f2=mono?arial(true):add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+  const kids=pages.map((o,i)=>{const foot=`BT ${FOOT} rg /F1 8.5 Tf ${M} 30 Td (${esc(pdfText(title))}) Tj ET BT ${FOOT} rg /F1 8.5 Tf ${(W-M-textW(`Página ${i+1} de ${pages.length}`,false,8.5)).toFixed(2)} 30 Td (${esc(pdfText(`Página ${i+1} de ${pages.length}`))}) Tj ET`;
     const stream=o.concat(foot).join('\n');const c=add(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
     return add(`<< /Type /Page /Parent ${pg} 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /Font << /F1 ${f1} 0 R /F2 ${f2} 0 R >> >> /Contents ${c} 0 R >>`)});
   objs[cat-1]=`<< /Type /Catalog /Pages ${pg} 0 R >>`;objs[pg-1]=`<< /Type /Pages /Kids [${kids.map(k=>k+' 0 R').join(' ')}] /Count ${kids.length} >>`;
@@ -2336,17 +2363,19 @@ function zipStore(files){const enc=new TextEncoder(),parts=[],cen=[];let off=0;
     off+=loc.length+nb.length+db.length}
   const cs=cen.reduce((a,b)=>a+b.length,0);
   return new Blob([...parts,...cen,new Uint8Array([...u32(0x06054b50),...u16(0),...u16(0),...u16(files.length),...u16(files.length),...u32(cs),...u32(off),...u16(0)])],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'})}
-function buildDocx(text){
+function buildDocx(text,opts={}){
+  const mono=!!opts.mono,FONT=mono?'Arial':'Calibri',ACC=mono?null:'0B57D0',KEYC=mono?null:'444746';
   const x=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'');
-  const run=(t,o={})=>`<w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/>${o.b?'<w:b/>':''}${o.c?`<w:color w:val="${o.c}"/>`:''}<w:sz w:val="${o.sz||22}"/></w:rPr><w:t xml:space="preserve">${x(t)}</w:t></w:r>`;
+  const SZ=n=>mono?24:n;
+  const run=(t,o={})=>`<w:r><w:rPr><w:rFonts w:ascii="${FONT}" w:hAnsi="${FONT}" w:cs="${FONT}"/>${o.b?'<w:b/>':''}${o.c?`<w:color w:val="${o.c}"/>`:''}<w:sz w:val="${o.sz||SZ(22)}"/><w:szCs w:val="${o.sz||SZ(22)}"/></w:rPr><w:t xml:space="preserve">${x(t)}</w:t></w:r>`;
   const para=(runs,ppr='')=>`<w:p><w:pPr>${ppr}</w:pPr>${runs}</w:p>`;
   const body=reportBlocks(text).map(b=>{
     if(b.t==='sp')return '';
-    if(b.t==='h1')return para(run(b.x,{b:1,sz:34,c:'0B57D0'}),'<w:pBdr><w:bottom w:val="single" w:sz="8" w:space="4" w:color="0B57D0"/></w:pBdr><w:spacing w:after="160"/>');
-    if(b.t==='h2')return para(run(b.x,{b:1,sz:26,c:'0B57D0'}),'<w:keepNext/><w:spacing w:before="280" w:after="80"/>');
-    if(b.t==='h3')return para(run(b.x,{b:1,sz:23}),'<w:keepNext/><w:spacing w:before="160" w:after="40"/>');
-    if(b.t==='kv')return para(run(b.k+': ',{b:1,c:'444746',sz:21})+run(b.x,{sz:21}),'<w:spacing w:after="20"/>');
-    if(b.t==='li')return para(run('•\t',{c:'0B57D0'})+run(b.x),'<w:tabs><w:tab w:val="left" w:pos="360"/></w:tabs><w:ind w:left="360" w:hanging="360"/><w:spacing w:after="40"/>');
+    if(b.t==='h1')return para(run(b.x,{b:1,sz:mono?28:34,c:ACC}),`<w:pBdr><w:bottom w:val="single" w:sz="${mono?4:8}" w:space="4" w:color="${ACC||'000000'}"/></w:pBdr><w:spacing w:after="160"/>`);
+    if(b.t==='h2')return para(run(b.x,{b:1,sz:SZ(26),c:ACC}),'<w:keepNext/><w:spacing w:before="280" w:after="80"/>');
+    if(b.t==='h3')return para(run(b.x,{b:1,sz:SZ(23)}),'<w:keepNext/><w:spacing w:before="160" w:after="40"/>');
+    if(b.t==='kv')return para(run(b.k+': ',{b:1,c:KEYC,sz:SZ(21)})+run(b.x,{sz:SZ(21)}),'<w:spacing w:after="20"/>');
+    if(b.t==='li')return para(run('•\t',{c:ACC})+run(b.x),'<w:tabs><w:tab w:val="left" w:pos="360"/></w:tabs><w:ind w:left="360" w:hanging="360"/><w:spacing w:after="40"/>');
     return para(run(b.x),'<w:spacing w:after="120" w:line="300" w:lineRule="auto"/>')}).join('');
   const doc=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>`;
   return zipStore([
@@ -2381,6 +2410,28 @@ const rpName=ext=>`informe-difusion-${$('#rpDate').value}.${ext}`;
 $('#rpCopy').onclick=async()=>snack(await copyText($('#rpText').value)?'Informe copiado':'No se pudo copiar');
 $('#rpPdf').onclick=()=>{download(rpName('pdf'),buildPdf($('#rpText').value,`Informe de difusión · ${cap(longDate($('#rpDate').value))}`),'application/pdf');snack('PDF descargado')};
 $('#rpDocx').onclick=()=>{download(rpName('docx'),buildDocx($('#rpText').value),'application/vnd.openxmlformats-officedocument.wordprocessingml.document');snack('Documento de Word descargado')};
+/* ---- Reporte de grupos (Word en Arial 12 blanco y negro, PDF o copiar) ---- */
+const GR={scope:'active'};
+function grList(){const L=GR.scope==='all'?S.groups:GR.scope==='sel'?S.groups.filter(g=>S.gChecked.has(g.id)):S.groups.filter(g=>g.active);
+  return L.slice().sort((a,b)=>a.name.localeCompare(b.name,'es',{sensitivity:'base'}))}
+function buildGroupsReport(){
+  const inc={};$$('#grInc [data-inc]').forEach(c=>inc[c.dataset.inc]=c.checked);
+  const L=grList(),t={active:'Grupos activos de Facebook',all:'Grupos de Facebook',sel:'Grupos seleccionados de Facebook'}[GR.scope];
+  const out=[t,`Fecha: ${cap(longDate(ymd(Date.now())))}`,`Total: ${pl(L.length,GR.scope==='active'?'grupo activo':'grupo',GR.scope==='active'?'grupos activos':'grupos')}`,'','Listado'];
+  if(!L.length)out.push('No hay grupos que cumplan este criterio.');
+  L.forEach((g,i)=>{out.push(`${i+1}. ${g.name}`);if(inc.link)out.push(`Enlace: ${g.url}`);if(inc.tags&&(g.tags||[]).length)out.push(`Etiquetas: ${g.tags.join(', ')}`);
+    if(inc.notes&&g.notes)out.push(`Notas: ${g.notes.replace(/\s+/g,' ')}`);if(inc.last)out.push(`Último uso: ${g.lastShared?fmtDate(g.lastShared):'nunca'}`);if(GR.scope!=='active')out.push(`Estado: ${g.active?'activo':'inactivo'}`)});
+  return out.join('\n')}
+function grRender(){$$('#grScope button').forEach(b=>b.classList.toggle('on',b.dataset.sc===GR.scope));
+  const sb=$('#grScope [data-sc=sel]');sb.disabled=!S.gChecked.size;sb.textContent=`Seleccionados${S.gChecked.size?` (${S.gChecked.size})`:''}`;
+  $('#grText').value=buildGroupsReport();const n=grList().length;['#grCopy','#grDocx','#grPdf'].forEach(b=>$(b).disabled=!n)}
+$('#grReportBtn').onclick=()=>{GR.scope=S.gChecked.size?'sel':'active';grRender();$('#grDlg').showModal()};
+$('#grScope').addEventListener('click',e=>{const b=e.target.closest('[data-sc]');if(!b||b.disabled)return;GR.scope=b.dataset.sc;grRender()});
+$('#grInc').addEventListener('change',grRender);
+const grName=ext=>`grupos-${{active:'activos',all:'todos',sel:'seleccionados'}[GR.scope]}-${ymd(Date.now())}.${ext}`;
+$('#grCopy').onclick=async()=>snack(await copyText($('#grText').value)?'Reporte copiado':'No se pudo copiar');
+$('#grDocx').onclick=()=>{download(grName('docx'),buildDocx($('#grText').value,{mono:true}),'application/vnd.openxmlformats-officedocument.wordprocessingml.document');snack('Documento de Word descargado (Arial 12, blanco y negro)')};
+$('#grPdf').onclick=()=>{download(grName('pdf'),buildPdf($('#grText').value,`Reporte de grupos · ${cap(longDate(ymd(Date.now())))}`,{mono:true}),'application/pdf');snack('PDF descargado')};
 /* Selección desde el Historial (la casilla está dentro del resumen desplegable) */
 $('#histBox').addEventListener('click',e=>{const cb=e.target.closest('[data-hsel]');if(!cb)return;e.preventDefault();const id=cb.dataset.hsel;
   S.hsel.has(id)?S.hsel.delete(id):S.hsel.add(id);setTimeout(()=>{cb.checked=S.hsel.has(id);renderReportBtn()},0)},true);
@@ -2507,6 +2558,7 @@ H('grupos','Grupos','Gestionar grupos','grupos añadir eliminar activar desactiv
 <li><b>Notas / normas:</b> se mostrarán como recordatorio en el asistente, p. ej. «solo los lunes».</li>
 <li><b>Acciones masivas:</b> marca varios grupos para activarlos, desactivarlos, etiquetarlos o eliminarlos.</li>
 <li><b>Eliminar:</b> solo los quita de tu lista; no sales del grupo en Facebook. Puedes deshacerlo desde el aviso.</li></ul>
+<p><b>Reporte:</b> genera la lista de los grupos activos (o de todos, o de los seleccionados) con su enlace, etiquetas, notas o último uso, para copiarla o descargarla en Word (Arial 12, blanco y negro) o PDF.</p>
 <p>Pulsa <kbd>/</kbd> para buscar.</p>`),
 H('marcador','Grupos','Capturar grupos con el marcador','bookmarklet marcador capturar importar automatico lista grupos',`
 <p>El marcador lee tu lista de grupos directamente desde Facebook, con tu sesión iniciada, y la copia al portapapeles. <b>No publica nada, no envía datos a ningún servidor y no se ejecuta solo.</b></p>

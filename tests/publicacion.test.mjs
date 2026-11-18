@@ -297,6 +297,40 @@ await t('exporta un PDF válido que incluye las ediciones', async () => pdf.slic
 await t('exporta un Word (.docx) válido que incluye las ediciones', async () => docx.slice(0, 2).toString() === 'PK' && docx.toString('utf8').includes('word/document.xml') && docx.toString('utf8').includes('Nota del equipo') ? `${files[1].n} (${docx.length} B)` : false);
 await t('copia el texto al portapapeles', async () => { await ev(`window.__clip=[];navigator.clipboard.writeText=async t=>{window.__clip.push(t)};document.getElementById('rpCopy').click()`); await sleep(200); return /Nota del equipo/.test(await ev(`window.__clip.at(-1)||''`)); });
 
+console.log('7. Reporte de grupos activos');
+await ev(`(()=>{S.groups=cleanGroups([
+  {id:'k1',name:'Ventas Santiago',url:'https://www.facebook.com/groups/601/',tags:['ventas','oriente'],notes:'Solo lunes',active:true},
+  {id:'k2',name:'Aguacates de Cuba',url:'https://www.facebook.com/groups/602/',active:true},
+  {id:'k3',name:'Grupo inactivo',url:'https://www.facebook.com/groups/603/',active:false}]);persist.groups();S.gChecked.clear();location.hash='grupos'})()`);
+await sleep(400);
+await t('genera el listado de los grupos activos, ordenado y con el total', async () => {
+  await ev(`document.getElementById('grReportBtn').click()`); await sleep(300);
+  const r = await ev(`document.getElementById('grText').value`);
+  const ok = /^Grupos activos de Facebook\nFecha: .+\nTotal: 2 grupos activos\n\nListado\n1\. Aguacates de Cuba\nEnlace: https:\/\/www\.facebook\.com\/groups\/602\/\n2\. Ventas Santiago\nEnlace: https:\/\/www\.facebook\.com\/groups\/601\/\nEtiquetas: ventas, oriente$/.test(r) && !/inactivo/.test(r);
+  return ok ? 'activos: 2 (sin el inactivo)' : (() => { throw new Error(r); })();
+});
+await t('permite incluir notas y último uso, o todos los grupos con su estado', async () => {
+  await ev(`document.querySelector('#grInc [data-inc=notes]').click();document.querySelector('#grScope [data-sc=all]').click()`); await sleep(200);
+  const r = await ev(`document.getElementById('grText').value`);
+  await ev(`document.querySelector('#grInc [data-inc=notes]').click();document.querySelector('#grScope [data-sc=active]').click()`);
+  return /Total: 3 grupos/.test(r) && /Notas: Solo lunes/.test(r) && /Estado: inactivo/.test(r);
+});
+await ev(`window.__dls=[];download=(n,d,t)=>window.__dls.push({n,d})`);
+await ev(`document.getElementById('grDocx').click();document.getElementById('grPdf').click()`); await sleep(300);
+const gfiles = JSON.parse(await ev(`Promise.all(window.__dls.map(x=>new Promise(r=>{const f=new FileReader();f.onload=()=>r({n:x.n,b:f.result.split(',')[1]});f.readAsDataURL(x.d)}))).then(JSON.stringify)`));
+const gdocx = Buffer.from(gfiles.find(f => f.n.endsWith('.docx')).b, 'base64'), gpdf = Buffer.from(gfiles.find(f => f.n.endsWith('.pdf')).b, 'base64');
+if (process.env.TEST_OUT) { fs.writeFileSync(path.join(process.env.TEST_OUT, 'grupos.docx'), gdocx); fs.writeFileSync(path.join(process.env.TEST_OUT, 'grupos.pdf'), gpdf); }
+await t('Word en Arial 12 y en blanco y negro', async () => {
+  const x = gdocx.toString('utf8');
+  return x.includes('w:ascii="Arial"') && !x.includes('Calibri') && /w:sz w:val="24"/.test(x) && !/<w:color w:val="(?!000000)/.test(x) && /Aguacates de Cuba/.test(x) ? `${gfiles.find(f => f.n.endsWith('.docx')).n}` : (() => { throw new Error('docx'); })();
+});
+await t('PDF en Arial, en blanco y negro', async () => {
+  const x = gpdf.toString('latin1');
+  return x.startsWith('%PDF-') && /\/BaseFont \/Arial/.test(x) && !/Helvetica/.test(x) && !/0\.04 0\.34 0\.82/.test(x) && /Aguacates de Cuba/.test(x) ? `${gfiles.find(f => f.n.endsWith('.pdf')).n}` : (() => { throw new Error('pdf'); })();
+});
+await t('copia el reporte al portapapeles', async () => { await ev(`window.__clip=[];navigator.clipboard.writeText=async t=>{window.__clip.push(t)};document.getElementById('grCopy').click()`); await sleep(200); return /^Grupos activos de Facebook/.test(await ev(`window.__clip.at(-1)||''`)); });
+await ev(`document.getElementById('grDlg').close()`);
+
 await t('sin errores de JavaScript', async () => errors.length === 0 || (() => { throw new Error(errors.join(' | ')); })());
 
 console.log(`\n${passed} correctas, ${failed} fallidas\n`);
