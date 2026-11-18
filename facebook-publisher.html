@@ -50,9 +50,11 @@
 
 /* ================== BASE ================== */
 *,*::before,*::after{box-sizing:border-box}
-html,body{margin:0;height:100%}
+html,body{margin:0}
+html{min-height:100%}
+body{min-height:100vh;min-height:100dvh}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
-body{overflow-x:hidden;background:var(--bg);color:var(--text);font:400 14px/20px var(--font);-webkit-font-smoothing:antialiased;letter-spacing:.01em}
+body{overflow-x:clip;background:var(--bg);color:var(--text);font:400 14px/20px var(--font);-webkit-font-smoothing:antialiased;letter-spacing:.01em}
 button,input,textarea,select{font:inherit;color:inherit}
 a{color:var(--primary);text-underline-offset:2px}
 h1,h2,h3,h4{font-family:var(--font-display);font-weight:400;letter-spacing:0}
